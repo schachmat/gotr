@@ -1,0 +1,51 @@
+\documentclass[12pt]{article}
+
+% Allgemeines
+\usepackage[automark]{scrpage2} % Kopf- und Fußzeilen
+\usepackage{amsmath,marvosym} % Mathesachen
+\usepackage[T1]{fontenc} % Ligaturen, richtige Umlaute im PDF
+\usepackage[utf8]{inputenc}% UTF8-Kodierung für Umlaute usw
+\usepackage[ngerman]{babel} % Silbentrennung
+\usepackage{pdflscape} % einzelne Seiten drehen können
+\usepackage{multicol}
+\usepackage[hypertex]{hyperref}
+
+\usepackage{graphicx}
+
+\usepackage{color}
+
+\setlength{\columnsep}{50pt}
+
+% Quellcode
+\usepackage{listings} % für Formatierung in Quelltexten
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\lstset{
+	extendedchars=true,
+	basicstyle=\tiny\ttfamily,
+	tabsize=2,
+	keywordstyle=\textbf,
+	commentstyle=\color{mygray},
+	keywordstyle=\color{blue},
+	identifierstyle=\color{black},
+	stringstyle=\color{mygreen},
+	numbers=left,
+	numberstyle=\tiny\color{mygray},
+	% für schönen Zeilenumbruch
+	breakautoindent  = true,
+	breakindent      = 2em,
+	breaklines       = true,
+	postbreak        = ,
+	prebreak         = \raisebox{-.8ex}[0ex][0ex]{\Righttorque},
+	belowcaptionskip=1\baselineskip,
+	frame = l,
+	xleftmargin=\parindent,
+	showstringspaces=false,
+}
+
+\newcommand{\cppclasslisting}[1]{
+	\subsection*{#1.h}
+	\lstinputlisting[language=C++]{../Compiler/src/#1.h}
+	\subsection*{#1.cpp}
+	\lstinputlisting[language=C++]{../Compiler/src/#1.cpp}
+}
