@@ -36,8 +36,14 @@ Ideally it should be possible to have secure, face to face like conversations ov
 	\item{\textbf{Deniability:} \footnote{Deniability as a property is the direct opposite of what traditional security patterns (e.g. PGP for e-mail) achieve. Typically the signature used to achieve authenticity also provides a proof of who the author of a message was. On the other hand this property makes such patterns suitable for messages of legal relevance such as contracts or bills.} No entity is able to prove the authorship of a message to a non participating entity.}
 \end{itemize}
 
-
-Currently there is no free and open source library for inclusion in existing IM protocols or building new ones that provide these properties.
+For just two chat participants the well known and established libotr can be used
+to achieve these goals. However, currently there is no free and open source
+library for inclusion in IM clients that provide these properties for
+conversations with more than two participants such as IRC channels or XMPP
+conference rooms. Considering groups wanting to have private conversations such
+as political parties, business partners or whistle blowers, which are unable to
+meet in person due to legal, time or monetary restrictions, the need for such a
+tool is given.
 
 \section{Related Work}
 
