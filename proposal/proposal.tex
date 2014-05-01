@@ -1,20 +1,16 @@
 \input{praeambel.tex}
 
-\title{}
-\author{Markus Teich, Jannik Theiß}
+\title{Project Proposal: a free Group OTR library \\ {\small Peer-to-Peer Systems and Security, Summer 2014}}
+\author{
+	Markus Teich
+	\and
+	Jannik Theiß
+}
 \date{\today}
 
 \begin{document}
 
-\begin{center}
-\huge \textbf{Project Proposal: a free Group OTR library} \\
-\vspace{2cm}
-\LARGE\textbf{\textsc{Peer-to-Peer Systems and Security}}\\
-\vspace{0.5cm}
-\textbf{Summer 2014}\\
-\textbf{Markus Teich, Jannik Theiß}
-\vspace{3.5cm}
-\end{center}
+\maketitle
 
 
 \section{Introduction}
@@ -23,11 +19,11 @@ In recent years instant messaging (IM) gained a lot in popularity. Virtually
 everyone uses one or more IM solutions (e.g. WhatsApp, Skype, iMessage, Facebook
 Messenger etc.) for private conversations. Especially the ease of use that comes
 with this kind of online communication combined with the high availability
-through the popularity of smart phones makes IM attractive for a broad audience.
+through the popularity of smartphones makes IM attractive for a broad audience.
 Also companies have discovered IM as a suitable solution for online business
 meetings, particularly because it causes no additional costs.
 
-At its heart IM emulates the behavoir of a private conversation held in person.
+At its heart IM emulates the behavior of a private conversation held in person.
 Naturally people expect their face to face conversations to have several
 properties. For example for any party that did not participate the conversation
 the (hopefully) honest word of the participants is the only proof of what was
@@ -38,7 +34,7 @@ computer science and/or cryptography already expect their private online
 conversation to be held under these constraints.
 
 However, the dominant IM solutions do not satisfy all of these properties.
-Security concerns fueled by the revelation of surveillance activities of
+Security concerns fuelled by the revelation of surveillance activities of
 government institutions last year have lead to a more wide spread awareness for
 the need to secure communication over the internet.
 
@@ -74,7 +70,7 @@ messages of legal relevance such as contracts or bills.}}
 
 \end{itemize}
 
-For just two chat participants the well known and established libotr can be used
+For just two chat participants the well known and established \texttt{libotr} can be used
 to achieve these goals. However, currently there is no free and open source
 library for inclusion in IM clients that provide these properties for
 conversations with more than two participants such as IRC channels or XMPP
@@ -94,6 +90,7 @@ Alexander et al.\ attended the problem that the key exchange imposes an obstacle
 for casual users \cite{auth-otr}. To facilitate this they suggest to choose a question to which
 only the two parties of the conversation know the answer. With the aid of a solution
 to the Socialist Millionaires’ Problem the two answers are then checked for equality without sending their answers over the internet.
+
 A first attempt to expand the capabilities of OTR to group conversation was made in 2007 by Bian at al.\ \cite{gotr}. They implemented a plugin for the MSN messenger, which designates one participant to work as a virtual server. All messages are then sent via the OTR protocol to this server and distributed to the other participants from there.
 
 
@@ -103,12 +100,12 @@ mpOTR: PFS only per session?
 \section{Project Plan}
 
 The goal of our project is to implement a free and open source library which is
-independent of a specific IM client and provides the user with the group OTR
+independent from a specific IM solution and provides the user with the group OTR
 functionality proposed in \cite{impr-gotr}. The existing proof of concept
 implementation for pidgin serves as reference to our work. We aim to provide the
 group OTR algorithm under a standardised interface usable by various existing IM
 clients as well as new IM concepts based on OTR only communications. Further the
-correct functionality of our library is to be tested with a simple “client”.
+correct functionality of our library is to be tested with a simple application in form of a command line tool.
 However the evaluation of the cryptographic correctness of the proposed
 algorithm is not the subject of our project.
 
