@@ -79,22 +79,24 @@ to achieve these goals. However, currently there is no free and open source
 library for inclusion in IM clients that provide these properties for
 conversations with more than two participants such as IRC channels or XMPP
 conference rooms. Considering groups wanting to have private conversations such
-as political parties, business partners or whistle blowers, which are unable to
+as political parties, business partners, whistle blowers or even ordinary people, which are unable to
 meet in person due to legal, time or monetary restrictions, the need for such a
-tool is given.
+tool is obvious.
 
 \section{Related Work}
 
 In 2004 Borisov et al.\ initially proposed the idea of off-the-record
-communication(OTR) \cite{otr}. The OTR protocol amied at providing the
-beforementioned properties for chats with two participants. However in 2005 Di
+communication(OTR) \cite{otr}. The OTR protocol aimed at providing the
+aforementioned properties for chats with two participants. However in 2005 Di
 Raimondo et al.\ published a paper in which they revealed several weaknesses in
 the protocol and also provided solutions to fix these \cite{sec-otr}. In 2007
-Alexander et al.\ attendet the problem of exchanging public keys 
+Alexander et al.\ attended the problem that the key exchange imposes an obstacle
+for casual users \cite{auth-otr}. To facilitate this they suggest to choose a question to which
+only the two parties of the conversation know the answer. With the aid of a solution
+to the Socialist Millionaires’ Problem the two answers are then checked for equality without sending their answers over the internet.
+A first attempt to expand the capabilities of OTR to group conversation was made in 2007 by Bian at al.\ \cite{gotr}. They implemented a plugin for the MSN messenger, which designates one participant to work as a virtual server. All messages are then sent via the OTR protocol to this server and distributed to the other participants from there.
 
-\cite{auth-otr}: smp, real life shared secret
 
-\cite{gotr}: virtual server
 mpOTR: Transcript verification only at the end of a session bad?
 mpOTR: PFS only per session?
 
@@ -104,13 +106,11 @@ The goal of our project is to implement a free and open source library which is
 independent of a specific IM client and provides the user with the group OTR
 functionality proposed in \cite{impr-gotr}. The existing proof of concept
 implementation for pidgin serves as reference to our work. We aim to provide the
-group OTR algorithm under a standardized interface usable by various existing IM
+group OTR algorithm under a standardised interface usable by various existing IM
 clients as well as new IM concepts based on OTR only communications. Further the
 correct functionality of our library is to be tested with a simple “client”.
 However the evaluation of the cryptographic correctness of the proposed
 algorithm is not the subject of our project.
-
-- generalize
 
 \begin{thebibliography}{xx}
 
@@ -142,7 +142,7 @@ algorithm is not the subject of our project.
 		Diverse Transports. In \textit{Proceedings of the ACM workshop on
 		Privacy in the electronic society}, WPES ’10, 2012.
 
-	\bibitem{impr-gotr} H. Liu, E. Y. Vasserman, and N. Hopper.Improved Group
+	\bibitem{impr-gotr} H. Liu, E. Y. Vasserman, and N. Hopper. Improved Group
 		Off-the-Record Messaging. In \textit{Proceedings of the ACM workshop on
 		Privacy in the electronic society}, WPES ’11, 2013.
 
