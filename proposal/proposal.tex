@@ -7,29 +7,36 @@
 \begin{document}
 
 \begin{center}
-\huge \textbf{Group OTR} \\
+\huge \textbf{Project Proposal: a free Group OTR library} \\
 \vspace{2cm}
 \LARGE\textbf{\textsc{Peer-to-Peer Systems and Security}}\\
 \vspace{0.5cm}
-\textbf{Summer 2014}
+\textbf{Summer 2014}\\
+\textbf{Markus Teich, Jannik Theiß}
 \vspace{3.5cm}
 \end{center}
 
 
 \section{Introduction}
-Naturally people expecet their face to face conversations to have several security properties. As instant messaging (IM) solutions emerge, research aims to replicate these properties for online conversations.
+In recent years instant messaging (IM) gained a lot in popularity. Virtually everyone uses one or more IM solutions (e.g. WhatsApp, Skype, iMessage, Facebook Messenger etc.) for private conversations. Especially the ease of use that comes with this kind of online communication combined with the high availability through the popularity of smartphones makes IM attractive for a broad audience. Also companies have discovered IM as a suitable solution for online business meetings, particularly because it causes no additional costs.
+
+At its heart IM emulates the behavoir of a private conversation held in person. Naturally people expecet their face to face conversations to satisfy several properties. For example for any party that did not participate the conversation the (hopefully) honest word of the participants is the only proof of what was said during the conversation (given that no one recorded it). To be a suitable alternative to face to face conversations IM should also satisfy these properties. It is also not astonishing that people without a strong knowledge in informatics and/or cryptography already expect their private online conversation to be held under these constraints.
+
+
+However, the dominant IM solutions do not satisfy all of these properties. Security concerns fueled by the revelation of surveillance activities of government institutions last year have lead to a more wide spread awareness for the need to secure communication over the internet.
 
 
 \section{Motivation}
-Secure communication 
+Ideally it should be possible to have secure, face to face like conversations over the internet without additional effort. To properly emulate the security of a face to face meeting, an IM conversation should satisfy the following properties:
+\begin{itemize}
+	\item{\textbf{Authenticity:}}
+	\item{\textbf{Inegrity:}}
+	\item{\textbf{Confidentiality:}}
+	\item{\textbf{Deniability:} \footnote{Deniability as a property is the direct oposite of what traditional security patterns (e.g. PGP for e-mail) achive. Typically the signature used to achive authenticity also provides a proof of who the author of a message was. On the other hand this property makes such patterns suitable for messages of legal relevance such as contracts or bills.}}
+\end{itemize}
 
-u
 
-c
-
-k
-
-s
+Currently there is no free and open source library for inclusion in existing IM protocols or building new ones that provide these properties.
 
 \section{Related Work}
 
@@ -37,17 +44,9 @@ mpOTR: Transcript verification only at the end of a session bad?
 mpOTR: PFS only per session?
 
 \section{Project Plan}
+The goal of our project is to implement a free and open source library which is independent of a specific IM client and provides the user with the group OTR functionality proposed in \cite{impr-gotr}. The existing proof of concept implementation for pidgin serves as reference to our work. We aim to provide the group OTR algorithm under a standardized interface usableby various existing IM clients as well as new IM concepts based on OTR only communications. Further the correct functionality of our library is to be tested with a simple ``client''. However we unfortunately can not evaluate the cryptographic correctness of the proposed algorithm. This is left to people with more crypto knowledge.
 
-The goal of our work is to implement a free and open source library which is
-independent of a specific IM client and provides the user with the group OTR
-functionality proposed in \cite{impr-gotr}. The existing proof of concept
-implementation for pidgin serves as reference to our planned improvements. We
-aim to provide the group OTR algorithm under a standardized interface usable by
-various existing IM clients as well as new IM concepts based on OTR only
-communications. Further the correct functionality of our library is to be tested
-with a simple ``client''. However we unfortunately can not evaluate the
-cryptographic correctness of the proposed algorithm. This is left to people with
-more crypto knowledge.
+- generalize
 
 \begin{thebibliography}{xx}
 	\bibitem{otr} N. Borisov, I. Goldberg, and E. Brewer. Off-the-record communication, or, why not to use PGP. In \textit{Proceedings of the ACM workshop on Privacy in the electronic society}, WPES ’04, 2004.
