@@ -64,13 +64,13 @@ satisfy the following properties:
 	\item{\textbf{Perfect Forward Secrecy:} An attacker is unable to derive
 		ephemeral key material from disclosed long term keys.}
 
-	\item{\textbf{Deniability:} \footnote{Deniability as a property is the
-		direct opposite of what traditional security patterns (e.g. PGP for
-e-mail) achieve. Typically the signature used to achieve authenticity also
-provides a proof of who the author of a message was. On the other hand this
-property makes such patterns suitable for messages of legal relevance such as
-contracts or bills.} No entity is able to prove the authorship of a message to a
-non participating entity.}
+	\item{\textbf{Deniability:} No entity is able to prove the authorship of a
+			message to a non participating entity.\footnote{Deniability as a
+				property is the direct opposite of what traditional security
+				patterns (e.g. PGP for e-mail) achieve. Typically the signature
+		used to achieve authenticity also provides a proof of who the author of
+a message was. On the other hand this property makes such patterns suitable for
+messages of legal relevance such as contracts or bills.}}
 
 \end{itemize}
 
@@ -93,6 +93,7 @@ the protocol and also provided solutions to fix these \cite{sec-otr}. In 2007
 Alexander et al.\ attendet the problem of exchanging public keys 
 
 \cite{auth-otr}: smp, real life shared secret
+
 
 \cite{gotr}: virtual server
 mpOTR: Transcript verification only at the end of a session bad?
