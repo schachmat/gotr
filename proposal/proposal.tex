@@ -58,7 +58,7 @@ satisfy the following properties:
 		able to read the content of the messages.}
 
 	\item{\textbf{Perfect Forward Secrecy:} An attacker is unable to derive
-		ephemeral key material from disclosed long term keys.}
+		ephemeral key material of past conversations from disclosed long term keys.}
 
 	\item{\textbf{Deniability:} No entity is able to prove the authorship of a
 			message to a non participating entity.\footnote{Deniability as a
@@ -90,13 +90,13 @@ Alexander et al.\ attended the problem that the key exchange imposes an obstacle
 for casual users \cite{auth-otr}. To facilitate this they suggest to choose a question to which
 only the two parties of the conversation know the answer. With the aid of a solution
 to the Socialist Millionaires’ Problem the two answers are then checked for equality without sending their answers over the internet.
-In 2008 this expansion also was evaluated\cite{user-study} in a user study and some understanding problems have been fixed.
+In 2008 this expansion also was evaluated \cite{user-study} in a user study and some understanding problems have been fixed.
 
 A first attempt to expand the capabilities of OTR to group conversation was made in 2007 by Bian at al.\ \cite{gotr}. They implemented a plugin for the MSN messenger, which designates one participant to work as a virtual server. All messages are then sent via the OTR protocol to this server and distributed to the other participants from there.
 
 The first protocol proposing OTR for group conversations without the need for a
-trusted “server” party\cite{mp-otr} has been published in 2009 by Goldberg et
-al. In 2013 this topic has been revisited by Liu et al.\ \cite{impr-gotr} to
+trusted “server” party \cite{mp-otr} has been published in 2009 by Goldberg et
+al.\ In 2013 this topic has been revisited by Liu et al.\ \cite{impr-gotr} to
 improve repudiability of the previous approach.
 
 \section{Project Plan}
