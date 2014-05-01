@@ -18,9 +18,9 @@
 
 
 \section{Introduction}
-In recent years instant messaging (IM) gained a lot in popularity. Virtually everyone uses one or more IM solutions (e.g. WhatsApp, Skype, iMessage, Facebook Messenger etc.) for private conversations. Especially the ease of use that comes with this kind of online communication combined with the high availability through the popularity of smartphones makes IM attractive for a broad audience. Also companies have discovered IM as a suitable solution for online business meetings, particularly because it causes no additional costs.
+In recent years instant messaging (IM) gained a lot in popularity. Virtually everyone uses one or more IM solutions (e.g. WhatsApp, Skype, iMessage, Facebook Messenger etc.) for private conversations. Especially the ease of use that comes with this kind of online communication combined with the high availability through the popularity of smart phones makes IM attractive for a broad audience. Also companies have discovered IM as a suitable solution for online business meetings, particularly because it causes no additional costs.
 
-At its heart IM emulates the behavoir of a private conversation held in person. Naturally people expecet their face to face conversations to have several properties. For example for any party that did not participate the conversation the (hopefully) honest word of the participants is the only proof of what was said during the conversation (given that no one recorded it). To be a suitable alternative to face to face conversations IM should also satisfy these properties. It is also not astonishing that people without a strong knowledge in computer science and/or cryptography already expect their private online conversation to be held under these constraints.
+At its heart IM emulates the behavoir of a private conversation held in person. Naturally people expect their face to face conversations to have several properties. For example for any party that did not participate the conversation the (hopefully) honest word of the participants is the only proof of what was said during the conversation (given that no one recorded it). To be a suitable alternative to face to face conversations IM should also satisfy these properties. It is also not astonishing that people without a strong knowledge in computer science and/or cryptography already expect their private online conversation to be held under these constraints.
 
 
 However, the dominant IM solutions do not satisfy all of these properties. Security concerns fueled by the revelation of surveillance activities of government institutions last year have lead to a more wide spread awareness for the need to secure communication over the internet.
@@ -29,14 +29,21 @@ However, the dominant IM solutions do not satisfy all of these properties. Secur
 \section{Motivation}
 Ideally it should be possible to have secure, face to face like conversations over the internet without additional effort. To properly emulate the security of a face to face meeting, an IM conversation should satisfy the following properties:
 \begin{itemize}
-	\item{\textbf{Authenticity:}}
-	\item{\textbf{Integrity:}}
-	\item{\textbf{Confidentiality:}}
-	\item{\textbf{Deniability:} \footnote{Deniability as a property is the direct oposite of what traditional security patterns (e.g. PGP for e-mail) achive. Typically the signature used to achive authenticity also provides a proof of who the author of a message was. On the other hand this property makes such patterns suitable for messages of legal relevance such as contracts or bills.}}
+	\item{\textbf{Authenticity:} The receiver can be sure about the origin of a message.}
+	\item{\textbf{Integrity:} The receiver can be sure, the message has not been modified after it has been sent.}
+	\item{\textbf{Confidentiality:} No entity other than the participants is able to read the content of the messages.}
+	\item{\textbf{Perfect Forward Secrecy:} An attacker is unable to derive ephemeral key material from disclosed long term keys.}
+	\item{\textbf{Deniability:} \footnote{Deniability as a property is the direct opposite of what traditional security patterns (e.g. PGP for e-mail) achieve. Typically the signature used to achieve authenticity also provides a proof of who the author of a message was. On the other hand this property makes such patterns suitable for messages of legal relevance such as contracts or bills.} No entity is able to prove the authorship of a message to a non participating entity.}
 \end{itemize}
 
-
-Currently there is no free and open source library for inclusion in existing IM protocols or building new ones that provide these properties.
+For just two chat participants the well known and established libotr can be used
+to achieve these goals. However, currently there is no free and open source
+library for inclusion in IM clients that provide these properties for
+conversations with more than two participants such as IRC channels or XMPP
+conference rooms. Considering groups wanting to have private conversations such
+as political parties, business partners or whistle blowers, which are unable to
+meet in person due to legal, time or monetary restrictions, the need for such a
+tool is given.
 
 \section{Related Work}
 In 2004 Borisov et al.\ initially proposed the idea of off-the-record communication(OTR) \cite{otr}. The OTR protocol amied at providing the beforementioned properties for chats with two participants. However in 2005 Di Raimondo et al.\ published a paper in which they revealed several weaknesses in the protocol and also provided solutions to fix these \cite{sec-otr}. In 2007 Alexander et al.\ attendet the problem of exchanging public keys 
@@ -47,7 +54,7 @@ mpOTR: Transcript verification only at the end of a session bad?
 mpOTR: PFS only per session?
 
 \section{Project Plan}
-The goal of our project is to implement a free and open source library which is independent of a specific IM client and provides the user with the group OTR functionality proposed in \cite{impr-gotr}. The existing proof of concept implementation for pidgin serves as reference to our work. We aim to provide the group OTR algorithm under a standardized interface usably various existing IM clients as well as new IM concepts based on OTR only communications. Further the correct functionality of our library is to be tested with a simple ``client''. However the evaluation of the cryptographic correctness of the proposed algorithm is not the subject of our project.
+The goal of our project is to implement a free and open source library which is independent of a specific IM client and provides the user with the group OTR functionality proposed in \cite{impr-gotr}. The existing proof of concept implementation for pidgin serves as reference to our work. We aim to provide the group OTR algorithm under a standardized interface usable by various existing IM clients as well as new IM concepts based on OTR only communications. Further the correct functionality of our library is to be tested with a simple “client”. However the evaluation of the cryptographic correctness of the proposed algorithm is not the subject of our project.
 
 - generalize
 
@@ -56,8 +63,12 @@ The goal of our project is to implement a free and open source library which is 
 	\bibitem{sec-otr} M. Di Raimondo, R. Gennaro, and H. Krawczyk. Secure off-the-record messaging. In \textit{Proceedings of the ACM workshop on Privacy in the electronic society}, WPES ’05, 2005.
 	\bibitem{auth-otr} C. Alexander and I. Goldberg. Improved User Authentication in Off-the-Record Messaging. In \textit{Proceedings of the 2007 ACM workshop on Privacy in electronic society}, WPES ’07, 2007.
 	\bibitem{gotr} J. Bian, R. Seker, and U. Topaloglu. Off-the-Record Instant Messaging for Group Conversation. In \textit{Proceedings of Information Reuse and Integration}, IRI ’07, 2007.
-	\bibitem{user-study} A User Study of Off-the-Record Messaging
-	\bibitem{mp-otr} Multi-party Off-the-Record Messaging
+	\bibitem{user-study} R. Stedman, K. Yoshida, and I. Goldberg. A User Study
+		of Off-the-Record Messaging. In \textit{Proceedings of the Symposium On
+	Usable Privacy and Security}, SOUPS ’07, 2008.
+	\bibitem{mp-otr} I. Goldberg, B. Ustaoğlu, M. D. Van Gundy, and H. Chen
+		Multi-party Off-the-Record Messaging. In \textit{Proceedings of the ACM
+		Conference on Computer and communications security}, CCS ’09, 2009.
 	\bibitem{sec-com} Secure Communication over Diverse Transports
 	\bibitem{impr-gotr} Improved Group Off-the-Record Messaging
 \end{thebibliography}
