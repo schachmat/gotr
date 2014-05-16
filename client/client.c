@@ -1,4 +1,6 @@
+#include <dirent.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -19,14 +21,50 @@ typedef struct timeval timeval;
 static char* nick;
 
 // prototypes
+void die(const char *message);
 static int send_all(const char* message);
 static int send_user(const char* message, const char* user);
 int main(int argc, char* argv[]);
 
+void die(const char *message) {
+	fprintf(stderr, "err: %s\n", message);
+	exit(1);
+}
+
 // sends the message to all clients in the room
 static int
 send_all(const char* message) {
-	return 0;
+	DIR *directory;
+	struct dirent *dir;
+	int socket_fd;
+	char socket_path[128];
+	struct sockaddr_un address;
+	
+	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	
+	directory = opendir(ROOMDIR);
+	
+	if(directory) {
+		while((dir = readdir(directory)) != NULL) {
+			if((dir->d_type == DT_SOCK) && (!strcmp(nick, dir->d_name))) {
+				strcpy(socket_path, ROOMDIR);
+				strcat(socket_path, dir->d_name);
+				memset(&address, 0, sizeof(struct sockaddr_un));
+				address.sun_family = AF_UNIX;
+				snprintf(address.sun_path, 100, "%s", socket_path);
+				
+				if (connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) != 0) {
+					die("connect() failed");
+				}
+				
+				write(socket_fd, message, strlen(message));
+				
+				close(socket_fd);
+			}
+		}
+		
+		closedir(directory);
+	}
 }
 
 // sends the message to the user
