@@ -1,26 +1,30 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
 // where are we talking
-#define ROOMDIR "/var/gotrusers/"
+#define ROOMDIR "/tmp/gotrusers/"
+
 
 // variables
 static char* nick;
 
 // prototypes
-int send_all(const char* message);
-int send_user(const char* message, const char* user);
+static int send_all(const char* message);
+static int send_user(const char* message, const char* user);
 int main(int argc, char* argv[]);
 
 // sends the message to all clients in the room
-int
+static int
 send_all(const char* message) {
 	return 0;
 }
 
 // sends the message to the user
-int
+static int
 send_user(const char* message, const char* user) {
 	return 0;
 }
@@ -31,6 +35,7 @@ main(int argc, char* argv[]) {
 	int socket_fd;
 	int connection_fd;
 	socklen_t address_length;
+	char* fname;
 
 	if(argc < 2) {
 		fprintf(stderr, "client nickname required");
@@ -48,7 +53,8 @@ main(int argc, char* argv[]) {
 		return 1;
 	}
 
-
+	asprintf(&fname, "%s%s", ROOMDIR, nick);
+	unlink(fname);
 
 	return 0;
 }
