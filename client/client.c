@@ -22,7 +22,7 @@ static int send_user(const char* message, const char* user);
 int main(int argc, char* argv[]);
 
 void die(const char *message) {
-	fprintf(stderr, "err: %s\n", message);
+	fprintf(stderr, "%s\n", message);
 	exit(1);
 }
 
@@ -49,7 +49,7 @@ send_all(const char* message) {
 				snprintf(address.sun_path, 100, "%s", socket_path);
 				
 				if (connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) != 0) {
-					die("connect() failed");
+					die("send_all: connect() failed");
 				}
 				
 				write(socket_fd, message, strlen(message));
@@ -60,11 +60,34 @@ send_all(const char* message) {
 		
 		closedir(directory);
 	}
+	
+	return 0;
 }
 
 // sends the message to the user
 static int
 send_user(const char* message, const char* user) {
+	int socket_fd;
+	char socket_path[128];
+	struct sockaddr_un address;
+	
+	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	
+	strcpy(socket_path, ROOMDIR);
+	strcat(socket_path, user);
+	
+	memset(&address, 0, sizeof(struct sockaddr_un));
+	address.sun_family = AF_UNIX;
+	snprintf(address.sun_path, 100, "%s", socket_path);
+	
+	if (connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) != 0) {
+		die("send_user: connect() failed");
+	}
+	
+	write(socket_fd, message, strlen(message));
+	
+	close(socket_fd);
+	
 	return 0;
 }
 
