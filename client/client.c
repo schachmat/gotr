@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <dirent.h>
 
 // variables
 static char* nick;
@@ -12,6 +13,23 @@ int main(int argc, char* argv[]);
 int
 send_all(const char* message)
 {
+	DIR *d;
+	struct dirent *dir;
+	
+	d = opendir("/tmp/gotrusers/");
+	
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			if (dir->d_type == DT_SOCK) {
+				printf("%s\n", dir->d_name);
+			}
+		}
+		
+		closedir(d);
+	}
+	
+	
+	
 	return 0;
 }
 
@@ -29,9 +47,9 @@ main(int argc, char* argv[])
 		fprintf(stderr, "client nickname required");
 		return 1;
 	}
-
+		
 	nick = argv[1];
 	printf("nick: %s", nick);
-
+	
 	return 0;
 }
