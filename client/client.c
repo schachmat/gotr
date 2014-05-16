@@ -1,13 +1,19 @@
-#define _GNU_SOURCE
-
 #include <stdio.h>
-#include <unistd.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/un.h>
+#include <unistd.h>
 
 // where are we talking
 #define ROOMDIR "/tmp/gotrusers/"
+#define UNIX_PATH_MAX 108
+#define BUFLEN 2048
 
+typedef struct sockaddr sockaddr;
+typedef struct sockaddr_un sockaddr_un;
+typedef struct timeval timeval;
 
 // variables
 static char* nick;
@@ -31,14 +37,17 @@ send_user(const char* message, const char* user) {
 
 int
 main(int argc, char* argv[]) {
-	struct sockaddr_un address;
+	int res;
+	timeval timeout;
+	fd_set reads;
+	fd_set errs;
+	sockaddr_un address;
 	int socket_fd;
-	int connection_fd;
-	socklen_t address_length;
-	char* fname;
+	char fname[109];
+	char buf[BUFLEN];
 
 	if(argc < 2) {
-		fprintf(stderr, "client nickname required");
+		fprintf(stderr, "client nickname required\n");
 		return 1;
 	}
 
@@ -49,12 +58,66 @@ main(int argc, char* argv[]) {
 
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	if(socket_fd < 0) {
-		printf("socket() failed\n");
+		fprintf(stderr, "socket() failed\n");
 		return 1;
 	}
 
-	asprintf(&fname, "%s%s", ROOMDIR, nick);
+	mkdir(ROOMDIR, 0755);
+	sprintf(fname, "%s%s", ROOMDIR, nick);
+	fname[108] = '\0';
 	unlink(fname);
 
+	memset(&address, 0, sizeof(sockaddr_un));
+	address.sun_family = AF_UNIX;
+	snprintf(address.sun_path, UNIX_PATH_MAX, "%s", fname);
+
+	if(bind(socket_fd, (sockaddr*)&address, sizeof(sockaddr_un)) != 0) {
+		fprintf(stderr, "bind() failed\n");
+		return 1;
+	}
+
+	if(listen(socket_fd, 10) != 0) {
+		fprintf(stderr, "listen() failed\n");
+		return 1;
+	}
+
+	while(1) {
+		FD_ZERO(&reads);
+		FD_SET(STDIN_FILENO, &reads);
+		FD_SET(socket_fd, &reads);
+		FD_ZERO(&errs);
+		FD_SET(socket_fd, &errs);
+		timeout.tv_sec = 1;
+		timeout.tv_usec = 0;
+
+		if((res = select(socket_fd + 1, &reads, (fd_set*) 0, &errs, &timeout)) < 0) {
+			fprintf(stderr, "select() failed\n");
+			goto quit;
+		} else if(res != 0) {
+			if(FD_ISSET(socket_fd, &errs)) {
+				fprintf(stderr, "our socket died. k thx bye.\n");
+				return 1;
+			}
+			if(FD_ISSET(socket_fd, &reads)) {
+				fprintf(stderr, "we got a massage!\n");
+			}
+			if(FD_ISSET(STDIN_FILENO, &reads)) {
+				if(fgets(buf, BUFLEN, stdin)) {
+					if(*buf == '/') { // command
+						if(!strncmp(buf, "/quit", 5)) {
+							goto quit;
+						} else {
+							fprintf(stderr, "unknown command: %s\n", buf);
+						}
+					} else {
+						send_all(buf);
+					}
+				}
+			}
+		}
+	}
+
+quit:
+	unlink(fname);
 	return 0;
 }
