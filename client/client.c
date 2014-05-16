@@ -37,7 +37,6 @@ send_all(const char* message) {
 	DIR *directory;
 	dirent *dir;
 	int socket_fd;
-	char socket_path[UNIX_PATH_MAX];
 	sockaddr_un address;
 	
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
@@ -47,10 +46,9 @@ send_all(const char* message) {
 	if(directory) {
 		while((dir = readdir(directory)) != NULL) {
 			if((dir->d_type == DT_SOCK) && (strcmp(nick, dir->d_name))) {
-				snprintf(socket_path, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
 				memset(&address, 0, sizeof(sockaddr_un));
 				address.sun_family = AF_UNIX;
-				snprintf(address.sun_path, UNIX_PATH_MAX, "%s", socket_path);
+				snprintf(address.sun_path, UNIX_PATH_MAX + 1, "%s%s", ROOMDIR, nick);
 				
 				if (connect(socket_fd, (sockaddr *) &address, sizeof(sockaddr_un)) != 0) {
 					close(socket_fd);
@@ -74,16 +72,13 @@ send_all(const char* message) {
 static int
 send_user(const char* message, const char* user) {
 	int socket_fd;
-	char socket_path[UNIX_PATH_MAX];
 	sockaddr_un address;
 	
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
-	
-	snprintf(socket_path, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
-	
+
 	memset(&address, 0, sizeof(sockaddr_un));
 	address.sun_family = AF_UNIX;
-	snprintf(address.sun_path, UNIX_PATH_MAX, "%s", socket_path);
+	snprintf(address.sun_path, UNIX_PATH_MAX + 1, "%s%s", ROOMDIR, nick);
 	
 	if(connect(socket_fd, (sockaddr *) &address, sizeof(sockaddr_un)) != 0) {
 		die("send_user: connect() failed");
@@ -115,21 +110,18 @@ main(int argc, char* argv[]) {
 	nick = argv[1];
 	printf("entering room as %s\n", nick);
 
-	send_all("hi there, do you like cake?");
-
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	if(socket_fd < 0) {
 		die("socket() failed");
 	}
 
 	mkdir(ROOMDIR, 0755);
-	sprintf(fname, "%s%s", ROOMDIR, nick);
-	fname[UNIX_PATH_MAX] = '\0';
+	snprintf(fname, UNIX_PATH_MAX + 1, "%s%s", ROOMDIR, nick);
 	unlink(fname);
 
 	memset(&address, 0, sizeof(sockaddr_un));
 	address.sun_family = AF_UNIX;
-	snprintf(address.sun_path, UNIX_PATH_MAX, "%s", fname);
+	snprintf(address.sun_path, UNIX_PATH_MAX + 1, "%s", fname);
 
 	if(bind(socket_fd, (sockaddr*)&address, sizeof(sockaddr_un)) != 0) {
 		fprintf(stderr, "bind() failed\n");
