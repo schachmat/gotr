@@ -35,10 +35,10 @@ void die(const char *message) {
 static int
 send_all(const char* message) {
 	DIR *directory;
-	struct dirent *dir;
+	dirent *dir;
 	int socket_fd;
-	char socket_path[128];
-	struct sockaddr_un address;
+	char socket_path[UNIX_PATH_MAX];
+	sockaddr_un address;
 	
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	
@@ -46,14 +46,15 @@ send_all(const char* message) {
 	
 	if(directory) {
 		while((dir = readdir(directory)) != NULL) {
-			if((dir->d_type == DT_SOCK) && (!strcmp(nick, dir->d_name))) {
-				strcpy(socket_path, ROOMDIR);
-				strcat(socket_path, dir->d_name);
-				memset(&address, 0, sizeof(struct sockaddr_un));
+			if((dir->d_type == DT_SOCK) && (strcmp(nick, dir->d_name))) {
+				snprintf(socket_path, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
+				memset(&address, 0, sizeof(sockaddr_un));
 				address.sun_family = AF_UNIX;
-				snprintf(address.sun_path, 100, "%s", socket_path);
+				snprintf(address.sun_path, UNIX_PATH_MAX, "%s", socket_path);
 				
-				if (connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) != 0) {
+				if (connect(socket_fd, (sockaddr *) &address, sizeof(sockaddr_un)) != 0) {
+					close(socket_fd);
+					closedir(directory);
 					die("send_all: connect() failed");
 				}
 				
@@ -73,19 +74,18 @@ send_all(const char* message) {
 static int
 send_user(const char* message, const char* user) {
 	int socket_fd;
-	char socket_path[128];
-	struct sockaddr_un address;
+	char socket_path[UNIX_PATH_MAX];
+	sockaddr_un address;
 	
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	
-	strcpy(socket_path, ROOMDIR);
-	strcat(socket_path, user);
+	snprintf(socket_path, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
 	
-	memset(&address, 0, sizeof(struct sockaddr_un));
+	memset(&address, 0, sizeof(sockaddr_un));
 	address.sun_family = AF_UNIX;
-	snprintf(address.sun_path, 100, "%s", socket_path);
+	snprintf(address.sun_path, UNIX_PATH_MAX, "%s", socket_path);
 	
-	if (connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) != 0) {
+	if(connect(socket_fd, (sockaddr *) &address, sizeof(sockaddr_un)) != 0) {
 		die("send_user: connect() failed");
 	}
 	
@@ -104,7 +104,7 @@ main(int argc, char* argv[]) {
 	fd_set errs;
 	sockaddr_un address;
 	int socket_fd;
-	char fname[109];
+	char fname[UNIX_PATH_MAX + 1];
 	char buf[BUFLEN];
 
 	if(argc < 2) {
@@ -119,13 +119,12 @@ main(int argc, char* argv[]) {
 
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	if(socket_fd < 0) {
-		fprintf(stderr, "socket() failed\n");
-		return 1;
+		die("socket() failed");
 	}
 
 	mkdir(ROOMDIR, 0755);
 	sprintf(fname, "%s%s", ROOMDIR, nick);
-	fname[108] = '\0';
+	fname[UNIX_PATH_MAX] = '\0';
 	unlink(fname);
 
 	memset(&address, 0, sizeof(sockaddr_un));
