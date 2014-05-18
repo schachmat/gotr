@@ -10,7 +10,7 @@
 
 // where are we talking
 #define ROOMDIR "/tmp/gotrusers/"
-#define UNIX_PATH_MAX 108
+#define UNIX_PATH_MAX 104
 #define BUFLEN 2048
 
 typedef struct sockaddr sockaddr;
@@ -37,7 +37,6 @@ send_all(const char* message) {
 	DIR *directory;
 	struct dirent *dir;
 	int socket_fd;
-	char socket_path[UNIX_PATH_MAX];
 	sockaddr_un address;
 	
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
@@ -50,10 +49,9 @@ send_all(const char* message) {
 	if(directory) {
 		while((dir = readdir(directory)) != NULL) {
 			if((dir->d_type == DT_SOCK) && (strcmp(nick, dir->d_name))) {
-				snprintf(socket_path, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
 				memset(&address, 0, sizeof(sockaddr_un));
 				address.sun_family = AF_UNIX;
-				snprintf(address.sun_path, UNIX_PATH_MAX, "%s", socket_path);
+				snprintf(address.sun_path, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
 				
 				if (connect(socket_fd, (sockaddr *) &address, sizeof(sockaddr_un)) != 0) {
 					close(socket_fd);
@@ -77,21 +75,20 @@ send_all(const char* message) {
 static int
 send_user(const char* message, const char* user) {
 	int socket_fd;
-	char socket_path[UNIX_PATH_MAX];
 	sockaddr_un address;
 	
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	
 	if(socket_fd < 0) {
 		die("send_user: socket() failed");
 	}
 	
-	snprintf(socket_path, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
-	
 	memset(&address, 0, sizeof(sockaddr_un));
 	address.sun_family = AF_UNIX;
-	snprintf(address.sun_path, UNIX_PATH_MAX, "%s", socket_path);
+	snprintf(address.sun_path, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
 	
 	if(connect(socket_fd, (sockaddr *) &address, sizeof(sockaddr_un)) != 0) {
+		close(socket_fd);
 		die("send_user: connect() failed");
 	}
 	
@@ -134,10 +131,12 @@ main(int argc, char* argv[]) {
 	snprintf(address.sun_path, UNIX_PATH_MAX, "%s", fname);
 
 	if(bind(socket_fd, (sockaddr*)&address, sizeof(sockaddr_un)) != 0) {
+		close(socket_fd);
 		die("main: bind() failed");
 	}
 
 	if(listen(socket_fd, 10) != 0) {
+		close(socket_fd);
 		die("main: listen() failed");
 	}
 
@@ -155,15 +154,14 @@ main(int argc, char* argv[]) {
 			goto quit;
 		} else if(res != 0) {
 			if(FD_ISSET(socket_fd, &errs)) {
-				fprintf(stderr, "our socket died. k thx bye.\n");
-				return 1;
+				die("our socket died. k thx bye.");
 			}
 			if(FD_ISSET(socket_fd, &reads)) {
-				fprintf(stderr, "we got a massage!\n");
+				fprintf(stderr, "we got a message!\n");
 			}
 			if(FD_ISSET(STDIN_FILENO, &reads)) {
 				if(fgets(buf, BUFLEN, stdin)) {
-					if(*buf == '/') { // command
+					if(buf[0] == '/') { // command
 						if(!strncmp(buf, "/quit", 5)) {
 							goto quit;
 						} else {
