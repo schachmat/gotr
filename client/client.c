@@ -23,6 +23,8 @@ typedef struct dirent dirent;
 
 /* variables */
 static char* nick;
+static int out_fd;
+static sockaddr_un receiver;
 
 /* prototypes */
 static void die(const char *message);
@@ -41,31 +43,22 @@ static int
 send_all(const char* message) {
 	DIR *directory;
 	dirent *dir;
-	int socket_fd;
-	sockaddr_un address;
-
-	if((socket_fd = socket(PF_UNIX, SOCK_STREAM, 0)) == -1) {
-		perror("send_all: socket() failed");
-		return 1;
-	}
 
 	if(!(directory = opendir("."))) {
 		perror("send_all: opendir(\".\") failed");
 		return 1;
 	}
 
-	memset(&address, 0, sizeof(sockaddr_un));
-	address.sun_family = AF_UNIX;
-
 	while((dir = readdir(directory))) {
-		strncpy(address.sun_path, dir->d_name, UNIX_PATH_MAX);
-		if(dir->d_type != DT_SOCK || !strcmp(dir->d_name, nick)
-		|| connect(socket_fd, (sockaddr*) &address, sizeof(sockaddr_un))) {
+		strncpy(receiver.sun_path, dir->d_name, UNIX_PATH_MAX);
+		if(dir->d_type != DT_SOCK || !strcmp(dir->d_name, nick)) {
 			continue;
 		}
-		printf("This is the name we write to: %s\n", dir->d_name);
-		write(socket_fd, message, strlen(message));
-		close(socket_fd);
+		if(sendto(out_fd, message, strlen(message), 0, (sockaddr*) &receiver,
+		          sizeof(sockaddr_un)) == -1) {
+			fprintf(stderr, "Could not send message to %s: %s\n", dir->d_name,
+					strerror(errno));
+		}
 	}
 
 	closedir(directory);
@@ -75,26 +68,12 @@ send_all(const char* message) {
 /* sends the message to the user */
 static int
 send_user(const char* message, const char* user) {
-	int socket_fd;
-	sockaddr_un address;
-
-	if((socket_fd = socket(PF_UNIX, SOCK_STREAM, 0)) == -1) {
-		perror("send_user: socket failed");
+	strncpy(receiver.sun_path, user, UNIX_PATH_MAX);
+	if(sendto(out_fd, message, strlen(message), 0, (sockaddr *) &receiver,
+	          sizeof(sockaddr_un)) == -1) {
+		perror("could not send message");
 		return 1;
 	}
-
-	memset(&address, 0, sizeof(sockaddr_un));
-	address.sun_family = AF_UNIX;
-	strncpy(address.sun_path, user, UNIX_PATH_MAX);
-
-	if(connect(socket_fd, (sockaddr *) &address, sizeof(sockaddr_un)) == -1) {
-		perror("send_user: connect failed");
-		close(socket_fd);
-		return 1;
-	}
-
-	write(socket_fd, message, strlen(message));
-	close(socket_fd);
 	return 0;
 }
 
@@ -104,7 +83,7 @@ main(int argc, char* argv[]) {
 	timeval timeout = {1, 0};
 	fd_set reads;
 	sockaddr_un address;
-	int socket_fd;
+	int in_fd;
 	char buf[BUFLEN];
 
 	errno = 0;
@@ -114,50 +93,56 @@ main(int argc, char* argv[]) {
 	}
 	printf("entering room as %s\n", nick = argv[1]);
 
-	if((socket_fd = socket(PF_UNIX, SOCK_STREAM, 0)) == -1) {
-		perror("main: socket failed");
+	if((out_fd = socket(PF_UNIX, SOCK_DGRAM, 0)) == -1) {
+		perror("main: outgoing socket() failed");
+		return 1;
+	}
+
+	if((in_fd = socket(PF_UNIX, SOCK_DGRAM, 0)) == -1) {
+		perror("main: incoming socket() failed");
+		close(out_fd);
 		return 1;
 	}
 
 	mkdir(ROOMDIR, 0755);
 	chdir(ROOMDIR);
 	if(!stat(nick, &finfo)) {
-		close(socket_fd);
+		close(in_fd);
+		close(out_fd);
 		die("main: Nickname already in use!");
 	}
 	unlink(nick);
+
+	memset(&receiver, 0, sizeof(sockaddr_un));
+	receiver.sun_family = AF_UNIX;
 
 	memset(&address, 0, sizeof(sockaddr_un));
 	address.sun_family = AF_UNIX;
 	strncpy(address.sun_path, nick, UNIX_PATH_MAX);
 
-	if(bind(socket_fd, (sockaddr*)&address, sizeof(sockaddr_un)) == -1) {
+	if(bind(in_fd, (sockaddr*)&address, sizeof(sockaddr_un)) == -1) {
 		perror("main: bind() failed");
-		goto fail;
-	}
-
-	if(listen(socket_fd, 10) == -1) {
-		perror("main: listen() failed");
 		goto fail;
 	}
 
 	while(1) {
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);
-/*		FD_SET(socket_fd, &reads); */
+		FD_SET(in_fd, &reads);
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
 
-		switch(select(socket_fd + 1, &reads, (fd_set*) 0, (fd_set*) 0, &timeout)) {
+		switch(select(in_fd + 1, &reads, (fd_set*) 0, (fd_set*) 0, &timeout)) {
 			default:
-				if(FD_ISSET(socket_fd, &reads)) {
+				if(FD_ISSET(in_fd, &reads)) {
 					fprintf(stderr, "we got a massage!\n");
 				}
 				if(FD_ISSET(STDIN_FILENO, &reads)) {
 					if(fgets(buf, BUFLEN, stdin)) {
 						if(buf[0] == '/') { /* command */
 							if(!strncmp(buf, "/quit", 5)) {
-								close(socket_fd);
+								close(in_fd);
+								close(out_fd);
 								unlink(nick);
 								return 0;
 							} else {
@@ -179,7 +164,8 @@ main(int argc, char* argv[]) {
 	}
 
 fail:
-	close(socket_fd);
+	close(in_fd);
+	close(out_fd);
 	unlink(nick);
 	return 1;
 }
