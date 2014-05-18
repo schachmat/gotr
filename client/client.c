@@ -35,12 +35,15 @@ void die(const char *message) {
 static int
 send_all(const char* message) {
 	DIR *directory;
-	dirent *dir;
+	struct dirent *dir;
 	int socket_fd;
 	char socket_path[UNIX_PATH_MAX];
 	sockaddr_un address;
 	
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	if(socket_fd < 0) {
+		die("send_all: socket() failed");
+	}
 	
 	directory = opendir(ROOMDIR);
 	
@@ -78,6 +81,9 @@ send_user(const char* message, const char* user) {
 	sockaddr_un address;
 	
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	if(socket_fd < 0) {
+		die("send_user: socket() failed");
+	}
 	
 	snprintf(socket_path, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
 	
@@ -104,27 +110,23 @@ main(int argc, char* argv[]) {
 	fd_set errs;
 	sockaddr_un address;
 	int socket_fd;
-	char fname[UNIX_PATH_MAX + 1];
+	char fname[UNIX_PATH_MAX];
 	char buf[BUFLEN];
 
 	if(argc < 2) {
-		fprintf(stderr, "client nickname required\n");
-		return 1;
+		die("client nickname required");
 	}
 
 	nick = argv[1];
 	printf("entering room as %s\n", nick);
 
-	send_all("hi there, do you like cake?");
-
 	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	if(socket_fd < 0) {
-		die("socket() failed");
+		die("main: socket() failed");
 	}
 
 	mkdir(ROOMDIR, 0755);
-	sprintf(fname, "%s%s", ROOMDIR, nick);
-	fname[UNIX_PATH_MAX] = '\0';
+	snprintf(fname, UNIX_PATH_MAX, "%s%s", ROOMDIR, nick);
 	unlink(fname);
 
 	memset(&address, 0, sizeof(sockaddr_un));
@@ -132,13 +134,11 @@ main(int argc, char* argv[]) {
 	snprintf(address.sun_path, UNIX_PATH_MAX, "%s", fname);
 
 	if(bind(socket_fd, (sockaddr*)&address, sizeof(sockaddr_un)) != 0) {
-		fprintf(stderr, "bind() failed\n");
-		return 1;
+		die("main: bind() failed");
 	}
 
 	if(listen(socket_fd, 10) != 0) {
-		fprintf(stderr, "listen() failed\n");
-		return 1;
+		die("main: listen() failed");
 	}
 
 	while(1) {
