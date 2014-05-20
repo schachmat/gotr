@@ -83,6 +83,8 @@ main(int argc, char* argv[]) {
 	timeval timeout = {1, 0};
 	fd_set reads;
 	sockaddr_un address;
+	sockaddr_un recv_address;
+	socklen_t recv_address_len;
 	int in_fd;
 	char buf[BUFLEN];
 	ssize_t buf_len;
@@ -125,8 +127,6 @@ main(int argc, char* argv[]) {
 		perror("main: bind() failed");
 		goto fail;
 	}
-	
-	send_all("hello gotr");
 
 	while(1) {
 		FD_ZERO(&reads);
@@ -138,9 +138,10 @@ main(int argc, char* argv[]) {
 		switch(select(in_fd + 1, &reads, (fd_set*) 0, (fd_set*) 0, &timeout)) {
 			default:
 				if(FD_ISSET(in_fd, &reads)) {
-					buf_len = recv(in_fd, buf, BUFLEN - 1, 0);
+					recv_address_len = sizeof(sockaddr);
+					buf_len = recvfrom(in_fd, buf, BUFLEN - 1, 0, (sockaddr*)&recv_address, &recv_address_len);
 					buf[buf_len] = '\0';
-					fprintf(stderr, "we got a nice massage: %s\n", buf);
+					fprintf(stderr, "we got a nice massage from %s: %s\n", recv_address.sun_path, buf);
 				}
 				if(FD_ISSET(STDIN_FILENO, &reads)) {
 					if(fgets(buf, BUFLEN, stdin)) {
