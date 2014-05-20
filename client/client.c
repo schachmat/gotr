@@ -23,7 +23,7 @@ typedef struct dirent dirent;
 
 /* variables */
 static char* nick;
-static int out_fd;
+int sock_fd;
 static sockaddr_un receiver;
 
 /* prototypes */
@@ -54,7 +54,7 @@ send_all(const char* message) {
 		if(dir->d_type != DT_SOCK || !strcmp(dir->d_name, nick)) {
 			continue;
 		}
-		if(sendto(out_fd, message, strlen(message), 0, (sockaddr*) &receiver,
+		if(sendto(sock_fd, message, strlen(message), 0, (sockaddr*) &receiver,
 		          sizeof(sockaddr_un)) == -1) {
 			fprintf(stderr, "Could not send message to %s: %s\n", dir->d_name,
 					strerror(errno));
@@ -69,7 +69,7 @@ send_all(const char* message) {
 static int
 send_user(const char* message, const char* user) {
 	strncpy(receiver.sun_path, user, UNIX_PATH_MAX);
-	if(sendto(out_fd, message, strlen(message), 0, (sockaddr *) &receiver,
+	if(sendto(sock_fd, message, strlen(message), 0, (sockaddr *) &receiver,
 	          sizeof(sockaddr_un)) == -1) {
 		perror("could not send message");
 		return 1;
@@ -85,7 +85,6 @@ main(int argc, char* argv[]) {
 	sockaddr_un address;
 	sockaddr_un recv_address;
 	socklen_t recv_address_len;
-	int in_fd;
 	char buf[BUFLEN];
 	ssize_t buf_len;
 
@@ -96,22 +95,15 @@ main(int argc, char* argv[]) {
 	}
 	printf("entering room as %s\n", nick = argv[1]);
 
-	if((out_fd = socket(PF_UNIX, SOCK_DGRAM, 0)) == -1) {
-		perror("main: outgoing socket() failed");
-		return 1;
-	}
-
-	if((in_fd = socket(PF_UNIX, SOCK_DGRAM, 0)) == -1) {
+	if((sock_fd = socket(PF_UNIX, SOCK_DGRAM, 0)) == -1) {
 		perror("main: incoming socket() failed");
-		close(out_fd);
 		return 1;
 	}
 
 	mkdir(ROOMDIR, 0755);
 	chdir(ROOMDIR);
 	if(!stat(nick, &finfo)) {
-		close(in_fd);
-		close(out_fd);
+		close(sock_fd);
 		die("main: Nickname already in use!");
 	}
 	unlink(nick);
@@ -123,7 +115,7 @@ main(int argc, char* argv[]) {
 	address.sun_family = AF_UNIX;
 	strncpy(address.sun_path, nick, UNIX_PATH_MAX);
 
-	if(bind(in_fd, (sockaddr*)&address, sizeof(sockaddr_un)) == -1) {
+	if(bind(sock_fd, (sockaddr*)&address, sizeof(sockaddr_un)) == -1) {
 		perror("main: bind() failed");
 		goto fail;
 	}
@@ -131,24 +123,23 @@ main(int argc, char* argv[]) {
 	while(1) {
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);
-		FD_SET(in_fd, &reads);
+		FD_SET(sock_fd, &reads);
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
 
-		switch(select(in_fd + 1, &reads, (fd_set*) 0, (fd_set*) 0, &timeout)) {
+		switch(select(sock_fd + 1, &reads, (fd_set*) 0, (fd_set*) 0, &timeout)) {
 			default:
-				if(FD_ISSET(in_fd, &reads)) {
+				if(FD_ISSET(sock_fd, &reads)) {
 					recv_address_len = sizeof(sockaddr);
-					buf_len = recvfrom(in_fd, buf, BUFLEN - 1, 0, (sockaddr*)&recv_address, &recv_address_len);
+					buf_len = recvfrom(sock_fd, buf, BUFLEN - 1, 0, (sockaddr*)&recv_address, &recv_address_len);
 					buf[buf_len] = '\0';
 					fprintf(stderr, "we got a nice massage from %s: %s\n", recv_address.sun_path, buf);
 				}
 				if(FD_ISSET(STDIN_FILENO, &reads)) {
 					if(fgets(buf, BUFLEN, stdin)) {
 						if(buf[0] == '/') { /* command */
-							if(!strncmp(buf, "/quit", 5)) {
-								close(in_fd);
-								close(out_fd);
+							if(buf[1] == 'q') {
+								close(sock_fd);
 								unlink(nick);
 								return 0;
 							} else {
@@ -170,8 +161,7 @@ main(int argc, char* argv[]) {
 	}
 
 fail:
-	close(in_fd);
-	close(out_fd);
+	close(sock_fd);
 	unlink(nick);
 	return 1;
 }
