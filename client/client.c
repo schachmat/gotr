@@ -133,7 +133,7 @@ main(int argc, char* argv[]) {
 					recv_address_len = sizeof(sockaddr);
 					buf_len = recvfrom(sock_fd, buf, BUFLEN - 1, 0, (sockaddr*)&recv_address, &recv_address_len);
 					buf[buf_len] = '\0';
-					fprintf(stderr, "we got a nice massage from %s: %s\n", recv_address.sun_path, buf);
+					fprintf(stderr, "nice massage from %s: %s", recv_address.sun_path, buf);
 				}
 				if(FD_ISSET(STDIN_FILENO, &reads)) {
 					if(fgets(buf, BUFLEN, stdin)) {
