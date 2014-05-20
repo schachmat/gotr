@@ -1,6 +1,6 @@
 #include <gcrypt.h>
 
-/* hi there */
+#include "libgotr.h"
 
 void init() {
 

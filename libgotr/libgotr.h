@@ -1,0 +1,2 @@
+void init();
+/* hi there */

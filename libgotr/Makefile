@@ -1,10 +1,11 @@
 include config.mk
 
 SRC = libgotr.c
-OBJ = ${SRC:.c=.o}
 LIB = libgotr.a
+INC = libgotr.h
+OBJ = ${SRC:.c=.o}
 
-all: options libgotr
+all: options libgotr.a
 
 options:
 	@echo libgotr build options:
@@ -16,7 +17,7 @@ options:
 	@echo CC $<
 	@${CC} -c ${CFLAGS} $<
 
-${OBJ}: config.mk
+${OBJ}: ${INC} config.mk
 
 ${LIB}: ${OBJ}
 	@echo AR
