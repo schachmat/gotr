@@ -1,4 +1,5 @@
 *~
 *.swp
 client/client
+libgotr/libgotr.a
 *.o
