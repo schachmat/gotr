@@ -1,0 +1,17 @@
+Weeks since 2014-05-06: | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10|
+--------------------------------------------------------------------------------
+D - simple client       |xxx|
+r - API                   |xxx|
+r - libgotr                 |xxxxxxxxxxxxxxx|  |xxxxxxxx|
+r - status report                           |xx|
+d - evaluation                                          |xxxxxxx|
+r - presentation 1                      |xxxxxxxxxxx|
+r - presentation 2                              |xxxxxxxxxxx|
+o - documentation                                       |xxxxxxx|
+o - real world plugin                                       |xxx|
+r - report                                              |xxxxxxx|
+
+r = required
+d = desirable
+o = optional
+upper case = done
