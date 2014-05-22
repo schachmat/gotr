@@ -1,2 +1,2 @@
-void init();
+void gotr_init();
 /* hi there */

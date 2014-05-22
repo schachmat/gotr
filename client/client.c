@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include "libgotr.h"
 
 /* where are we talking */
 #define ROOMDIR "/tmp/gotrusers/"
@@ -88,6 +89,7 @@ main(int argc, char* argv[]) {
 	char buf[BUFLEN];
 	ssize_t buf_len;
 
+	gotr_init();
 	errno = 0;
 
 	if(argc < 2) {
