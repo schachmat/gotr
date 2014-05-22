@@ -89,7 +89,6 @@ main(int argc, char* argv[]) {
 	char buf[BUFLEN];
 	ssize_t buf_len;
 
-	gotr_init();
 	errno = 0;
 
 	if(argc < 2) {
@@ -122,6 +121,7 @@ main(int argc, char* argv[]) {
 		goto fail;
 	}
 
+	gotr_init(&send_all, &send_user);
 	while(1) {
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);
