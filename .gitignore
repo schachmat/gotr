@@ -3,3 +3,4 @@
 client/client
 libgotr/libgotr.a
 *.o
+.DS_Store

@@ -3,14 +3,22 @@
 
 #include "libgotr.h"
 
-static gotr_cb_send_all send_all;
-static gotr_cb_send_usr send_usr;
-
-void gotr_init(gotr_cb_send_all all, gotr_cb_send_usr usr) {
-	send_all = all;
-	send_usr = usr;
+gotr_chatroom gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr) {
+	gotr_chatroom *room;
+	
+	room = malloc(sizeof(gotr_chatroom));
+	room->send_all = send_all;
+	room->send_usr = send_usr;
+	
 	puts("gotr_init() called");
 }
+
+void gotr_leave(gotr_chatroom **room) {
+	free(*room);
+	room = NULL;
+}
+
+
 
 int gotr_send(const char* msg) {
 	return 0;
