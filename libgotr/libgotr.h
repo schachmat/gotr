@@ -9,7 +9,7 @@ typedef void (*gotr_cb_receive_usr)(struct gotr_chatroom*, const char*, const ch
 struct gotr_user {
 	char *name;
 	char pub_key[crypto_box_PUBLICKEYBYTES];
-	struct gotr_user_list* next;
+	struct gotr_user* next;
 };
 
 struct gotr_chatroom {

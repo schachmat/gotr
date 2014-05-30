@@ -48,7 +48,7 @@ void gotr_add_user(struct gotr_chatroom *room, char *pub_key)
 	struct gotr_user **user = &room->users;
 	
 	while (*user != NULL) {
-		user = &user->next;
+		user = &((*user)->next);
 	}
 	
 	*user = malloc(sizeof(struct gotr_user));
