@@ -13,7 +13,6 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send
 	struct gotr_chatroom *room;
 
 	room = malloc(sizeof(struct gotr_chatroom));
-	room->users = users;
 	room->send_all = send_all;
 	room->send_usr = send_usr;
 	room->receive_usr = receive_usr;
@@ -37,8 +36,8 @@ void gotr_send(struct gotr_chatroom *room, char *message)
 
 void gotr_receive(struct gotr_chatroom *room, char *message)
 {
-	if(message[0] == '/') {
-		gotr_add_user(room, message + 1)
+	if (message[0] == '/') {
+		gotr_add_user(room, message + 1);
 	} else {
 		room->receive_usr(room, "jemand", message); //message for user
 	}
@@ -48,7 +47,7 @@ void gotr_add_user(struct gotr_chatroom *room, char *pub_key)
 {
 	struct gotr_user **user = &room->users;
 	
-	while(*user != NULL) {
+	while (*user != NULL) {
 		user = &user->next;
 	}
 	

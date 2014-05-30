@@ -18,7 +18,7 @@ struct gotr_chatroom {
 	unsigned char pub_key[crypto_box_PUBLICKEYBYTES];
 	unsigned char sec_key[crypto_box_SECRETKEYBYTES];
 	
-	struct gotr_user_list *users;
+	struct gotr_user *users;
 	gotr_cb_send_all send_all;
 	gotr_cb_send_usr send_usr;
 	gotr_cb_receive_usr receive_usr;
