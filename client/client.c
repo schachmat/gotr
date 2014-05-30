@@ -41,7 +41,6 @@ send_all(const char *message)
 {
 	DIR *directory;
 	struct dirent *dir;
-	struct stat info;
 
 	if (!(directory = opendir("."))) {
 		perror("send_all: opendir(\".\") failed");
@@ -50,11 +49,10 @@ send_all(const char *message)
 
 	while ((dir = readdir(directory))) {
 		strncpy(receiver.sun_path, dir->d_name, UNIX_PATH_MAX);
-		if (stat(receiver.sun_path, &info) == -1 || !(info.st_mode & S_IFSOCK)
-				|| !strcmp(dir->d_name, nick))
+		if (!strcmp(dir->d_name, nick))
 			continue;
 		if (sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
-				sizeof(struct sockaddr_un)) == -1)
+				sizeof(struct sockaddr_un)) == -1 && errno != ENOTSOCK)
 			fprintf(stderr, "Could not send message to %s: %s\n", dir->d_name,
 					strerror(errno));
 	}
