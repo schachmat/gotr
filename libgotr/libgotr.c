@@ -3,19 +3,23 @@
 
 #include "libgotr.h"
 
-gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr) {
-	gotr_chatroom *room;
-	
-	room = malloc(sizeof(gotr_chatroom));
+struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr) {
+	struct gotr_chatroom *room;
+
+	room = malloc(sizeof(struct gotr_chatroom));
 	room->send_all = send_all;
 	room->send_usr = send_usr;
-	
+
 	puts("gotr_init() called");
-	
+
 	return room;
 }
+typedef struct sockaddr_un sockaddr_un;
+typedef struct timeval timeval;
+typedef struct dirent dirent;
 
-void gotr_leave(gotr_chatroom **room) {
+
+void gotr_leave(struct gotr_chatroom **room) {
 	free(*room);
 	room = NULL;
 }
