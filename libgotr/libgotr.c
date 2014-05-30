@@ -10,8 +10,8 @@ void gotr_setup(struct gotr_chatroom *room)
 	
 	crypto_box_keypair(room->pub_key, room->sec_key);
 	setup_message[0] = '/';
-	setup_message[crypto_box_PUBLICKEYBYTES + 1] = '\0';
-	setup_message[crypto_box_PUBLICKEYBYTES + 2] = '\n';
+	setup_message[crypto_box_PUBLICKEYBYTES + 1] = '\n';
+	setup_message[crypto_box_PUBLICKEYBYTES + 2] = '\0';
 	memcpy(room->pub_key, setup_message + 1, crypto_box_PUBLICKEYBYTES);
 	
 	room->send_all(setup_message);
