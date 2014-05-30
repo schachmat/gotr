@@ -2,5 +2,7 @@
 *.swp
 client/client
 libgotr/libgotr.a
+libgotr/include
+libgotr/lib
 *.o
 .DS_Store

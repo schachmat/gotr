@@ -1,8 +1,9 @@
 # Customize below to fit your system
 
 # includes and libs
-INCS = -I. -I/usr/include
-LIBS = -L/usr/lib -lc -lnacl
+INCS = -I. -I./include -I/usr/include
+LIBS = -L./lib -L/usr/lib -lc -lnacl
+NACL_LOCATION = "lib/libnacl.a"
 
 # flags
 CFLAGS = -g -pedantic -Wall -O0 ${INCS}
