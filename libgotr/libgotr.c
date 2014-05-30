@@ -1,11 +1,19 @@
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 
 #include "libgotr.h"
 
 void gotr_setup(struct gotr_chatroom *room)
 {
+	char setup_message[crypto_box_PUBLICKEYBYTES + 2];
+	
 	crypto_box_keypair(room->pub_key, room->sec_key);
+	setup_message[0] = '\\';
+	setup_message[crypto_box_PUBLICKEYBYTES + 1] = '\0';
+	memcpy(room->pub_key, setup_message + 1, crypto_box_PUBLICKEYBYTES);
+	
+	room->send_all(setup_message);
 }
 
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr, gotr_cb_receive_usr receive_usr)
@@ -45,18 +53,26 @@ void gotr_receive(struct gotr_chatroom *room, char *message)
 
 void gotr_add_user(struct gotr_chatroom *room, char *pub_key)
 {
-	struct gotr_user **user = &room->users;
+	struct gotr_user *new_user;
 	
-	while (*user != NULL) {
-		user = &((*user)->next);
-	}
+	new_user = malloc(sizeof(struct gotr_user));
+	new_user->next = room->users;
+	room->users = new_user;
 	
-	*user = malloc(sizeof(struct gotr_user));
+	memcpy(new_user->pub_key, pub_key, crypto_box_PUBLICKEYBYTES);
 	
-	//memcpy((*user)->pub_key, const void *str2, size_t n)
+	room->receive_usr(room, "-- user added", pub_key); //debug
 }
 
 void gotr_leave(struct gotr_chatroom *room)
 {
+	struct gotr_user *user;
+	
+	while (room->users != NULL) {
+		user = room->users;
+		room->users = user->next;
+		free(user);
+	}
+	
 	free(room);
 }
