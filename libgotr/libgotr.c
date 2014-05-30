@@ -2,18 +2,19 @@
 #include <string.h>
 #include <stdio.h>
 
+#define LIBGOTR_VERSION "1"
 #include "libgotr.h"
 
 void gotr_setup(struct gotr_chatroom *room)
 {
 	char setup_message[crypto_box_PUBLICKEYBYTES + 3];
-	
+
 	crypto_box_keypair(room->pub_key, room->sec_key);
 	setup_message[0] = '/';
 	setup_message[crypto_box_PUBLICKEYBYTES + 1] = '\n';
 	setup_message[crypto_box_PUBLICKEYBYTES + 2] = '\0';
 	memcpy(room->pub_key, setup_message + 1, crypto_box_PUBLICKEYBYTES);
-	
+
 	room->send_all(setup_message);
 }
 
@@ -76,4 +77,34 @@ void gotr_leave(struct gotr_chatroom *room)
 	}
 	
 	free(room);
+}
+
+// User has to free() the returned pointer!
+char* gotr_encode(const char *in, size_t len)
+{
+	char *tmp;
+	char *ret = malloc(2*len + 1);
+	if (!in || !ret)
+		return NULL;
+
+	for (tmp = ret; len--; tmp += 2)
+		snprintf(tmp, 3, "%02X", *in++);
+
+	return ret;
+}
+
+// User has to free() the returned pointer!
+char* gotr_decode(const char *in, size_t* len)
+{
+//	char *ret;
+//	char buf[3] = "\0\0";
+//	size_t n = strlen(in) / 2;
+
+//	if (!in || !len || !n || !(ret = malloc(n)))
+		return NULL;
+
+//	*len = n;
+//	for () {
+//		memcpy(buf, in, 2);
+//		sscanf(buf, "%x", 
 }

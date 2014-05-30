@@ -30,3 +30,4 @@ void gotr_send(struct gotr_chatroom *room, char *message);
 void gotr_receive(struct gotr_chatroom *room, char *message);
 void gotr_add_user(struct gotr_chatroom *room, char *pub_key);
 void gotr_leave(struct gotr_chatroom *room); //room will be freed
+char* gotr_encode(const char *in, size_t len);

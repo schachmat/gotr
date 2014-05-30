@@ -6,8 +6,8 @@ LIBS = -L./lib -L/usr/lib -lc -lnacl
 NACL_LOCATION = "lib/libnacl.a"
 
 # flags
-CFLAGS = -g -pedantic -Wall -O0 ${INCS}
-#CFLAGS = -pedantic -Wall -O3 ${INCS}
+CFLAGS = -g -std=c99 -pedantic -Wall -O0 ${INCS}
+#CFLAGS = -std=c99 -pedantic -Wall -O3 ${INCS}
 LDFLAGS = -g ${LIBS}
 #LDFLAGS = -s ${LIBS}
 

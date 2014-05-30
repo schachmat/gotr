@@ -17,7 +17,7 @@ options:
 
 ${OBJ}: config.mk
 
-client: ${OBJ}
+client: ${OBJ} ../libgotr/libgotr.a
 	@echo CC -o $@
 	@${CC} -o $@ ${OBJ} ${LDFLAGS}
 
