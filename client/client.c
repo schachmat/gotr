@@ -41,17 +41,19 @@ send_all(const char *message)
 {
 	DIR *directory;
 	struct dirent *dir;
+	struct stat info;
 
-	if(!(directory = opendir("."))) {
+	if (!(directory = opendir("."))) {
 		perror("send_all: opendir(\".\") failed");
 		return 1;
 	}
 
-	while((dir = readdir(directory))) {
+	while ((dir = readdir(directory))) {
 		strncpy(receiver.sun_path, dir->d_name, UNIX_PATH_MAX);
-		if(dir->d_type != DT_SOCK || !strcmp(dir->d_name, nick))
+		if (stat(receiver.sun_path, &info) == -1 || !(info.st_mode & S_IFSOCK)
+				|| !strcmp(dir->d_name, nick))
 			continue;
-		if(sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
+		if (sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
 				sizeof(struct sockaddr_un)) == -1)
 			fprintf(stderr, "Could not send message to %s: %s\n", dir->d_name,
 					strerror(errno));
@@ -66,7 +68,7 @@ static int
 send_user(const char *user, const char *message)
 {
 	strncpy(receiver.sun_path, user, UNIX_PATH_MAX);
-	if(sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
+	if (sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
 			sizeof(struct sockaddr_un)) == -1) {
 		perror("could not send message");
 		return 1;
@@ -96,18 +98,18 @@ main(int argc, char *argv[])
 
 	errno = 0;
 
-	if(argc < 2)
+	if (argc < 2)
 		die(USAGE);
 	printf("entering room as %s\n", nick = argv[1]);
 
-	if((sock_fd = socket(PF_UNIX, SOCK_DGRAM, 0)) == -1) {
+	if ((sock_fd = socket(PF_UNIX, SOCK_DGRAM, 0)) == -1) {
 		perror("main: incoming socket() failed");
 		return 1;
 	}
 
 	mkdir(ROOMDIR, 0755);
 	chdir(ROOMDIR);
-	if(!stat(nick, &finfo)) {
+	if (!stat(nick, &finfo)) {
 		close(sock_fd);
 		die("main: Nickname already in use!");
 	}
@@ -120,13 +122,13 @@ main(int argc, char *argv[])
 	address.sun_family = AF_UNIX;
 	strncpy(address.sun_path, nick, UNIX_PATH_MAX);
 
-	if(bind(sock_fd, (struct sockaddr *)&address, sizeof(struct sockaddr_un)) == -1) {
+	if (bind(sock_fd, (struct sockaddr *)&address, sizeof(struct sockaddr_un)) == -1) {
 		perror("main: bind() failed");
 		goto fail;
 	}
 
 	room = gotr_join(&send_all, &send_user, &receive_user);
-	while(1) {
+	while (1) {
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);
 		FD_SET(sock_fd, &reads);
@@ -135,17 +137,17 @@ main(int argc, char *argv[])
 
 		switch(select(sock_fd + 1, &reads, (fd_set *) 0, (fd_set *) 0, &timeout)) {
 		default:
-			if(FD_ISSET(sock_fd, &reads)) {
+			if (FD_ISSET(sock_fd, &reads)) {
 				recv_address_len = sizeof(struct sockaddr);
 				buf_len = recvfrom(sock_fd, buf, BUFLEN - 1, 0, (struct sockaddr *)&recv_address, &recv_address_len);
 				buf[buf_len] = '\0';
 				gotr_receive(room, buf);
 				//fprintf(stderr, "nice massage from %s: %s", recv_address.sun_path, buf);
 			}
-			if(FD_ISSET(STDIN_FILENO, &reads)) {
-				if(fgets(buf, BUFLEN, stdin)) {
-					if(buf[0] == '/') { /* command */
-						if(buf[1] == 'q') {
+			if (FD_ISSET(STDIN_FILENO, &reads)) {
+				if (fgets(buf, BUFLEN, stdin)) {
+					if (buf[0] == '/') { /* command */
+						if (buf[1] == 'q') {
 							close(sock_fd);
 							unlink(nick);
 							gotr_leave(room);
