@@ -20,6 +20,8 @@ options:
 ${OBJ}: ${INC} config.mk
 
 ${LIB}: ${OBJ}
+	@echo CP ${NACL_LOCATION} $@
+	@cp ${NACL_LOCATION} $@
 	@echo AR
 	@${AR} -rcs $@ ${OBJ}
 
