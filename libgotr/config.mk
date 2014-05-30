@@ -2,7 +2,7 @@
 
 # includes and libs
 INCS = -I. -I/usr/include
-LIBS = -L/usr/lib -lc -lgcrypt
+LIBS = -L/usr/lib -lc -lnacl
 
 # flags
 CFLAGS = -g -pedantic -Wall -O0 ${INCS}

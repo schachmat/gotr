@@ -63,7 +63,7 @@ send_all(const char *message)
 
 /* sends the message to the user */
 static int
-send_user(const char *message, const char *user)
+send_user(const char *user, const char *message)
 {
 	strncpy(receiver.sun_path, user, UNIX_PATH_MAX);
 	if(sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
@@ -72,6 +72,13 @@ send_user(const char *message, const char *user)
 		return 1;
 	}
 	return 0;
+}
+
+/* displays message */
+static void
+receive_user(struct gotr_chatroom *room, const char *user, const char *message)
+{
+	fprintf(stderr, "nice massage from %s: %s", user, message);
 }
 
 int
@@ -85,6 +92,7 @@ main(int argc, char *argv[])
 	socklen_t recv_address_len;
 	char buf[BUFLEN];
 	ssize_t buf_len;
+	struct gotr_chatroom *room = NULL;
 
 	errno = 0;
 
@@ -117,7 +125,7 @@ main(int argc, char *argv[])
 		goto fail;
 	}
 
-	gotr_init(&send_all, &send_user);
+	room = gotr_join(&send_all, &send_user, &receive_user, NULL);
 	while(1) {
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);
@@ -131,7 +139,8 @@ main(int argc, char *argv[])
 				recv_address_len = sizeof(struct sockaddr);
 				buf_len = recvfrom(sock_fd, buf, BUFLEN - 1, 0, (struct sockaddr *)&recv_address, &recv_address_len);
 				buf[buf_len] = '\0';
-				fprintf(stderr, "nice massage from %s: %s", recv_address.sun_path, buf);
+				gotr_receive(room, buf);
+				//fprintf(stderr, "nice massage from %s: %s", recv_address.sun_path, buf);
 			}
 			if(FD_ISSET(STDIN_FILENO, &reads)) {
 				if(fgets(buf, BUFLEN, stdin)) {
@@ -139,12 +148,14 @@ main(int argc, char *argv[])
 						if(buf[1] == 'q') {
 							close(sock_fd);
 							unlink(nick);
+							gotr_leave(room);
+							room = NULL;
 							return 0;
 						} else {
 							fprintf(stderr, "unknown command: %s\n", buf);
 						}
 					} else {
-						send_all(buf);
+						gotr_send(room, buf);
 					}
 				}
 			}
@@ -161,5 +172,6 @@ main(int argc, char *argv[])
 fail:
 	close(sock_fd);
 	unlink(nick);
+	gotr_leave(room);
 	return 1;
 }
