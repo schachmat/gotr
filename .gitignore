@@ -6,3 +6,4 @@ libgotr/include
 libgotr/lib
 *.o
 .DS_Store
+*/cscope.out
