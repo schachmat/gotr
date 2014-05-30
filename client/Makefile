@@ -13,7 +13,7 @@ options:
 
 .c.o:
 	@echo CC $<
-	${CC} -dM -E ${CFLAGS} $<
+	${CC} -c ${CFLAGS} $<
 
 ${OBJ}: config.mk
 
