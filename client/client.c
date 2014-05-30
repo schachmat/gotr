@@ -78,7 +78,7 @@ send_user(const char *user, const char *message)
 static void
 receive_user(struct gotr_chatroom *room, const char *user, const char *message)
 {
-	fprintf(stderr, "nice massage from %s: %s", user, message);
+	fprintf(stderr, "%s: %s", user, message);
 }
 
 int
@@ -125,7 +125,7 @@ main(int argc, char *argv[])
 		goto fail;
 	}
 
-	room = gotr_join(&send_all, &send_user, &receive_user, NULL);
+	room = gotr_join(&send_all, &send_user, &receive_user);
 	while(1) {
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);

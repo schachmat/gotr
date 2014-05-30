@@ -2,7 +2,7 @@
 
 # includes and libs
 INCS = -I. -I/usr/include -I../libgotr
-LIBS = -L/usr/lib -lc -L../libgotr -lgotr
+LIBS = -L/usr/lib -lc -L../libgotr -lgotr -lnacl
 
 # flags
 CFLAGS = -g -pedantic -Wall -O0 ${INCS}
