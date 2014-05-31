@@ -63,7 +63,12 @@ void gotr_add_user(struct gotr_chatroom *room, char *pub_key)
 	
 	memcpy(new_user->pub_key, pub_key, crypto_box_PUBLICKEYBYTES);
 	
-	room->receive_usr(room, "-- user added", pub_key); //debug
+	//debug print pub_key
+	printf("user added: --");
+	for (int i = 0; i < crypto_box_PUBLICKEYBYTES; i++) {
+		printf("%X", *(pub_key + i));
+	}
+	printf("--\n");
 }
 
 void gotr_leave(struct gotr_chatroom *room)
