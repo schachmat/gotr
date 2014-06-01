@@ -85,7 +85,7 @@ void gotr_leave(struct gotr_chatroom *room)
 }
 
 // User has to free() the returned pointer!
-char* gotr_encode(const char *in, size_t len)
+char* gotr_encode(const unsigned char *in, size_t len)
 {
 	char *tmp;
 	char *ret = malloc(2*len + 1);
@@ -99,17 +99,17 @@ char* gotr_encode(const char *in, size_t len)
 }
 
 // User has to free() the returned pointer!
-char* gotr_decode(const char *in, size_t* len)
+unsigned char* gotr_decode(const char *in, size_t* len)
 {
-//	char *ret;
-//	char buf[3] = "\0\0";
-//	size_t n = strlen(in) / 2;
-
-//	if (!in || !len || !n || !(ret = malloc(n)))
+	unsigned char *tmp;
+	size_t n = strlen(in) / 2;
+	unsigned char *ret;
+	if (!in || !len || !n || !(ret = malloc(n)))
 		return NULL;
 
-//	*len = n;
-//	for () {
-//		memcpy(buf, in, 2);
-//		sscanf(buf, "%x", 
+	*len = n;
+	for (tmp = ret; n--; in += 2)
+		sscanf(in, "%2hhx%*s", tmp++);
+
+	return ret;
 }
