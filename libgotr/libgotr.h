@@ -1,5 +1,3 @@
-#include <crypto_box.h>
-
 struct gotr_chatroom;
 
 typedef int (*gotr_cb_send_all)(const char*);
@@ -8,16 +6,12 @@ typedef void (*gotr_cb_receive_usr)(struct gotr_chatroom*, const char*, const ch
 
 struct gotr_user {
 	char *name;
-	char pub_key[crypto_box_PUBLICKEYBYTES];
 	struct gotr_user* next;
 };
 
 struct gotr_chatroom {
 	//sid
-	
-	unsigned char pub_key[crypto_box_PUBLICKEYBYTES];
-	unsigned char sec_key[crypto_box_SECRETKEYBYTES];
-	
+
 	struct gotr_user *users;
 	gotr_cb_send_all send_all;
 	gotr_cb_send_usr send_usr;

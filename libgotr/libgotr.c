@@ -7,15 +7,15 @@
 
 void gotr_setup(struct gotr_chatroom *room)
 {
-	char setup_message[crypto_box_PUBLICKEYBYTES + 3];
+//	char setup_message[crypto_box_PUBLICKEYBYTES + 3];
 
-	crypto_box_keypair(room->pub_key, room->sec_key);
-	setup_message[0] = '/';
-	setup_message[crypto_box_PUBLICKEYBYTES + 1] = '\n';
-	setup_message[crypto_box_PUBLICKEYBYTES + 2] = '\0';
-	memcpy(room->pub_key, setup_message + 1, crypto_box_PUBLICKEYBYTES);
+//	crypto_box_keypair(room->pub_key, room->sec_key);
+//	setup_message[0] = '/';
+//	setup_message[crypto_box_PUBLICKEYBYTES + 1] = '\n';
+//	setup_message[crypto_box_PUBLICKEYBYTES + 2] = '\0';
+//	memcpy(room->pub_key, setup_message + 1, crypto_box_PUBLICKEYBYTES);
 
-	room->send_all(setup_message);
+//	room->send_all(setup_message);
 }
 
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr, gotr_cb_receive_usr receive_usr)
@@ -61,14 +61,7 @@ void gotr_add_user(struct gotr_chatroom *room, char *pub_key)
 	new_user->next = room->users;
 	room->users = new_user;
 	
-	memcpy(new_user->pub_key, pub_key, crypto_box_PUBLICKEYBYTES);
-	
-	//debug print pub_key
-	printf("user added: --");
-	for (int i = 0; i < crypto_box_PUBLICKEYBYTES; i++) {
-		printf("%X", *(pub_key + i));
-	}
-	printf("--\n");
+//	memcpy(new_user->pub_key, pub_key, crypto_box_PUBLICKEYBYTES);
 }
 
 void gotr_leave(struct gotr_chatroom *room)

@@ -21,15 +21,13 @@ options:
 	@echo CC $<
 	@${CC} -c ${CFLAGS} $<
 
-${OBJ}: ${INC} config.mk
+${OBJ} ${CLIENT_OBJ}: ${INC} config.mk
 
 ${CLIENT}: ${CLIENT_OBJ} ${LIB}
 	@echo CC -o $@
 	@${CC} -o $@ ${CLIENT_OBJ} ${CLIENT_LDFLAGS}
 
 ${LIB}: ${OBJ}
-	@echo CP ${NACL_LOCATION} $@
-	@cp ${NACL_LOCATION} $@
 	@echo AR
 	@${AR} -rcs $@ ${OBJ}
 
