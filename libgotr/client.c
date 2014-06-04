@@ -52,9 +52,8 @@ send_all(const char *message)
 		if (!strcmp(dir->d_name, nick))
 			continue;
 		if (sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
-				sizeof(struct sockaddr_un)) == -1 && errno != ENOTSOCK)
-			fprintf(stderr, "Could not send message to %s: %s\n", dir->d_name,
-					strerror(errno));
+				sizeof(struct sockaddr_un)) == -1 && errno != ECONNREFUSED)
+			perror("client: sendto failed");
 	}
 
 	closedir(directory);
