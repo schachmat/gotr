@@ -5,10 +5,14 @@ LIB = libgotr.a
 INC = libgotr.h
 OBJ = ${SRC:.c=.o}
 
-all: options libgotr.a
+CLIENT = client
+CLIENT_SRC = client.c
+CLIENT_OBJ = ${CLIENT_SRC:.c=.o}
+
+all: options ${LIB} ${CLIENT}
 
 options:
-	@echo libgotr build options:
+	@echo build options:
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
@@ -19,6 +23,10 @@ options:
 
 ${OBJ}: ${INC} config.mk
 
+${CLIENT}: ${CLIENT_OBJ} ${LIB}
+	@echo CC -o $@
+	@${CC} -o $@ ${CLIENT_OBJ} ${CLIENT_LDFLAGS}
+
 ${LIB}: ${OBJ}
 	@echo CP ${NACL_LOCATION} $@
 	@cp ${NACL_LOCATION} $@
@@ -27,6 +35,6 @@ ${LIB}: ${OBJ}
 
 clean:
 	@echo cleaning
-	@rm -f libgotr.a ${OBJ}
+	@rm -f ${LIB} ${CLIENT} ${OBJ} ${CLIENT_OBJ}
 
-.PHONY: all options clean
+.PHONY: all client libgotr.a options clean
