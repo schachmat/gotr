@@ -1,6 +1,6 @@
 *~
 *.swp
-client/client
+libgotr/client
 libgotr/libgotr.a
 libgotr/include
 libgotr/lib
