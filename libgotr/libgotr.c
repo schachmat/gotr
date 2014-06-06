@@ -1,21 +1,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <gcrypt.h>
 
-#define LIBGOTR_VERSION "1"
+#define GOTR_PROT_VERSION "1"
+#define GOTR_GCRYPT_VERSION "1.6.0"
+
+#include "util.h"
 #include "libgotr.h"
 
-void gotr_setup(struct gotr_chatroom *room)
+int gotr_init()
 {
-//	char setup_message[crypto_box_PUBLICKEYBYTES + 3];
+	gcry_error_t err = 0;
+	if (!gcry_check_version(GOTR_GCRYPT_VERSION)) {
+		eprintf("libgcrypt version mismatch");
+		return 0;
+	}
 
-//	crypto_box_keypair(room->pub_key, room->sec_key);
-//	setup_message[0] = '/';
-//	setup_message[crypto_box_PUBLICKEYBYTES + 1] = '\n';
-//	setup_message[crypto_box_PUBLICKEYBYTES + 2] = '\0';
-//	memcpy(room->pub_key, setup_message + 1, crypto_box_PUBLICKEYBYTES);
+	if ((err = gcry_control(GCRYCTL_DISABLE_SECMEM, 0)))
+		eprintf("failed to set libgcrypt option DISABLE_SECMEM: %s",
+				gcry_strerror(err));
 
-//	room->send_all(setup_message);
+	gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
+
+	return 1;
 }
 
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr, gotr_cb_receive_usr receive_usr)
@@ -27,9 +35,15 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send
 	room->send_usr = send_usr;
 	room->receive_usr = receive_usr;
 
-	gotr_setup(room);
+//	char setup_message[crypto_box_PUBLICKEYBYTES + 3];
 
-	puts("gotr_init() called");
+//	crypto_box_keypair(room->pub_key, room->sec_key);
+//	setup_message[0] = '/';
+//	setup_message[crypto_box_PUBLICKEYBYTES + 1] = '\n';
+//	setup_message[crypto_box_PUBLICKEYBYTES + 2] = '\0';
+//	memcpy(room->pub_key, setup_message + 1, crypto_box_PUBLICKEYBYTES);
+
+//	room->send_all(setup_message);
 
 	return room;
 }

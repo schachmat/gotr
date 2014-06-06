@@ -124,6 +124,9 @@ main(int argc, char *argv[])
 		goto fail;
 	}
 
+	if (!gotr_init())
+		goto fail;
+
 	room = gotr_join(&send_all, &send_user, &receive_user);
 	while (1) {
 		FD_ZERO(&reads);
@@ -151,7 +154,7 @@ main(int argc, char *argv[])
 							room = NULL;
 							return 0;
 						} else {
-							fprintf(stderr, "unknown command: %s\n", buf);
+							fprintf(stderr, "unknown command: %s", buf);
 						}
 					} else {
 						gotr_send(room, buf);

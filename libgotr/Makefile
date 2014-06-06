@@ -1,12 +1,13 @@
 include config.mk
 
-SRC = libgotr.c
+SRC = libgotr.c util.c
 LIB = libgotr.a
-INC = libgotr.h
+INC = libgotr.h util.h
 OBJ = ${SRC:.c=.o}
 
 CLIENT = client
 CLIENT_SRC = client.c
+CLIENT_INC = libgotr.h
 CLIENT_OBJ = ${CLIENT_SRC:.c=.o}
 
 all: options ${LIB} ${CLIENT}
@@ -21,7 +22,9 @@ options:
 	@echo CC $<
 	@${CC} -c ${CFLAGS} $<
 
-${OBJ} ${CLIENT_OBJ}: ${INC} config.mk
+${OBJ}: ${INC} config.mk
+
+${CLIENT_OBJ}: ${CLIENT_INC} config.mk
 
 ${CLIENT}: ${CLIENT_OBJ} ${LIB}
 	@echo CC -o $@

@@ -2,9 +2,9 @@
 
 # includes and libs
 INCS = -I. -I./include -I/usr/include
-LIBS = -L/usr/lib -lc
+LIBS = -L/usr/lib -lc -lgcrypt
 
-CLIENT_LIBS = -L. -L/usr/lib -lc -lgotr
+CLIENT_LIBS = -L. -L/usr/lib -lc -lgotr -lgcrypt
 
 # flags
 CFLAGS = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}
