@@ -1,6 +1,6 @@
 include config.mk
 
-SRC = libgotr.c util.c
+SRC = libgotr.c util.c bdgka.c
 LIB = libgotr.a
 INC = libgotr.h util.h
 OBJ = ${SRC:.c=.o}

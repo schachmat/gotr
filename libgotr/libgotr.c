@@ -13,15 +13,17 @@ int gotr_init()
 {
 	gcry_error_t err = 0;
 	if (!gcry_check_version(GOTR_GCRYPT_VERSION)) {
-		eprintf("libgcrypt version mismatch");
+		gotr_eprintf("libgcrypt version mismatch");
 		return 0;
 	}
 
 	if ((err = gcry_control(GCRYCTL_DISABLE_SECMEM, 0)))
-		eprintf("failed to set libgcrypt option DISABLE_SECMEM: %s",
+		gotr_eprintf("failed to set libgcrypt option DISABLE_SECMEM: %s",
 				gcry_strerror(err));
 
 	gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
+
+	gotr_rand_poll();
 
 	return 1;
 }
@@ -58,13 +60,28 @@ void gotr_send(struct gotr_chatroom *room, char *message)
 	room->send_all(message);
 }
 
-void gotr_receive(struct gotr_chatroom *room, char *message)
+int gotr_receive(struct gotr_chatroom *room, char *message)
 {
-	if (message[0] == '/') {
-		gotr_add_user(room, message + 1);
-	} else {
-		room->receive_usr(room, "jemand", message); //message for user
+	size_t len = 0;
+	unsigned char *msg = NULL;
+
+	if (!room || !message) {
+		gotr_eprintf("called gotr_receive with NULL argument");
+		return 0;
 	}
+
+	if (strstr(message, "?GOTR?") != message) {
+		gotr_eprintf("received unencrypted message: %s", message);
+		room->receive_usr(room, "!!!UNENCRYPTED!!!", message);
+		return 1;
+	}
+
+	if (!(msg = gotr_decode(message, &len))) {
+		gotr_eprintf("could not decode message: %s", message);
+		return 1;
+	}
+
+	return 0;
 }
 
 void gotr_add_user(struct gotr_chatroom *room, char *pub_key)

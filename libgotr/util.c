@@ -1,11 +1,20 @@
 #include <errno.h>
+#include <gcrypt.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "util.h"
 
-void eprintf(const char *format, ...)
+static unsigned char rand_amount = 255;
+
+void gotr_rand_poll()
+{
+	if(!(rand_amount--))
+		gcry_fast_random_poll();
+}
+
+void gotr_eprintf(const char *format, ...)
 {
 	va_list ap;
 
