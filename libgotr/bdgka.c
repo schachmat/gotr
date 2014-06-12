@@ -1,4 +1,7 @@
+/* Bourmester-Desmeth Group Key Agreement */
 
+
+/* group parameters from http://tools.ietf.org/html/rfc3526 */
 static const int gotr_bd_generator = 4;
 static const char *gotr_bd_prime =
 		"FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1"

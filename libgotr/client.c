@@ -44,7 +44,7 @@ send_all(const char *message)
 
 	if (!(directory = opendir("."))) {
 		perror("send_all: opendir(\".\") failed");
-		return 1;
+		return 0;
 	}
 
 	while ((dir = readdir(directory))) {
@@ -58,7 +58,7 @@ send_all(const char *message)
 	}
 
 	closedir(directory);
-	return 0;
+	return 1;
 }
 
 /* sends the message to the user */
@@ -69,9 +69,9 @@ send_user(const char *user, const char *message)
 	if (sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
 			sizeof(struct sockaddr_un)) == -1) {
 		perror("could not send message");
-		return 1;
+		return 0;
 	}
-	return 0;
+	return 1;
 }
 
 /* displays message */
