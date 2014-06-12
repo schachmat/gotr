@@ -4,6 +4,10 @@
 #include <gcrypt.h>
 #include <arpa/inet.h>
 
+#include "util.h"
+#include "libgotr.h"
+#include "b64.h"
+
 #define GOTR_PROT_VERSION "1"
 #define GOTR_GCRYPT_VERSION "1.6.0"
 
@@ -19,10 +23,6 @@
 #define GOTR_STATE_FLAKE_GOT_y         ((char)2)
 #define GOTR_STATE_FLAKE_GOT_V         ((char)3)
 #define GOTR_STATE_FLAKE_VALIDATED     ((char)4)
-
-#include "util.h"
-#include "libgotr.h"
-#include "b64.h"
 
 static int gotr_got_msg(struct gotr_chatroom *room, char *msg);
 
@@ -115,12 +115,12 @@ int gotr_receive(struct gotr_chatroom *room, char *message)
 	}
 	msg[len-1] = '\0';
 
-	// header
 	op = *msg;
 
 	if (op >= 0 && op < GOTR_OP_MAX && msg_handler[op])
 		msg_handler[op](room, msg);
 
+	free(msg);
 	return 1;
 }
 
@@ -144,35 +144,4 @@ void gotr_leave(struct gotr_chatroom *room)
 	}
 
 	free(room);
-}
-
-// User has to free() the returned pointer!
-char* gotr_encode(const char *in, size_t len)
-{
-	char *tmp;
-	char *ret = malloc(2*len + 1);
-	if (!in || !ret)
-		return NULL;
-
-	for (tmp = ret; len--; tmp += 2)
-		snprintf(tmp, 3, "%02X", *in++);
-
-	return ret;
-}
-
-// User has to free() the returned pointer!
-char* gotr_decode(const char *in, size_t* len)
-{
-	char *tmp;
-	size_t n = strlen(in) / 2;
-	char *ret;
-	if (!in || !len || !n || !(ret = malloc(n+1)))
-		return NULL;
-
-	*len = n;
-	for (tmp = ret; n--; in += 2)
-		sscanf(in, "%2hhx%*s", (unsigned char*)(tmp++));
-
-	ret[*len] = '\0';
-	return ret;
 }
