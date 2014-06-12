@@ -2,12 +2,19 @@
 #include <string.h>
 #include <stdio.h>
 #include <gcrypt.h>
+#include <arpa/inet.h>
 
 #define GOTR_PROT_VERSION "1"
 #define GOTR_GCRYPT_VERSION "1.6.0"
 
 #include "util.h"
 #include "libgotr.h"
+#include "b64.h"
+
+enum gotr_ops {
+	GOTR_OP_IDLE = 0,
+	GOTR_OP_MSG,
+};
 
 int gotr_init()
 {
@@ -57,31 +64,59 @@ void gotr_keyupdate(struct gotr_chatroom *room)
 
 void gotr_send(struct gotr_chatroom *room, char *message)
 {
-	room->send_all(message);
+	size_t len = strlen(message);
+	char *msg = otrl_base64_otr_encode(message, len);
+	room->send_all(msg);
+	free(msg);
 }
 
 int gotr_receive(struct gotr_chatroom *room, char *message)
 {
 	size_t len = 0;
-	unsigned char *msg = NULL;
+	char *msg = NULL;
+	enum gotr_ops op;
 
 	if (!room || !message) {
 		gotr_eprintf("called gotr_receive with NULL argument");
 		return 0;
 	}
 
-	if (strstr(message, "?GOTR?") != message) {
-		gotr_eprintf("received unencrypted message: %s", message);
-		room->receive_usr(room, "!!!UNENCRYPTED!!!", message);
-		return 1;
-	}
+//	if (strstr(message, "?GOTR?") != message) {
+//		gotr_eprintf("received unencrypted message: %s", message);
+//		room->receive_usr(room, "!!!UNENCRYPTED!!!", message);
+//		return 0;
+//	}
+//	message += 6;
+//
+//	if (*message != '1') {
+//		gotr_eprintf("unsupported protocol version: %c", *message);
+//		return 0;
+//	}
+//	message++;
 
-	if (!(msg = gotr_decode(message, &len))) {
+	if ((otrl_base64_otr_decode(message, &msg, &len))) {
 		gotr_eprintf("could not decode message: %s", message);
-		return 1;
+		return 0;
+	}
+	msg[len-1] = '\0';
+	gotr_eprintf("got \"anonymous\" massage: %s", msg);
+
+	// header
+	op = ntohs(*((uint16_t*)msg));
+	len -= 2;
+	msg += 2;
+
+	switch (op) {
+	case GOTR_OP_IDLE:
+		break;
+	case GOTR_OP_MSG:
+		room->receive_usr(room, "jemand", msg);
+		break;
+	default:
+		break;
 	}
 
-	return 0;
+	return 1;
 }
 
 void gotr_add_user(struct gotr_chatroom *room, char *pub_key)
@@ -109,7 +144,7 @@ void gotr_leave(struct gotr_chatroom *room)
 }
 
 // User has to free() the returned pointer!
-char* gotr_encode(const unsigned char *in, size_t len)
+char* gotr_encode(const char *in, size_t len)
 {
 	char *tmp;
 	char *ret = malloc(2*len + 1);
@@ -123,17 +158,18 @@ char* gotr_encode(const unsigned char *in, size_t len)
 }
 
 // User has to free() the returned pointer!
-unsigned char* gotr_decode(const char *in, size_t* len)
+char* gotr_decode(const char *in, size_t* len)
 {
-	unsigned char *tmp;
+	char *tmp;
 	size_t n = strlen(in) / 2;
-	unsigned char *ret;
-	if (!in || !len || !n || !(ret = malloc(n)))
+	char *ret;
+	if (!in || !len || !n || !(ret = malloc(n+1)))
 		return NULL;
 
 	*len = n;
 	for (tmp = ret; n--; in += 2)
-		sscanf(in, "%2hhx%*s", tmp++);
+		sscanf(in, "%2hhx%*s", (unsigned char*)(tmp++));
 
+	ret[*len] = '\0';
 	return ret;
 }
