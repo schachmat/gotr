@@ -24,5 +24,4 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send
 void gotr_keyupdate(struct gotr_chatroom *room);
 int gotr_send(struct gotr_chatroom *room, char *message);
 int gotr_receive(struct gotr_chatroom *room, char *message);
-void gotr_add_user(struct gotr_chatroom *room, char *pub_key);
 void gotr_leave(struct gotr_chatroom *room); //room will be freed
