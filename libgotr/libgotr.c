@@ -9,14 +9,14 @@
 #include "b64.h"
 
 #define GOTR_PROT_VERSION "1"
-#define GOTR_GCRYPT_VERSION "1.6.0"
+#define GOTR_GCRYPT_VERSION "1.6.1"
 
-#define GOTR_OP_INIT_PAIR_CHANNEL ((char)0)
-#define GOTR_OP_FLAKE_SEND_z      ((char)1)
-#define GOTR_OP_FLAKE_SEND_R      ((char)2)
-#define GOTR_OP_FLAKE_VALIDATE    ((char)3)
-#define GOTR_OP_MSG               ((char)4)
-#define GOTR_OP_MAX               ((char)5)
+#define GOTR_OP_EST_PAIR_CHANNEL ((char)0)
+#define GOTR_OP_FLAKE_SEND_z     ((char)1)
+#define GOTR_OP_FLAKE_SEND_R     ((char)2)
+#define GOTR_OP_FLAKE_VALIDATE   ((char)3)
+#define GOTR_OP_MSG              ((char)4)
+#define GOTR_OP_MAX              ((char)5)
 
 #define GOTR_STATE_UNKNOWN             ((char)0)
 #define GOTR_STATE_CHANNEL_ESTABLISHED ((char)1)
@@ -25,7 +25,11 @@
 #define GOTR_STATE_FLAKE_VALIDATED     ((char)4)
 
 static void gotr_add_user(struct gotr_chatroom *room);
-static int gotr_got_msg(struct gotr_chatroom *room, char *msg);
+static int gotr_got_est_pair_channel(struct gotr_chatroom *room, char *msg);
+static int gotr_got_flake_y         (struct gotr_chatroom *room, char *msg);
+static int gotr_got_flake_V         (struct gotr_chatroom *room, char *msg);
+static int gotr_got_flake_validation(struct gotr_chatroom *room, char *msg);
+static int gotr_got_msg             (struct gotr_chatroom *room, char *msg);
 
 static int (*msg_handler[GOTR_OP_MAX])(struct gotr_chatroom *, char *) = {
 	[GOTR_OP_MSG] = &gotr_got_msg,
@@ -86,6 +90,26 @@ int gotr_send(struct gotr_chatroom *room, char *message)
 fail:
 	free(buf);
 	return ret;
+}
+
+static int gotr_got_est_pair_channel(struct gotr_chatroom *room, char *msg)
+{
+	return 1;
+}
+
+static int gotr_got_flake_y(struct gotr_chatroom *room, char *msg)
+{
+	return 1;
+}
+
+static int gotr_got_flake_V(struct gotr_chatroom *room, char *msg)
+{
+	return 1;
+}
+
+static int gotr_got_flake_validation(struct gotr_chatroom *room, char *msg)
+{
+	return 1;
 }
 
 static int gotr_got_msg(struct gotr_chatroom *room, char *msg)
