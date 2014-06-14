@@ -6,18 +6,18 @@ typedef int (*gotr_cb_send_usr)(const char*, const struct gotr_user*);
 typedef void (*gotr_cb_receive_usr)(const char*, const struct gotr_user*, const struct gotr_chatroom*);
 
 struct gotr_user {
-	char *name;
-	char state;
-	struct gotr_user* next;
+	char *name;             ///< users name
+	char state;             ///< progress in the key exchange algorithm
+	struct gotr_user* next; ///< link to next user in the list
 };
 
 struct gotr_chatroom {
 	//sid
 
-	struct gotr_user *users;
-	gotr_cb_send_all send_all;
-	gotr_cb_send_usr send_usr;
-	gotr_cb_receive_usr receive_usr;
+	struct gotr_user *users;         ///< a list of all users in the room
+	gotr_cb_send_all send_all;       ///< callback to send a message to every participant in this room
+	gotr_cb_send_usr send_usr;       ///< callback to send a message to a specific user
+	gotr_cb_receive_usr receive_usr; ///< callback to notify the client about a decrypted message he has to print
 };
 
 int gotr_init();

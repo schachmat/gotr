@@ -1,8 +1,10 @@
 /* Bourmester-Desmeth Group Key Agreement */
 
+#include <gcrypt.h>
+
 
 /* group parameters from http://tools.ietf.org/html/rfc3526 */
-static const int gotr_bd_generator = 4;
+static const unsigned int gotr_bd_generator = 4;
 static const char *gotr_bd_prime =
 		"FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1"
 		"29024E088A67CC74020BBEA63B139B22514A08798E3404DD"
@@ -26,3 +28,44 @@ static const char *gotr_bd_prime =
 		"1F612970CEE2D7AFB81BDD762170481CD0069127D5B05AA9"
 		"93B4EA988D8FDDC186FFB7DC90A6C08F4DF435C934063199"
 		"FFFFFFFFFFFFFFFF";
+
+static gcry_mpi_t prime;
+static gcry_mpi_t generator;
+
+/**
+ * initializes cryptographic constants.
+ */
+int gotr_bdgka_init()
+{
+	gcry_mpi_set_ui(generator, gotr_bd_generator);
+	return !gcry_mpi_scan(&prime, GCRYMPI_FMT_HEX, gotr_bd_prime, 0, NULL);
+}
+
+/**
+ * generate a private BD key.
+ */
+void gotr_gen_private_BD_key(gcry_mpi_t* privkey)
+{
+	*privkey = mpi_new(GOTR_SKEYSIZE);
+	do {
+		gcry_mpi_randomize(*privkey, GOTR_SKEYSIZE, GCRY_STRONG_RANDOM);
+	} while (!gcry_mpi_cmp_ui(*privkey, 0));
+}
+
+/**
+ * generate a public BD key.
+ */
+void gotr_gen_public_BD_key(gcry_mpi_t* pubkey, const gcry_mpi_t privkey)
+{
+	*pubkey = mpi_new(GOTR_PKEYSIZE);
+	mpi_powm(*pubkey, generator, privkey, prime);
+}
+
+/**
+ * generate a BD key pair.
+ */
+void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey)
+{
+	gotr_gen_private_BD_key(privkey);
+	gotr_gen_public_BD_key(pubkey, *privkey);
+}
