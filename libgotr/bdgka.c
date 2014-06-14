@@ -2,11 +2,12 @@
 
 #include <gcrypt.h>
 
+#include "bdgka.h"
+
 #define GOTR_SKEYSIZE (4096)
 #define GOTR_PKEYSIZE (GOTR_SKEYSIZE+1)
 
 /* group parameters from http://tools.ietf.org/html/rfc3526 */
-static const unsigned int gotr_bd_generator = 4;
 static const char *gotr_bd_prime =
 		"FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1"
 		"29024E088A67CC74020BBEA63B139B22514A08798E3404DD"
@@ -39,8 +40,11 @@ static gcry_mpi_t generator;
  */
 int gotr_bdgka_init()
 {
-	gcry_mpi_set_ui(generator, gotr_bd_generator);
-	return !gcry_mpi_scan(&prime, GCRYMPI_FMT_HEX, gotr_bd_prime, 0, NULL);
+	generator = GCRYMPI_CONST_FOUR;
+	if(gcry_mpi_scan(&prime, GCRYMPI_FMT_HEX, gotr_bd_prime, 0, NULL))
+		return 0;
+	gcry_mpi_set_flag(prime, GCRYMPI_FLAG_CONST);
+	return 1;
 }
 
 /**
@@ -70,4 +74,17 @@ void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey)
 {
 	gotr_gen_private_BD_key(privkey);
 	gotr_gen_public_BD_key(pubkey, *privkey);
+}
+
+/**
+ * generate a BD X value.
+ */
+int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t nom, const gcry_mpi_t denom, const gcry_mpi_t pow)
+{
+	*ret = mpi_new(GOTR_PKEYSIZE);
+	if (!gcry_mpi_invm(*ret, denom, prime))
+		return 0;
+	gcry_mpi_mulm(*ret, *ret, nom, prime);
+	gcry_mpi_powm(*ret, *ret, pow, prime);
+	return 1;
 }
