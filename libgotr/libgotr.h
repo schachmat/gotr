@@ -6,9 +6,10 @@ typedef int (*gotr_cb_send_usr)(const char*, const struct gotr_user*);
 typedef void (*gotr_cb_receive_usr)(const char*, const struct gotr_user*, const struct gotr_chatroom*);
 
 struct gotr_user {
-	char *name;             ///< users name
-	char state;             ///< progress in the key exchange algorithm
-	struct gotr_user* next; ///< link to next user in the list
+	char *name;                                 ///< users name
+	struct gotr_eddsa_public_key static_pubkey; ///< the long term static key of this user
+	char state;                                 ///< progress in the key exchange algorithm
+	struct gotr_user* next;                     ///< link to next user in the list
 };
 
 struct gotr_chatroom {

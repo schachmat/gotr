@@ -25,7 +25,7 @@
 #define GOTR_STATE_FLAKE_GOT_V         ((char)3)
 #define GOTR_STATE_FLAKE_VALIDATED     ((char)4)
 
-static void gotr_add_user(struct gotr_chatroom *room);
+static int gotr_add_user(struct gotr_user *user, struct gotr_chatroom *room);
 static int gotr_got_est_pair_channel(struct gotr_chatroom *room, char *msg);
 static int gotr_got_flake_y         (struct gotr_chatroom *room, char *msg);
 static int gotr_got_flake_V         (struct gotr_chatroom *room, char *msg);
@@ -150,14 +150,20 @@ int gotr_receive(struct gotr_chatroom *room, char *message)
 	return 1;
 }
 
-static void gotr_add_user(struct gotr_chatroom *room)
+static int gotr_add_user(struct gotr_user *user, struct gotr_chatroom *room)
 {
-	struct gotr_user *new_user;
+	struct gotr_user *cur;
 
-	new_user = malloc(sizeof(struct gotr_user));
-	new_user->state = GOTR_STATE_UNKNOWN;
-	new_user->next = room->users;
-	room->users = new_user;
+	if (!user || !room || !(cur = room->users))
+		return 0;
+
+	while (memcmp(&(user->static_pubkey), &(cur->static_pubkey),
+				sizeof(struct gotr_eddsa_public_key)) < 0)
+		cur = cur->next;
+
+	user->next = cur->next;
+	cur->next = user;
+	return 1;
 }
 
 void gotr_leave(struct gotr_chatroom *room)
