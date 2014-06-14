@@ -2,6 +2,8 @@
 
 #include <gcrypt.h>
 
+#define GOTR_SKEYSIZE (4096)
+#define GOTR_PKEYSIZE (GOTR_SKEYSIZE+1)
 
 /* group parameters from http://tools.ietf.org/html/rfc3526 */
 static const unsigned int gotr_bd_generator = 4;
