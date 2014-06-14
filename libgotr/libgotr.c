@@ -31,8 +31,8 @@ static int gotr_got_flake_V         (struct gotr_chatroom *room, char *msg);
 static int gotr_got_flake_validation(struct gotr_chatroom *room, char *msg);
 static int gotr_got_msg             (struct gotr_chatroom *room, char *msg);
 static int gotr_send_est_pair_channel(struct gotr_chatroom *room, char *msg);
-static int gotr_send_flake_y         (struct gotr_chatroom *room, char *msg);
-static int gotr_send_flake_V         (struct gotr_chatroom *room, char *msg);
+static int gotr_send_flake_z         (struct gotr_chatroom *room, char *msg);
+static int gotr_send_flake_R         (struct gotr_chatroom *room, char *msg);
 static int gotr_send_flake_validation(struct gotr_chatroom *room, char *msg);
 static int gotr_send_msg             (struct gotr_chatroom *room, char *msg);
 
