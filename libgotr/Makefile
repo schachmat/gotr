@@ -2,7 +2,7 @@ include config.mk
 
 SRC = libgotr.c util.c bdgka.c b64.c
 LIB = libgotr.a
-INC = libgotr.h util.h
+INC = libgotr.h util.h bdgka.h
 OBJ = ${SRC:.c=.o}
 
 CLIENT = client

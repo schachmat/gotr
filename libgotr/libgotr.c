@@ -7,6 +7,7 @@
 #include "util.h"
 #include "libgotr.h"
 #include "b64.h"
+#include "bdgka.h"
 
 #define GOTR_PROT_VERSION "1"
 #define GOTR_GCRYPT_VERSION "1.6.1"
@@ -56,7 +57,7 @@ int gotr_init()
 
 	gotr_rand_poll();
 
-	return 1;
+	return gotr_bdgka_init();
 }
 
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr, gotr_cb_receive_usr receive_usr)

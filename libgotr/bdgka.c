@@ -46,7 +46,7 @@ int gotr_bdgka_init()
 /**
  * generate a private BD key.
  */
-void gotr_gen_private_BD_key(gcry_mpi_t* privkey)
+static void gotr_gen_private_BD_key(gcry_mpi_t* privkey)
 {
 	*privkey = mpi_new(GOTR_SKEYSIZE);
 	do {
@@ -57,7 +57,7 @@ void gotr_gen_private_BD_key(gcry_mpi_t* privkey)
 /**
  * generate a public BD key.
  */
-void gotr_gen_public_BD_key(gcry_mpi_t* pubkey, const gcry_mpi_t privkey)
+static void gotr_gen_public_BD_key(gcry_mpi_t* pubkey, const gcry_mpi_t privkey)
 {
 	*pubkey = mpi_new(GOTR_PKEYSIZE);
 	mpi_powm(*pubkey, generator, privkey, prime);
