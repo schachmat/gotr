@@ -24,8 +24,8 @@ static struct sockaddr_un receiver;
 
 /* prototypes */
 static void die(const char *message);
-static int send_all(const char *message);
-static int send_user(const char *message, const char *user);
+static int send_all(const char *message, const struct gotr_chatroom* room);
+static int send_user(const char *message, const struct gotr_user *user);
 int main(int argc, char* argv[]);
 
 static void
@@ -37,7 +37,7 @@ die(const char *message)
 
 /* sends the message to all clients in the room */
 static int
-send_all(const char *message)
+send_all(const char *message, const struct gotr_chatroom* room)
 {
 	DIR *directory;
 	struct dirent *dir;
@@ -63,9 +63,9 @@ send_all(const char *message)
 
 /* sends the message to the user */
 static int
-send_user(const char *user, const char *message)
+send_user(const char *message, const struct gotr_user *user)
 {
-	strncpy(receiver.sun_path, user, UNIX_PATH_MAX);
+	strncpy(receiver.sun_path, user->name, UNIX_PATH_MAX);
 	if (sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
 			sizeof(struct sockaddr_un)) == -1) {
 		perror("could not send message");
@@ -76,9 +76,9 @@ send_user(const char *user, const char *message)
 
 /* displays message */
 static void
-receive_user(struct gotr_chatroom *room, const char *user, const char *message)
+receive_user(const char *message, const struct gotr_user *user, const struct gotr_chatroom *room)
 {
-	fprintf(stderr, "%s: %s", user, message);
+	fprintf(stderr, "%s: %s", user->name, message);
 }
 
 int

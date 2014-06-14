@@ -1,8 +1,9 @@
 struct gotr_chatroom;
+struct gotr_user;
 
-typedef int (*gotr_cb_send_all)(const char*);
-typedef int (*gotr_cb_send_usr)(const char*, const char*);
-typedef void (*gotr_cb_receive_usr)(struct gotr_chatroom*, const char*, const char*);
+typedef int (*gotr_cb_send_all)(const char*, const struct gotr_chatroom*);
+typedef int (*gotr_cb_send_usr)(const char*, const struct gotr_user*);
+typedef void (*gotr_cb_receive_usr)(const char*, const struct gotr_user*, const struct gotr_chatroom*);
 
 struct gotr_user {
 	char *name;

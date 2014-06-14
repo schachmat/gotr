@@ -30,6 +30,11 @@ static int gotr_got_flake_y         (struct gotr_chatroom *room, char *msg);
 static int gotr_got_flake_V         (struct gotr_chatroom *room, char *msg);
 static int gotr_got_flake_validation(struct gotr_chatroom *room, char *msg);
 static int gotr_got_msg             (struct gotr_chatroom *room, char *msg);
+static int gotr_send_est_pair_channel(struct gotr_chatroom *room, char *msg);
+static int gotr_send_flake_y         (struct gotr_chatroom *room, char *msg);
+static int gotr_send_flake_V         (struct gotr_chatroom *room, char *msg);
+static int gotr_send_flake_validation(struct gotr_chatroom *room, char *msg);
+static int gotr_send_msg             (struct gotr_chatroom *room, char *msg);
 
 static int (*msg_handler[GOTR_OP_MAX])(struct gotr_chatroom *, char *) = {
 	[GOTR_OP_MSG] = &gotr_got_msg,
@@ -83,7 +88,7 @@ int gotr_send(struct gotr_chatroom *room, char *message)
 		goto fail;
 	}
 
-	if(!(ret = room->send_all(msg)))
+	if(!(ret = room->send_all(msg, room)))
 		gotr_eprintf("unable to broadcast message");
 
 	free(msg);
