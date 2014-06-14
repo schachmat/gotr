@@ -38,8 +38,12 @@ cscope: ${SRC} ${INC} ${CLIENT_SRC} ${CLIENT_INC}
 	@echo cScope
 	@${CSCOPE} -R -b
 
+doc: Doxyfile
+	@echo DOXYGEN
+	@${DOXYGEN} >/dev/null
+
 clean:
 	@echo cleaning
 	@rm -f ${LIB} ${CLIENT} ${OBJ} ${CLIENT_OBJ}
 
-.PHONY: all client libgotr.a options cscope clean
+.PHONY: all client libgotr.a options cscope doc clean

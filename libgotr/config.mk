@@ -19,3 +19,4 @@ CLIENT_LDFLAGS = -g ${CLIENT_LIBS}
 CC = cc
 AR = ar
 CSCOPE = cscope
+DOXYGEN = doxygen
