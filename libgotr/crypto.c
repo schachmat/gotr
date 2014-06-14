@@ -1,4 +1,7 @@
+#include <arpa/inet.h>
+
 #include "crypto.h"
+#include "util.h"
 
 #define CURVE "Ed25519"
 
@@ -61,7 +64,7 @@ void gotr_mpi_print_unsigned(void *buf, size_t size, gcry_mpi_t val)
 			rsize = size;
 		memcpy(buf, p, rsize);
 		if (rsize < size)
-			memset(buf+rsize, 0, size - rsize);
+			memset(((char*)buf)+rsize, 0, size - rsize);
 	} else {
 		// Store regular MPIs as unsigned integers right aligned into the buffer.
 		rsize = size;
@@ -630,18 +633,25 @@ setup_cipher_aes(gcry_cipher_hd_t *handle,
 {
 	int rc;
 
-	/*GNUNET_assert (0 ==*/
-	gcry_cipher_open(handle, GCRY_CIPHER_AES256,
-			GCRY_CIPHER_MODE_CFB, 0);//);
+	if(gcry_cipher_open(handle, GCRY_CIPHER_AES256,
+			GCRY_CIPHER_MODE_CFB, 0)) {
+		gotr_eprintf("something in crypto failed");
+		abort();
+	}
 	rc = gcry_cipher_setkey(*handle,
 			sessionkey->aes_key,
 			sizeof(sessionkey->aes_key));
-	//GNUNET_assert ((0 == rc) || ((char) rc == GPG_ERR_WEAK_KEY));
+	if ((0 != rc) && ((char) rc != GPG_ERR_WEAK_KEY)) {
+		gotr_eprintf("something in crypto failed");
+		abort();
+	}
 	rc = gcry_cipher_setiv(*handle,
 			iv->aes_iv,
 			sizeof(iv->aes_iv));
-	//GNUNET_assert ((0 == rc) || ((char) rc == GPG_ERR_WEAK_KEY));
-	//return GNUNET_OK;
+	if ((0 != rc) && ((char) rc != GPG_ERR_WEAK_KEY)) {
+		gotr_eprintf("something in crypto failed");
+		abort();
+	}
 	return 1;
 }
 
@@ -660,18 +670,22 @@ setup_cipher_twofish(gcry_cipher_hd_t *handle,
 {
 	int rc;
 
-	/*GNUNET_assert (0 ==*/
-	gcry_cipher_open(handle, GCRY_CIPHER_TWOFISH,
-			GCRY_CIPHER_MODE_CFB, 0);//);
+	if (gcry_cipher_open(handle, GCRY_CIPHER_TWOFISH, GCRY_CIPHER_MODE_CFB, 0)) {
+		gotr_eprintf("something in crypto failed");
+		abort();
+	}
 	rc = gcry_cipher_setkey(*handle,
 			sessionkey->twofish_key,
 			sizeof(sessionkey->twofish_key));
-	//GNUNET_assert ((0 == rc) || ((char) rc == GPG_ERR_WEAK_KEY));
-	rc = gcry_cipher_setiv(*handle,
-			iv->twofish_iv,
-			sizeof(iv->twofish_iv));
-	//GNUNET_assert ((0 == rc) || ((char) rc == GPG_ERR_WEAK_KEY));
-	//return GNUNET_OK;
+	if ((0 != rc) && ((char) rc != GPG_ERR_WEAK_KEY)) {
+		gotr_eprintf("something in crypto failed");
+		abort();
+	}
+	rc = gcry_cipher_setiv(*handle, iv->twofish_iv, sizeof(iv->twofish_iv));
+	if ((0 != rc) && ((char) rc != GPG_ERR_WEAK_KEY)) {
+		gotr_eprintf("something in crypto failed");
+		abort();
+	}
 	return 1;
 }
 
@@ -980,13 +994,13 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 			if (hc == NULL)
 				goto hkdf_error;
 			memcpy(result, hc, k);
-			result += k;
+			result = ((char*)result) + k;
 		}
 
 		/* K(i+1) */
 		for (i = 1; i < t; i++)
 		{
-			memcpy(plain, result - k, k);
+			memcpy(plain, ((char*)result) - k, k);
 			memset(plain + k + ctx_len, i + 1, 1);
 			gcry_md_reset(prf);
 #if DEBUG_HKDF
@@ -996,7 +1010,7 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 			if (hc == NULL)
 				goto hkdf_error;
 			memcpy(result, hc, k);
-			result += k;
+			result = ((char*)result) + k;
 		}
 
 		/* K(t):d */
@@ -1004,7 +1018,7 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 		{
 			if (t > 0)
 			{
-				memcpy(plain, result - k, k);
+				memcpy(plain, ((char*)result) - k, k);
 				i++;
 			}
 			memset(plain + k + ctx_len, i, 1);

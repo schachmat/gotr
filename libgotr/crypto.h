@@ -1,6 +1,9 @@
+
+#ifndef _GOTR_CRYPTO_H
+#define _GOTR_CRYPTO_H
+
 #include <gcrypt.h>
-
-
+#include <stdint.h>
 
 // --- HASHING ---
 
@@ -91,3 +94,5 @@ void gotr_symmetric_derive_iv_v (struct gotr_SymmetricInitializationVector *iv, 
 
 int gotr_kdf_v (void *result, size_t out_len, const void *xts, size_t xts_len, const void *skm, size_t skm_len, va_list argp);
 int gotr_hkdf_v (void *result, size_t out_len, int xtr_algo, int prf_algo, const void *xts, size_t xts_len, const void *skm, size_t skm_len, va_list argp);
+
+#endif

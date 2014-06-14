@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 
 #include "util.h"
+#include "crypto.h"
 #include "libgotr.h"
 #include "b64.h"
 #include "bdgka.h"

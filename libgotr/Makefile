@@ -7,7 +7,7 @@ OBJ = ${SRC:.c=.o}
 
 CLIENT = client
 CLIENT_SRC = client.c
-CLIENT_INC = libgotr.h
+CLIENT_INC = libgotr.h crypto.h
 CLIENT_OBJ = ${CLIENT_SRC:.c=.o}
 
 all: options cscope ${LIB} ${CLIENT}
