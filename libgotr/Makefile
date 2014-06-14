@@ -10,7 +10,7 @@ CLIENT_SRC = client.c
 CLIENT_INC = libgotr.h
 CLIENT_OBJ = ${CLIENT_SRC:.c=.o}
 
-all: options ${LIB} ${CLIENT}
+all: options cscope ${LIB} ${CLIENT}
 
 options:
 	@echo build options:
@@ -34,8 +34,12 @@ ${LIB}: ${OBJ}
 	@echo AR
 	@${AR} -rcs $@ ${OBJ}
 
+cscope: ${SRC} ${INC} ${CLIENT_SRC} ${CLIENT_INC}
+	@echo cScope
+	@${CSCOPE} -R -b
+
 clean:
 	@echo cleaning
 	@rm -f ${LIB} ${CLIENT} ${OBJ} ${CLIENT_OBJ}
 
-.PHONY: all client libgotr.a options clean
+.PHONY: all client libgotr.a options cscope clean

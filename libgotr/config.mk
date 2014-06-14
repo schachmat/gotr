@@ -18,3 +18,4 @@ CLIENT_LDFLAGS = -g ${CLIENT_LIBS}
 # compiler and linker
 CC = cc
 AR = ar
+CSCOPE = cscope
