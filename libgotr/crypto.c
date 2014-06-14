@@ -185,7 +185,7 @@ key_from_sexp (gcry_mpi_t * array, gcry_sexp_t sexp, const char *topname,
  * @return NULL on error
  */
 static gcry_sexp_t
-decode_private_eddsa_key (const struct gotr_EddsaPrivateKey *priv)
+decode_private_eddsa_key (const struct gotr_eddsa_private_key *priv)
 {
   gcry_sexp_t result;
   int rc;
@@ -216,8 +216,8 @@ decode_private_eddsa_key (const struct gotr_EddsaPrivateKey *priv)
  * @param pub where to write the public key
  */
 void
-gotr_eddsa_key_get_public (const struct gotr_EddsaPrivateKey *priv,
-                                    struct gotr_EddsaPublicKey *pub)
+gotr_eddsa_key_get_public (const struct gotr_eddsa_private_key *priv,
+                                    struct gotr_eddsa_public_key *pub)
 {
   gcry_sexp_t sexp;
   gcry_ctx_t ctx;
@@ -241,9 +241,9 @@ gotr_eddsa_key_get_public (const struct gotr_EddsaPrivateKey *priv,
  * @param pk location of the key
  */
 void
-gotr_eddsa_key_clear (struct gotr_EddsaPrivateKey *pk)
+gotr_eddsa_key_clear (struct gotr_eddsa_private_key *pk)
 {
-  memset (pk, 0, sizeof (struct gotr_EddsaPrivateKey));
+  memset (pk, 0, sizeof (struct gotr_eddsa_private_key));
 }
 
 /**
@@ -251,10 +251,10 @@ gotr_eddsa_key_clear (struct gotr_EddsaPrivateKey *pk)
  *
  * @return fresh private key
  */
-struct gotr_EddsaPrivateKey *
+struct gotr_eddsa_private_key *
 gotr_eddsa_key_create ()
 {
-  struct gotr_EddsaPrivateKey *priv;
+  struct gotr_eddsa_private_key *priv;
   gcry_sexp_t priv_sexp;
   gcry_sexp_t s_keyparam;
   gcry_mpi_t d;
@@ -289,7 +289,7 @@ gotr_eddsa_key_create ()
     return NULL;
   }
   gcry_sexp_release (priv_sexp);
-  priv = malloc(sizeof(struct gotr_EddsaPrivateKey));
+  priv = malloc(sizeof(struct gotr_eddsa_private_key));
   gotr_mpi_print_unsigned (priv->d, sizeof (priv->d), d);
   gcry_mpi_release (d);
   return priv;
@@ -330,7 +330,7 @@ data_to_eddsa_value (const struct gotr_EccSignaturePurpose *purpose)
  * @return #GNUNET_SYSERR on error, #GNUNET_OK on success
  */
 int
-gotr_eddsa_sign (const struct gotr_EddsaPrivateKey *priv,
+gotr_eddsa_sign (const struct gotr_eddsa_private_key *priv,
                           const struct gotr_EccSignaturePurpose *purpose,
                           struct gotr_EddsaSignature *sig)
 {
@@ -386,7 +386,7 @@ int
 gotr_eddsa_verify (uint32_t purpose,
                             const struct gotr_EccSignaturePurpose *validate,
                             const struct gotr_EddsaSignature *sig,
-                            const struct gotr_EddsaPublicKey *pub)
+                            const struct gotr_eddsa_public_key *pub)
 {
   gcry_sexp_t data;
   gcry_sexp_t sig_sexpr;
