@@ -35,9 +35,9 @@ static const char *gotr_bd_prime =
 static gcry_mpi_t prime;
 static gcry_mpi_t generator;
 
-/**
- * initializes cryptographic constants.
- */
+static gcry_mpi_t gotr_gen_private_BD_key();
+static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey);
+
 int gotr_bdgka_init()
 {
 	generator = GCRYMPI_CONST_FOUR;
@@ -47,44 +47,47 @@ int gotr_bdgka_init()
 	return 1;
 }
 
-/**
- * generate a private BD key.
- */
-static void gotr_gen_private_BD_key(gcry_mpi_t* privkey)
-{
-	*privkey = mpi_new(GOTR_SKEYSIZE);
-	do {
-		gcry_mpi_randomize(*privkey, GOTR_SKEYSIZE, GCRY_STRONG_RANDOM);
-	} while (!gcry_mpi_cmp_ui(*privkey, 0));
-}
-
-/**
- * generate a public BD key.
- */
-static void gotr_gen_public_BD_key(gcry_mpi_t* pubkey, const gcry_mpi_t privkey)
-{
-	*pubkey = mpi_new(GOTR_PKEYSIZE);
-	mpi_powm(*pubkey, generator, privkey, prime);
-}
-
-/**
- * generate a BD key pair.
- */
 void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey)
 {
-	gotr_gen_private_BD_key(privkey);
-	gotr_gen_public_BD_key(pubkey, *privkey);
+	*privkey = gotr_gen_private_BD_key();
+	*pubkey = gotr_gen_public_BD_key(*privkey);
 }
 
-/**
- * generate a BD X value.
- */
-int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t nom, const gcry_mpi_t denom, const gcry_mpi_t pow)
+int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t denom, const gcry_mpi_t pow)
 {
 	*ret = mpi_new(GOTR_PKEYSIZE);
 	if (!gcry_mpi_invm(*ret, denom, prime))
 		return 0;
-	gcry_mpi_mulm(*ret, *ret, nom, prime);
+	gcry_mpi_mulm(*ret, *ret, num, prime);
 	gcry_mpi_powm(*ret, *ret, pow, prime);
 	return 1;
+}
+
+//int gotr_gen_BD_
+
+/**
+ * generate a private BD key.
+ * 
+ * @return The generated private BD key
+ */
+static gcry_mpi_t gotr_gen_private_BD_key()
+{
+	gcry_mpi_t ret = mpi_new(GOTR_SKEYSIZE);
+	do {
+		gcry_mpi_randomize(ret, GOTR_SKEYSIZE, GCRY_STRONG_RANDOM);
+	} while (!gcry_mpi_cmp_ui(ret, 0));
+	return ret;
+}
+
+/**
+ * generate a public BD key.
+ *
+ * @param privkey The corresponding private BD key
+ * @return The public BD key to @p privkey
+ */
+static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey)
+{
+	gcry_mpi_t ret = mpi_new(GOTR_PKEYSIZE);
+	mpi_powm(ret, generator, privkey, prime);
+	return ret;
 }
