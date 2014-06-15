@@ -8,6 +8,14 @@
 int gotr_bdgka_init();
 
 /**
+ * generate a BD key pair.
+ *
+ * @param[out] privkey The generated private BD key
+ * @param[out] pubkey The generated public BD key
+ */
+void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey);
+
+/**
  * generate a BD X value.
  * @f$ret = (\frac{num}{denom})^{pow} \pmod{prime}@f$
  *
@@ -19,10 +27,4 @@ int gotr_bdgka_init();
  */
 int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t denom, const gcry_mpi_t pow);
 
-/**
- * generate a BD key pair.
- *
- * @param[out] privkey The generated private BD key
- * @param[out] pubkey The generated public BD key
- */
-void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey);
+int gotr_gen_BD_flake_key(struct gotr_user *user);

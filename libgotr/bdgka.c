@@ -2,6 +2,7 @@
 
 #include <gcrypt.h>
 
+#include "libgotr.h"
 #include "bdgka.h"
 
 #define GOTR_SKEYSIZE (4096)
@@ -55,7 +56,7 @@ void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey)
 
 int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t denom, const gcry_mpi_t pow)
 {
-	*ret = mpi_new(GOTR_PKEYSIZE);
+	*ret = gcry_mpi_new(GOTR_PKEYSIZE);
 	if (!gcry_mpi_invm(*ret, denom, prime))
 		return 0;
 	gcry_mpi_mulm(*ret, *ret, num, prime);
@@ -63,7 +64,30 @@ int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t 
 	return 1;
 }
 
-//int gotr_gen_BD_
+int gotr_gen_BD_flake_key(struct gotr_user *user)
+{
+	gcry_mpi_t tmp = gcry_mpi_new(GOTR_PKEYSIZE);
+
+	if (!user || !user->y[0] || !user->r[1] || !user->R[0] || !user->R[1] || !user->V[1])
+		return 0;
+
+	/// @todo should we abort if the flake key already is calculated?
+	user->flake_key = gcry_mpi_new(GOTR_PKEYSIZE);
+
+	gcry_mpi_powm(user->flake_key, user->y[0], GCRYMPI_CONST_FOUR, prime);
+	gcry_mpi_powm(user->flake_key, user->flake_key, user->r[1], prime);
+
+	gcry_mpi_powm(tmp, user->R[1], GCRYMPI_CONST_THREE, prime);
+	gcry_mpi_mulm(user->flake_key, user->flake_key, tmp, prime);
+
+	gcry_mpi_powm(tmp, user->R[0], GCRYMPI_CONST_TWO, prime);
+	gcry_mpi_mulm(user->flake_key, user->flake_key, tmp, prime);
+
+	gcry_mpi_mulm(user->flake_key, user->flake_key, user->V[1], prime);
+
+	gcry_mpi_release(tmp);
+	return 1;
+}
 
 /**
  * generate a private BD key.
@@ -72,7 +96,7 @@ int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t 
  */
 static gcry_mpi_t gotr_gen_private_BD_key()
 {
-	gcry_mpi_t ret = mpi_new(GOTR_SKEYSIZE);
+	gcry_mpi_t ret = gcry_mpi_new(GOTR_SKEYSIZE);
 	do {
 		gcry_mpi_randomize(ret, GOTR_SKEYSIZE, GCRY_STRONG_RANDOM);
 	} while (!gcry_mpi_cmp_ui(ret, 0));
@@ -87,7 +111,7 @@ static gcry_mpi_t gotr_gen_private_BD_key()
  */
 static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey)
 {
-	gcry_mpi_t ret = mpi_new(GOTR_PKEYSIZE);
-	mpi_powm(ret, generator, privkey, prime);
+	gcry_mpi_t ret = gcry_mpi_new(GOTR_PKEYSIZE);
+	gcry_mpi_powm(ret, generator, privkey, prime);
 	return ret;
 }

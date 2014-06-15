@@ -47,6 +47,7 @@ struct gotr_user {
 	gcry_mpi_t y[2];
 	gcry_mpi_t R[2];
 	gcry_mpi_t V[2];
+	gcry_mpi_t flake_key;
 	struct gotr_user* next;
 };
 
