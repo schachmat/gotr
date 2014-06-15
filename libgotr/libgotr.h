@@ -37,6 +37,7 @@ typedef void (*gotr_cb_receive_usr)(const char*, const struct gotr_user*, const 
  * and @f$V_{ij1} = R_{ji1} = (\frac{y_{ji1}}{z_{ji0}})^{r_{ji1}} \mod{prime}@f$
  * @var gotr_user::next
  * link to next user in the list
+ * @todo cleanup function to free all members
  */
 struct gotr_user {
 	char *name;
