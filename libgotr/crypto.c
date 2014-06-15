@@ -10,8 +10,8 @@
 /**
  * Hash block of given size.
  *
- * @param block the data to #GNUNET_CRYPTO_hash, length is given as a second argument
- * @param size the length of the data to #GNUNET_CRYPTO_hash in @a block
+ * @param block the data to #gotr_hash, length is given as a second argument
+ * @param size the length of the data to #gotr_hash in @a block
  * @param ret pointer to where to write the hashcode
  */
 void gotr_hash(const void *block, size_t size, struct gotr_HashCode *ret)
