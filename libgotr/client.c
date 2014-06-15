@@ -9,7 +9,9 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+
 #include "libgotr.h"
+#include "bdgka.h"
 
 /* where are we talking */
 #define ROOMDIR "/tmp/gotrusers/"
@@ -127,6 +129,42 @@ main(int argc, char *argv[])
 
 	if (!gotr_init())
 		goto fail;
+
+
+
+	/// bdgka test
+	struct gotr_user u[2];
+	gotr_gen_BD_keypair(&u[0].r[0], &u[0].z[0]);
+	gotr_gen_BD_keypair(&u[0].r[1], &u[0].z[1]);
+	u[1].y[0] = u[0].z[0];
+	u[1].y[1] = u[0].z[1];
+	gotr_gen_BD_keypair(&u[1].r[0], &u[1].z[0]);
+	gotr_gen_BD_keypair(&u[1].r[1], &u[1].z[1]);
+	u[0].y[0] = u[1].z[0];
+	u[0].y[1] = u[1].z[1];
+	if (!gotr_gen_BD_X_value(&u[0].R[0], u[0].y[1], u[0].z[1], u[0].r[0]))
+		fprintf(stderr, "X0 failed\n");
+	if (!gotr_gen_BD_X_value(&u[0].R[1], u[0].z[0], u[0].y[0], u[0].r[1]))
+		fprintf(stderr, "X1 failed\n");
+	if (!gotr_gen_BD_X_value(&u[1].R[0], u[1].y[1], u[1].z[1], u[1].r[0]))
+		fprintf(stderr, "X2 failed\n");
+	if (!gotr_gen_BD_X_value(&u[1].R[1], u[1].z[0], u[1].y[0], u[1].r[1]))
+		fprintf(stderr, "X3 failed\n");
+	u[1].V[0] = u[0].R[0];
+	u[1].V[1] = u[0].R[1];
+	u[0].V[0] = u[1].R[0];
+	u[0].V[1] = u[1].R[1];
+	if (!gotr_gen_BD_flake_key(&u[0]))
+		fprintf(stderr, "f0 failed\n");
+	if (!gotr_gen_BD_flake_key(&u[1]))
+		fprintf(stderr, "f1 failed\n");
+	if (0 != gcry_mpi_cmp(u[0].flake_key, u[1].flake_key))
+		fprintf(stderr, "keys do not match\n");
+	else
+		fprintf(stderr, "bdgka flake keys match\n");
+
+
+
 
 	room = gotr_join(&send_all, &send_user, &receive_user);
 	while (1) {
