@@ -4,6 +4,7 @@
 
 #include "libgotr.h"
 #include "bdgka.h"
+#include "util.h"
 
 #define GOTR_SKEYSIZE (4096)
 #define GOTR_PKEYSIZE (GOTR_SKEYSIZE+1)
@@ -97,6 +98,7 @@ int gotr_gen_BD_flake_key(struct gotr_user *user)
 static gcry_mpi_t gotr_gen_private_BD_key()
 {
 	gcry_mpi_t ret = gcry_mpi_new(GOTR_SKEYSIZE);
+	gotr_rand_poll();
 	do {
 		gcry_mpi_randomize(ret, GOTR_SKEYSIZE, GCRY_STRONG_RANDOM);
 	} while (!gcry_mpi_cmp_ui(ret, 0));
