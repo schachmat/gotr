@@ -115,3 +115,42 @@ static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey)
 	gcry_mpi_powm(ret, generator, privkey, prime);
 	return ret;
 }
+
+/**
+ * for testing purposes only.
+ */
+//static int test()
+//{
+//	gotr_init();
+//
+//	/// bdgka test
+//	struct gotr_user u[2];
+//	gotr_gen_BD_keypair(&u[0].r[0], &u[0].z[0]);
+//	gotr_gen_BD_keypair(&u[0].r[1], &u[0].z[1]);
+//	u[1].y[0] = u[0].z[0];
+//	u[1].y[1] = u[0].z[1];
+//	gotr_gen_BD_keypair(&u[1].r[0], &u[1].z[0]);
+//	gotr_gen_BD_keypair(&u[1].r[1], &u[1].z[1]);
+//	u[0].y[0] = u[1].z[0];
+//	u[0].y[1] = u[1].z[1];
+//	if (!gotr_gen_BD_X_value(&u[0].R[0], u[0].y[1], u[0].z[1], u[0].r[0]))
+//		gotr_eprintf("X0 failed");
+//	if (!gotr_gen_BD_X_value(&u[0].R[1], u[0].z[0], u[0].y[0], u[0].r[1]))
+//		gotr_eprintf("X1 failed");
+//	if (!gotr_gen_BD_X_value(&u[1].R[0], u[1].y[1], u[1].z[1], u[1].r[0]))
+//		gotr_eprintf("X2 failed");
+//	if (!gotr_gen_BD_X_value(&u[1].R[1], u[1].z[0], u[1].y[0], u[1].r[1]))
+//		gotr_eprintf("X3 failed");
+//	u[1].V[0] = u[0].R[0];
+//	u[1].V[1] = u[0].R[1];
+//	u[0].V[0] = u[1].R[0];
+//	u[0].V[1] = u[1].R[1];
+//	if (!gotr_gen_BD_flake_key(&u[0]))
+//		gotr_eprintf("f0 failed");
+//	if (!gotr_gen_BD_flake_key(&u[1]))
+//		gotr_eprintf("f1 failed");
+//	gcry_mpi_dump(u[0].flake_key);
+//	gotr_eprintf("");
+//	gcry_mpi_dump(u[1].flake_key);
+//	return 0 == gcry_mpi_cmp(u[0].flake_key, u[1].flake_key);
+//}
