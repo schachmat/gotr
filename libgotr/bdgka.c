@@ -91,6 +91,42 @@ int gotr_gen_BD_flake_key(struct gotr_user *user)
 }
 
 /**
+ * @todo make static?
+ */
+int gotr_gen_BD_circle_key_part(gcry_mpi_t *cur, gcry_mpi_t factors[4], unsigned int pow)
+{
+	gcry_mpi_t tmp = gcry_mpi_new(GOTR_PKEYSIZE);
+	gcry_mpi_t n = gcry_mpi_set_ui(NULL, pow);
+
+	if (!cur || !(*cur) || !factors || !factors[0] || !factors [1] || !factors[2] || !factors[3] || !tmp)
+		return 0;
+
+	gcry_mpi_powm(tmp, factors[0], n, prime);
+	gcry_mpi_mulm(*cur, *cur, tmp, prime);
+
+	gcry_mpi_set_ui(n, --pow);
+	gcry_mpi_powm(tmp, factors[1], n, prime);
+	gcry_mpi_mulm(*cur, *cur, tmp, prime);
+
+	gcry_mpi_set_ui(n, --pow);
+	gcry_mpi_powm(tmp, factors[2], n, prime);
+	gcry_mpi_mulm(*cur, *cur, tmp, prime);
+
+	gcry_mpi_set_ui(n, --pow);
+	gcry_mpi_powm(tmp, factors[3], n, prime);
+	gcry_mpi_mulm(*cur, *cur, tmp, prime);
+
+	gcry_mpi_release(tmp);
+	gcry_mpi_release(n);
+	return 1;
+}
+
+int gotr_gen_BD_circle_key(gcry_mpi_t *key, const gotr_user *users)
+{
+	return 1;
+}
+
+/**
  * generate a private BD key.
  * 
  * @return The generated private BD key

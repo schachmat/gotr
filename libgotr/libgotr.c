@@ -39,6 +39,10 @@ static int gotr_send_flake_validation(struct gotr_chatroom *room, char *msg);
 static int gotr_send_msg             (struct gotr_chatroom *room, char *msg);
 
 static int (*msg_handler[GOTR_OP_MAX])(struct gotr_chatroom *, char *) = {
+	[GOTR_OP_EST_PAIR_CHANNEL] = &gotr_got_est_pair_channel,
+	[GOTR_OP_FLAKE_SEND_z] = &gotr_got_flake_y,
+	[GOTR_OP_FLAKE_SEND_R] = &gotr_got_flake_V,
+	[GOTR_OP_FLAKE_VALIDATE] = &gotr_got_flake_validation,
 	[GOTR_OP_MSG] = &gotr_got_msg,
 };
 
@@ -155,14 +159,20 @@ static int gotr_add_user(struct gotr_user *user, struct gotr_chatroom *room)
 {
 	struct gotr_user *cur;
 
-	if (!user || !room || !(cur = room->users))
+	if (!user || !room)
 		return 0;
+
+	if (!(cur = room->users)) {
+		user->next = NULL;
+		goto ins;
+	}
 
 	while (memcmp(&(user->static_pubkey), &(cur->static_pubkey),
 				sizeof(struct gotr_eddsa_public_key)) < 0)
 		cur = cur->next;
 
 	user->next = cur->next;
+ins:
 	cur->next = user;
 	return 1;
 }

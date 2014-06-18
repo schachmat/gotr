@@ -38,6 +38,8 @@ typedef void (*gotr_cb_receive_usr)(const char*, const struct gotr_user*, const 
  * @var gotr_user::next
  * link to next user in the list
  * @todo cleanup function to free all members
+ * @todo move crypto parameters to private data structure not visible/writable
+ * by host
  */
 struct gotr_user {
 	char *name;
