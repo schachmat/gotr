@@ -98,7 +98,7 @@ int gotr_gen_BD_circle_key_part(gcry_mpi_t *cur, gcry_mpi_t factors[4], unsigned
 	gcry_mpi_t tmp = gcry_mpi_new(GOTR_PKEYSIZE);
 	gcry_mpi_t n = gcry_mpi_set_ui(NULL, pow);
 
-	if (!cur || !factors || !tmp)
+	if (!cur || !(*cur) || !factors || !factors[0] || !factors [1] || !factors[2] || !factors[3] || !tmp)
 		return 0;
 
 	gcry_mpi_powm(tmp, factors[0], n, prime);
@@ -116,10 +116,12 @@ int gotr_gen_BD_circle_key_part(gcry_mpi_t *cur, gcry_mpi_t factors[4], unsigned
 	gcry_mpi_powm(tmp, factors[3], n, prime);
 	gcry_mpi_mulm(*cur, *cur, tmp, prime);
 
+	gcry_mpi_release(tmp);
+	gcry_mpi_release(n);
 	return 1;
 }
 
-int gotr_gen_BD_circle_key()
+int gotr_gen_BD_circle_key(gcry_mpi_t *key, const gotr_user *users)
 {
 	return 1;
 }
