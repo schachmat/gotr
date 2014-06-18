@@ -86,7 +86,7 @@ void test_symmetric() {
 	struct gotr_SymmetricSessionKey *key;
 	struct gotr_SymmetricInitializationVector *iv;
 	char salt[] = "ejhbjhbsefjhb";
-	char data[] = "omg lol kthxbye";
+	char data[] = "omg lol kthxbye, sr87rn!/&!NF)$§)Fb∫√∫~s";
 	unsigned char *data_encrypted;
 	char *data_decrypted;
 	
@@ -104,15 +104,14 @@ void test_symmetric() {
 	print_hex("aes iv   ", iv->aes_iv, sizeof(iv->aes_iv));
 	print_hex("twofish iv", iv->twofish_iv, sizeof(iv->twofish_iv));
 	
-	printf("data: %s\n", data);
-	
 	data_encrypted = malloc(sizeof(data));
 	gotr_symmetric_encrypt(data, sizeof(data), key, iv, data_encrypted);
 	print_hex("data encrypted", data_encrypted, sizeof(data));
 	
 	data_decrypted = malloc(sizeof(data));
 	gotr_symmetric_decrypt(data_encrypted, sizeof(data), key, iv, data_decrypted);
-	printf("data: %s\n", data_decrypted);
+	printf("data before:\t%s\n", data);
+	printf("data after:\t%s\n", data_decrypted);
 	
 	printf("\n\n");
 }
