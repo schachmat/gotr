@@ -121,7 +121,7 @@ int gotr_gen_BD_circle_key_part(gcry_mpi_t *cur, gcry_mpi_t factors[4], unsigned
 	return 1;
 }
 
-int gotr_gen_BD_circle_key(gcry_mpi_t *key, const gotr_user *users)
+int gotr_gen_BD_circle_key(gcry_mpi_t *key, const struct gotr_user *users)
 {
 	return 1;
 }
