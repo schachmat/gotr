@@ -26,7 +26,7 @@
 #define GOTR_STATE_FLAKE_GOT_V         ((char)3)
 #define GOTR_STATE_FLAKE_VALIDATED     ((char)4)
 
-struct gotr_user *gotr_new_user(struct gotr_chatroom *room, char *name, char state);
+static struct gotr_user *gotr_new_user(struct gotr_chatroom *room, char *name);
 
 static int gotr_got_est_pair_channel(struct gotr_chatroom *room, char *msg);
 static int gotr_got_flake_y         (struct gotr_chatroom *room, char *msg);
@@ -169,7 +169,7 @@ void gotr_user_joined(struct gotr_chatroom *room, char *name) {
 	struct gotr_eddsa_public_key *message_dsa_pub_key;
 	char *b64_message;
 	
-	user = gotr_new_user(room, name, GOTR_STATE_UNKNOWN);
+	user = gotr_new_user(room, name);
 	
 	message_size = sizeof(unsigned char) + sizeof(struct gotr_EcdhePublicKey) + sizeof(struct gotr_EddsaSignature) + sizeof(struct gotr_eddsa_public_key);
 	message = malloc(message_size);
@@ -194,25 +194,16 @@ void gotr_user_joined(struct gotr_chatroom *room, char *name) {
 	free(message);
 }
 
-struct gotr_user *gotr_new_user(struct gotr_chatroom *room, char *name, char state)
+struct gotr_user *gotr_new_user(struct gotr_chatroom *room, char *name)
 {
 	struct gotr_user *user;
-	
-	user = malloc(sizeof(struct gotr_user));
-	user->state = GOTR_STATE_UNKNOWN;
 
-	if (!user || !room)
+	if (!room || !(user = malloc(sizeof(struct gotr_user))))
 		return NULL;
 
-	if (!room->users) {
-		user->next = NULL;
-		room->users = user;
-	} else {
-		user->next = room->users;
-		room->users = user;
-	}
-
-	return user;
+	user->state = GOTR_STATE_UNKNOWN;
+	user->next = room->users;
+	return room->users = user;
 }
 
 void gotr_leave(struct gotr_chatroom *room)
