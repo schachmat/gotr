@@ -75,8 +75,10 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send
 	room->send_usr = send_usr;
 	room->receive_usr = receive_usr;
 	
+	gotr_eprintf("generating keypair, please wait...");
 	gotr_eddsa_key_create(&room->my_priv_key);
 	gotr_eddsa_key_get_public(&room->my_priv_key, &room->my_pub_key);
+	gotr_eprintf("done generating keypair.");
 
 	return room;
 }
@@ -162,34 +164,38 @@ int gotr_receive(struct gotr_chatroom *room, char *message)
 void gotr_user_joined(struct gotr_chatroom *room, char *name) {
 	int err;
 	struct gotr_user *user;
-	unsigned char *message; //op + dhe_pub_key + signature + dsa_pub_key
+	unsigned char *message;
 	size_t message_size;
 	struct gotr_EcdhePublicKey *message_dhe_pub_key;
 	struct gotr_EddsaSignature *message_signature;
 	struct gotr_eddsa_public_key *message_dsa_pub_key;
 	char *b64_message;
-	
+
 	user = gotr_new_user(room, name);
-	
-	message_size = sizeof(unsigned char) + sizeof(struct gotr_EcdhePublicKey) + sizeof(struct gotr_EddsaSignature) + sizeof(struct gotr_eddsa_public_key);
+
+	message_size = sizeof(unsigned char)        // op
+		+ sizeof(struct gotr_EcdhePublicKey)    // DH public key
+		+ sizeof(struct gotr_EddsaSignature)    // signature
+		+ sizeof(struct gotr_eddsa_public_key); // public key for signature
+	gotr_eprintf("msgsiz: %d", (int)message_size);
 	message = malloc(message_size);
-	
+
 	*message = GOTR_OP_EST_PAIR_CHANNEL;
-	
+
 	gotr_ecdhe_key_create(&user->dhe_privkey);
 	message_dhe_pub_key = (struct gotr_EcdhePublicKey *)(message + 1);
 	gotr_ecdhe_key_get_public(&user->dhe_privkey, message_dhe_pub_key);
-	
+
 	message_signature = (struct gotr_EddsaSignature *)(message_dhe_pub_key + 1);
 	err = gotr_eddsa_sign(&room->my_priv_key, message, sizeof(unsigned char) + sizeof(struct gotr_EcdhePublicKey), message_signature);
-	
+
 	message_dsa_pub_key = (struct gotr_eddsa_public_key *)(message_signature + 1);
 	memcpy(message_dsa_pub_key, &room->my_pub_key, sizeof(struct gotr_EcdhePublicKey));
-	
+
 	b64_message = otrl_base64_otr_encode(message, message_size);
-	
+
 	room->send_usr(room, user, b64_message);
-	
+
 	free(b64_message);
 	free(message);
 }
