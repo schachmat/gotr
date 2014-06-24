@@ -95,6 +95,200 @@ void gotr_mpi_scan_unsigned(gcry_mpi_t *result, const void *data, size_t size)
 
 // --- EdDSA ---
 
+static int key_from_sexp(gcry_mpi_t * array, gcry_sexp_t sexp, const char *topname, const char *elems);
+static gcry_sexp_t decode_private_eddsa_key(const struct gotr_eddsa_private_key *priv);
+static gcry_sexp_t data_to_eddsa_value(const void *block, size_t size);
+
+/**
+ * Create a new private key.
+ *
+ * @param priv where to write the private key
+ */
+	void
+gotr_eddsa_key_create(struct gotr_eddsa_private_key *priv)
+{
+	gcry_sexp_t priv_sexp;
+	gcry_sexp_t s_keyparam;
+	gcry_mpi_t d; 
+	int rc;
+
+	if (0 != (rc = gcry_sexp_build(&s_keyparam, NULL,
+					"(genkey(ecc(curve \"" CURVE "\")"
+					"(flags eddsa)))")))
+	{
+		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_sexp_build", rc);
+		return;
+	}
+	if (0 != (rc = gcry_pk_genkey(&priv_sexp, s_keyparam)))
+	{
+		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_pk_genkey", rc);
+		gcry_sexp_release(s_keyparam);
+		return;
+	}
+	gcry_sexp_release(s_keyparam);
+#if EXTRA_CHECKS
+	if (0 != (rc = gcry_pk_testkey(priv_sexp)))
+	{
+		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_pk_testkey", rc);
+		gcry_sexp_release(priv_sexp);
+		return;
+	}
+#endif
+	if (0 != (rc = key_from_sexp(&d, priv_sexp, "private-key", "d")))
+	{
+		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "key_from_sexp", rc);
+		gcry_sexp_release(priv_sexp);
+		return;
+	}
+	gcry_sexp_release(priv_sexp);
+	gotr_mpi_print_unsigned(priv->d, sizeof(priv->d), d);
+	gcry_mpi_release(d);
+}
+
+/**
+ * Extract the public key for the given private key.
+ *
+ * @param priv the private key
+ * @param pub where to write the public key
+ */
+	void
+gotr_eddsa_key_get_public(const struct gotr_eddsa_private_key *priv,
+		struct gotr_eddsa_public_key *pub)
+{
+	gcry_sexp_t sexp;
+	gcry_ctx_t ctx;
+	gcry_mpi_t q;
+
+	sexp = decode_private_eddsa_key(priv);
+	//GNUNET_assert (NULL != sexp);
+	/*GNUNET_assert (0 == */gcry_mpi_ec_new(&ctx, sexp, NULL);//);
+	gcry_sexp_release(sexp);
+	q = gcry_mpi_ec_get_mpi("q@eddsa", ctx, 0);
+	//GNUNET_assert (q);
+	gotr_mpi_print_unsigned(pub->q_y, sizeof(pub->q_y), q);
+	gcry_mpi_release(q);
+	gcry_ctx_release(ctx);
+}
+
+/**
+ * Sign a given block.
+ *
+ * @param priv private key to use for the signing
+ * @param block the data to sign
+ * @param size length of the block to sign
+ * @param sig where to write the signature
+ * @return #GNUNET_SYSERR on error, #GNUNET_OK on success
+ */
+	int
+gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv,
+		const void *block, size_t size,
+		struct gotr_EddsaSignature *sig)
+{
+	gcry_sexp_t priv_sexp;
+	gcry_sexp_t sig_sexp;
+	gcry_sexp_t data;
+	int rc;
+	gcry_mpi_t rs[2];
+
+	priv_sexp = decode_private_eddsa_key(priv);
+	data = data_to_eddsa_value(block, size);
+	if (0 != (rc = gcry_pk_sign(&sig_sexp, data, priv_sexp)))
+	{
+		/*LOG (GNUNET_ERROR_TYPE_WARNING,
+		  _("EdDSA signing failed at %s:%d: %s\n"), __FILE__,
+		  __LINE__, gcry_strerror (rc));*/
+		gcry_sexp_release(data);
+		gcry_sexp_release(priv_sexp);
+		//return GNUNET_SYSERR;
+		return -1;
+	}
+	gcry_sexp_release(priv_sexp);
+	gcry_sexp_release(data);
+
+	/* extract 'r' and 's' values from sexpression 'sig_sexp' and store in
+	   'signature' */
+	if (0 != (rc = key_from_sexp(rs, sig_sexp, "sig-val", "rs")))
+	{
+		//GNUNET_break (0);
+		gcry_sexp_release(sig_sexp);
+		//return GNUNET_SYSERR;
+		return -1;
+	}
+	gcry_sexp_release(sig_sexp);
+	gotr_mpi_print_unsigned(sig->r, sizeof(sig->r), rs[0]);
+	gotr_mpi_print_unsigned(sig->s, sizeof(sig->s), rs[1]);
+	gcry_mpi_release(rs[0]);
+	gcry_mpi_release(rs[1]);
+	//return GNUNET_OK;
+	return 1;
+}
+
+/**
+ * Verify signature.
+ *
+ * @param block the data to validate
+ * @param the length of the block
+ * @param sig signature that is being validated
+ * @param pub public key of the signer
+ * @returns #GNUNET_OK if ok, #GNUNET_SYSERR if invalid
+ */
+	int
+gotr_eddsa_verify(const struct gotr_eddsa_public_key *pub,
+		const void *block, size_t size,
+		const struct gotr_EddsaSignature *sig)
+{
+	gcry_sexp_t data;
+	gcry_sexp_t sig_sexpr;
+	gcry_sexp_t pub_sexpr;
+	int rc;
+
+	/* build s-expression for signature */
+	if (0 != (rc = gcry_sexp_build(&sig_sexpr, NULL,
+					"(sig-val(eddsa(r %b)(s %b)))",
+					(int)sizeof(sig->r), sig->r,
+					(int)sizeof(sig->s), sig->s)))
+	{
+		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_sexp_build", rc);
+		//return GNUNET_SYSERR;
+		return -1;
+	}
+	data = data_to_eddsa_value(block, size);
+	if (0 != (rc = gcry_sexp_build(&pub_sexpr, NULL,
+					"(public-key(ecc(curve " CURVE ")(q %b)))",
+					(int)sizeof(pub->q_y), pub->q_y)))
+	{
+		gcry_sexp_release(data);
+		gcry_sexp_release(sig_sexpr);
+		//return GNUNET_SYSERR;
+		return -1;
+	}
+	rc = gcry_pk_verify(sig_sexpr, data, pub_sexpr);
+	gcry_sexp_release(pub_sexpr);
+	gcry_sexp_release(data);
+	gcry_sexp_release(sig_sexpr);
+	if (0 != rc)
+	{
+		/*LOG (GNUNET_ERROR_TYPE_INFO,
+		  _("EdDSA signature verification failed at %s:%d: %s\n"), __FILE__,
+		  __LINE__, gcry_strerror (rc));*/
+		//return GNUNET_SYSERR;
+		return -1;
+	}
+	//return GNUNET_OK;
+	return 1;
+}
+
+/**
+ * Clear memory that was used to store a private key.
+ *
+ * @param priv location of the key
+ */
+	void
+gotr_eddsa_key_clear(struct gotr_eddsa_private_key *priv)
+{
+	memset(priv, 0, sizeof(struct gotr_eddsa_private_key));
+}
+
 /**
  * Extract values from an S-expression.
  *
@@ -180,107 +374,22 @@ decode_private_eddsa_key(const struct gotr_eddsa_private_key *priv)
 }
 
 /**
- * Extract the public key for the given private key.
- *
- * @param priv the private key
- * @param pub where to write the public key
- */
-	void
-gotr_eddsa_key_get_public(const struct gotr_eddsa_private_key *priv,
-		struct gotr_eddsa_public_key *pub)
-{
-	gcry_sexp_t sexp;
-	gcry_ctx_t ctx;
-	gcry_mpi_t q;
-
-	sexp = decode_private_eddsa_key(priv);
-	//GNUNET_assert (NULL != sexp);
-	/*GNUNET_assert (0 == */gcry_mpi_ec_new(&ctx, sexp, NULL);//);
-	gcry_sexp_release(sexp);
-	q = gcry_mpi_ec_get_mpi("q@eddsa", ctx, 0);
-	//GNUNET_assert (q);
-	gotr_mpi_print_unsigned(pub->q_y, sizeof(pub->q_y), q);
-	gcry_mpi_release(q);
-	gcry_ctx_release(ctx);
-}
-
-/**
- * @ingroup crypto
- * Clear memory that was used to store a private key.
- *
- * @param pk location of the key
- */
-	void
-gotr_eddsa_key_clear(struct gotr_eddsa_private_key *pk)
-{
-	memset(pk, 0, sizeof(struct gotr_eddsa_private_key));
-}
-
-/**
- * Create a new private key. Caller must free return value.
- *
- * @return fresh private key
- */
-	struct gotr_eddsa_private_key *
-gotr_eddsa_key_create()
-{
-	struct gotr_eddsa_private_key *priv;
-	gcry_sexp_t priv_sexp;
-	gcry_sexp_t s_keyparam;
-	gcry_mpi_t d;
-	int rc;
-
-	if (0 != (rc = gcry_sexp_build(&s_keyparam, NULL,
-					"(genkey(ecc(curve \"" CURVE "\")"
-					"(flags eddsa)))")))
-	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_sexp_build", rc);
-		return NULL;
-	}
-	if (0 != (rc = gcry_pk_genkey(&priv_sexp, s_keyparam)))
-	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_pk_genkey", rc);
-		gcry_sexp_release(s_keyparam);
-		return NULL;
-	}
-	gcry_sexp_release(s_keyparam);
-#if EXTRA_CHECKS
-	if (0 != (rc = gcry_pk_testkey(priv_sexp)))
-	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_pk_testkey", rc);
-		gcry_sexp_release(priv_sexp);
-		return NULL;
-	}
-#endif
-	if (0 != (rc = key_from_sexp(&d, priv_sexp, "private-key", "d")))
-	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "key_from_sexp", rc);
-		gcry_sexp_release(priv_sexp);
-		return NULL;
-	}
-	gcry_sexp_release(priv_sexp);
-	priv = malloc(sizeof(struct gotr_eddsa_private_key));
-	gotr_mpi_print_unsigned(priv->d, sizeof(priv->d), d);
-	gcry_mpi_release(d);
-	return priv;
-}
-
-/**
- * Convert the data specified in the given purpose argument to an
+ * Convert the data specified in the given block argument to an
  * S-expression suitable for signature operations.
  *
- * @param purpose data to convert
+ * @param block the data to convert
+ * @param size the length of the block
  * @return converted s-expression
  */
 	static gcry_sexp_t
-data_to_eddsa_value(const struct gotr_EccSignaturePurpose *purpose)
+data_to_eddsa_value(const void *block, size_t size)
 {
 	struct gotr_HashCode hc;
-	gcry_sexp_t data;
+	gcry_sexp_t expr;
 	int rc;
 
-	gotr_hash(purpose, ntohl(purpose->size), &hc);
-	if (0 != (rc = gcry_sexp_build(&data, NULL,
+	gotr_hash(block, size, &hc);
+	if (0 != (rc = gcry_sexp_build(&expr, NULL,
 					"(data(flags eddsa)(hash-algo %s)(value %b))",
 					"sha512",
 					(int)sizeof(hc), &hc)))
@@ -288,157 +397,59 @@ data_to_eddsa_value(const struct gotr_EccSignaturePurpose *purpose)
 		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_sexp_build", rc);
 		return NULL;
 	}
-	return data;
-}
-
-/**
- * Sign a given block.
- *
- * @param priv private key to use for the signing
- * @param purpose what to sign (size, purpose)
- * @param sig where to write the signature
- * @return #GNUNET_SYSERR on error, #GNUNET_OK on success
- */
-	int
-gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv,
-		const struct gotr_EccSignaturePurpose *purpose,
-		struct gotr_EddsaSignature *sig)
-{
-	gcry_sexp_t priv_sexp;
-	gcry_sexp_t sig_sexp;
-	gcry_sexp_t data;
-	int rc;
-	gcry_mpi_t rs[2];
-
-	priv_sexp = decode_private_eddsa_key(priv);
-	data = data_to_eddsa_value(purpose);
-	if (0 != (rc = gcry_pk_sign(&sig_sexp, data, priv_sexp)))
-	{
-		/*LOG (GNUNET_ERROR_TYPE_WARNING,
-		  _("EdDSA signing failed at %s:%d: %s\n"), __FILE__,
-		  __LINE__, gcry_strerror (rc));*/
-		gcry_sexp_release(data);
-		gcry_sexp_release(priv_sexp);
-		//return GNUNET_SYSERR;
-		return -1;
-	}
-	gcry_sexp_release(priv_sexp);
-	gcry_sexp_release(data);
-
-	/* extract 'r' and 's' values from sexpression 'sig_sexp' and store in
-	   'signature' */
-	if (0 != (rc = key_from_sexp(rs, sig_sexp, "sig-val", "rs")))
-	{
-		//GNUNET_break (0);
-		gcry_sexp_release(sig_sexp);
-		//return GNUNET_SYSERR;
-		return -1;
-	}
-	gcry_sexp_release(sig_sexp);
-	gotr_mpi_print_unsigned(sig->r, sizeof(sig->r), rs[0]);
-	gotr_mpi_print_unsigned(sig->s, sizeof(sig->s), rs[1]);
-	gcry_mpi_release(rs[0]);
-	gcry_mpi_release(rs[1]);
-	//return GNUNET_OK;
-	return 1;
-}
-
-/**
- * Verify signature.
- *
- * @param purpose what is the purpose that the signature should have?
- * @param validate block to validate (size, purpose, data)
- * @param sig signature that is being validated
- * @param pub public key of the signer
- * @returns #GNUNET_OK if ok, #GNUNET_SYSERR if invalid
- */
-	int
-gotr_eddsa_verify(uint32_t purpose,
-		const struct gotr_EccSignaturePurpose *validate,
-		const struct gotr_EddsaSignature *sig,
-		const struct gotr_eddsa_public_key *pub)
-{
-	gcry_sexp_t data;
-	gcry_sexp_t sig_sexpr;
-	gcry_sexp_t pub_sexpr;
-	int rc;
-
-	if (purpose != ntohl(validate->purpose)) {
-		//return GNUNET_SYSERR;       /* purpose mismatch */
-		return -1;
-	}
-
-
-	/* build s-expression for signature */
-	if (0 != (rc = gcry_sexp_build(&sig_sexpr, NULL,
-					"(sig-val(eddsa(r %b)(s %b)))",
-					(int)sizeof(sig->r), sig->r,
-					(int)sizeof(sig->s), sig->s)))
-	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_sexp_build", rc);
-		//return GNUNET_SYSERR;
-		return -1;
-	}
-	data = data_to_eddsa_value(validate);
-	if (0 != (rc = gcry_sexp_build(&pub_sexpr, NULL,
-					"(public-key(ecc(curve " CURVE ")(q %b)))",
-					(int)sizeof(pub->q_y), pub->q_y)))
-	{
-		gcry_sexp_release(data);
-		gcry_sexp_release(sig_sexpr);
-		//return GNUNET_SYSERR;
-		return -1;
-	}
-	rc = gcry_pk_verify(sig_sexpr, data, pub_sexpr);
-	gcry_sexp_release(pub_sexpr);
-	gcry_sexp_release(data);
-	gcry_sexp_release(sig_sexpr);
-	if (0 != rc)
-	{
-		/*LOG (GNUNET_ERROR_TYPE_INFO,
-		  _("EdDSA signature verification failed at %s:%d: %s\n"), __FILE__,
-		  __LINE__, gcry_strerror (rc));*/
-		//return GNUNET_SYSERR;
-		return -1;
-	}
-	//return GNUNET_OK;
-	return 1;
+	return expr;
 }
 
 
 
 // --- ECDHE ---
 
+static gcry_sexp_t decode_private_ecdhe_key(const struct gotr_EcdhePrivateKey *priv);
+
 /**
- * Convert the given private key from the network format to the
- * S-expression that can be used by libgcrypt.
+ * Create a new private key.
  *
- * @param priv private key to decode
- * @return NULL on error
+ * @param priv where to write the private key
  */
-	static gcry_sexp_t
-decode_private_ecdhe_key(const struct gotr_EcdhePrivateKey *priv)
+	void
+gotr_ecdhe_key_create(struct gotr_EcdhePrivateKey *priv)
 {
-	gcry_sexp_t result;
+	gcry_sexp_t priv_sexp;
+	gcry_sexp_t s_keyparam;
+	gcry_mpi_t d;
 	int rc;
 
-	rc = gcry_sexp_build(&result, NULL,
-			"(private-key(ecc(curve \"" CURVE "\")"
-			"(d %b)))",
-			(int)sizeof(priv->d), priv->d);
-	if (0 != rc)
+	if (0 != (rc = gcry_sexp_build(&s_keyparam, NULL,
+					"(genkey(ecc(curve \"" CURVE "\")"
+					"(flags)))")))
 	{
 		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_sexp_build", rc);
-		//GNUNET_assert (0);
+		return;
 	}
+	if (0 != (rc = gcry_pk_genkey(&priv_sexp, s_keyparam)))
+	{
+		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_pk_genkey", rc);
+		gcry_sexp_release(s_keyparam);
+		return;
+	}
+	gcry_sexp_release(s_keyparam);
 #if EXTRA_CHECKS
-	if (0 != (rc = gcry_pk_testkey(result)))
+	if (0 != (rc = gcry_pk_testkey(priv_sexp)))
 	{
 		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_pk_testkey", rc);
-		//GNUNET_assert (0);
+		gcry_sexp_release(priv_sexp);
+		return;
 	}
 #endif
-	return result;
+	if (0 != (rc = key_from_sexp(&d, priv_sexp, "private-key", "d")))
+	{
+		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "key_from_sexp", rc);
+		gcry_sexp_release(priv_sexp);
+		return;
+	}
+	gcry_sexp_release(priv_sexp);
+	gotr_mpi_print_unsigned(priv->d, sizeof(priv->d), d);
+	gcry_mpi_release(d);
 }
 
 /**
@@ -464,67 +475,6 @@ gotr_ecdhe_key_get_public(const struct gotr_EcdhePrivateKey *priv,
 	gotr_mpi_print_unsigned(pub->q_y, sizeof(pub->q_y), q);
 	gcry_mpi_release(q);
 	gcry_ctx_release(ctx);
-}
-
-/**
- * @ingroup crypto
- * Clear memory that was used to store a private key.
- *
- * @param pk location of the key
- */
-	void
-gotr_ecdhe_key_clear(struct gotr_EcdhePrivateKey *pk)
-{
-	memset(pk, 0, sizeof(struct gotr_EcdhePrivateKey));
-}
-
-/**
- * Create a new private key. Caller must free return value.
- *
- * @return fresh private key
- */
-	struct gotr_EcdhePrivateKey *
-gotr_ecdhe_key_create()
-{
-	struct gotr_EcdhePrivateKey *priv;
-	gcry_sexp_t priv_sexp;
-	gcry_sexp_t s_keyparam;
-	gcry_mpi_t d;
-	int rc;
-
-	if (0 != (rc = gcry_sexp_build(&s_keyparam, NULL,
-					"(genkey(ecc(curve \"" CURVE "\")"
-					"(flags)))")))
-	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_sexp_build", rc);
-		return NULL;
-	}
-	if (0 != (rc = gcry_pk_genkey(&priv_sexp, s_keyparam)))
-	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_pk_genkey", rc);
-		gcry_sexp_release(s_keyparam);
-		return NULL;
-	}
-	gcry_sexp_release(s_keyparam);
-#if EXTRA_CHECKS
-	if (0 != (rc = gcry_pk_testkey(priv_sexp)))
-	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_pk_testkey", rc);
-		gcry_sexp_release(priv_sexp);
-		return NULL;
-	}
-#endif
-	if (0 != (rc = key_from_sexp(&d, priv_sexp, "private-key", "d")))
-	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "key_from_sexp", rc);
-		gcry_sexp_release(priv_sexp);
-		return NULL;
-	}
-	gcry_sexp_release(priv_sexp);
-	priv = malloc(sizeof(struct gotr_EcdhePrivateKey));
-	gotr_mpi_print_unsigned(priv->d, sizeof(priv->d), d);
-	gcry_mpi_release(d);
-	return priv;
 }
 
 /**
@@ -596,6 +546,50 @@ gotr_ecc_ecdh(const struct gotr_EcdhePrivateKey *priv,
 	gcry_mpi_release(result_x);
 	//return GNUNET_OK;
 	return 1;
+}
+
+/**
+ * @ingroup crypto
+ * Clear memory that was used to store a private key.
+ *
+ * @param pk location of the key
+ */
+	void
+gotr_ecdhe_key_clear(struct gotr_EcdhePrivateKey *pk)
+{
+	memset(pk, 0, sizeof(struct gotr_EcdhePrivateKey));
+}
+
+/**
+ * Convert the given private key from the network format to the
+ * S-expression that can be used by libgcrypt.
+ *
+ * @param priv private key to decode
+ * @return NULL on error
+ */
+	static gcry_sexp_t
+decode_private_ecdhe_key(const struct gotr_EcdhePrivateKey *priv)
+{
+	gcry_sexp_t result;
+	int rc;
+
+	rc = gcry_sexp_build(&result, NULL,
+			"(private-key(ecc(curve \"" CURVE "\")"
+			"(d %b)))",
+			(int)sizeof(priv->d), priv->d);
+	if (0 != rc)
+	{
+		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_sexp_build", rc);
+		//GNUNET_assert (0);
+	}
+#if EXTRA_CHECKS
+	if (0 != (rc = gcry_pk_testkey(result)))
+	{
+		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_pk_testkey", rc);
+		//GNUNET_assert (0);
+	}
+#endif
+	return result;
 }
 
 

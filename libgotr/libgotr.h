@@ -3,9 +3,9 @@
 struct gotr_chatroom;
 struct gotr_user;
 
-typedef int (*gotr_cb_send_all)(const char*, const struct gotr_chatroom*);
-typedef int (*gotr_cb_send_usr)(const char*, const struct gotr_user*);
-typedef void (*gotr_cb_receive_usr)(const char*, const struct gotr_user*, const struct gotr_chatroom*);
+typedef int (*gotr_cb_send_all)(const struct gotr_chatroom *room, const char *message);
+typedef int (*gotr_cb_send_usr)(const struct gotr_chatroom *room, const struct gotr_user *user, const char *message);
+typedef void (*gotr_cb_receive_usr)(const struct gotr_chatroom *room, const struct gotr_user *user, const char *message);
 
 /**
  * stores key material and other information related to a specific user
@@ -45,6 +45,8 @@ struct gotr_user {
 	char *name;
 	char state;
 	struct gotr_eddsa_public_key static_pubkey;
+	struct gotr_EcdhePrivateKey dhe_privkey;
+	struct gotr_EcdhePublicKey dhe_pubkey;
 	gcry_mpi_t r[2];
 	gcry_mpi_t z[2];
 	gcry_mpi_t y[2];
@@ -57,6 +59,8 @@ struct gotr_user {
 struct gotr_chatroom {
 	//sid
 
+	struct gotr_eddsa_private_key my_priv_key;  //TODO is it secure to copy the private key around? -> pointer? use secure mem.?
+	struct gotr_eddsa_public_key my_pub_key;
 	struct gotr_user *users;         ///< a list of all users in the room
 	gotr_cb_send_all send_all;       ///< callback to send a message to every participant in this room
 	gotr_cb_send_usr send_usr;       ///< callback to send a message to a specific user
@@ -65,6 +69,7 @@ struct gotr_chatroom {
 
 int gotr_init();
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr, gotr_cb_receive_usr receive_usr);
+void gotr_user_joined(struct gotr_chatroom *room, char *name);
 void gotr_keyupdate(struct gotr_chatroom *room);
 int gotr_send(struct gotr_chatroom *room, char *message);
 int gotr_receive(struct gotr_chatroom *room, char *message);

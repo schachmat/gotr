@@ -32,22 +32,16 @@ struct gotr_eddsa_public_key {
 	unsigned char q_y[256 / 8];
 };
 
-struct gotr_EccSignaturePurpose {
-	uint32_t size;// GNUNET_PACKED;
-	uint32_t purpose;// GNUNET_PACKED;
-};
-
 struct gotr_EddsaSignature {
 	unsigned char r[256 / 8];
 	unsigned char s[256 / 8];
 };
 
+void gotr_eddsa_key_create(struct gotr_eddsa_private_key *priv);
 void gotr_eddsa_key_get_public(const struct gotr_eddsa_private_key *priv, struct gotr_eddsa_public_key *pub);
-//char *gotr_eddsa_public_key_to_string(const struct gotr_eddsa_public_key *pub);
-void gotr_eddsa_key_clear(struct gotr_eddsa_private_key *pk);
-struct gotr_eddsa_private_key *gotr_eddsa_key_create();
-int gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv, const struct gotr_EccSignaturePurpose *purpose, struct gotr_EddsaSignature *sig);
-int gotr_eddsa_verify(uint32_t purpose, const struct gotr_EccSignaturePurpose *validate, const struct gotr_EddsaSignature *sig, const struct gotr_eddsa_public_key *pub);
+int gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv, const void *block, size_t size, struct gotr_EddsaSignature *sig);
+int gotr_eddsa_verify(const struct gotr_eddsa_public_key *pub, const void *block, size_t size, const struct gotr_EddsaSignature *sig);
+void gotr_eddsa_key_clear(struct gotr_eddsa_private_key *priv);
 
 
 
@@ -61,10 +55,10 @@ struct gotr_EcdhePublicKey {
 	unsigned char q_y[256 / 8];
 };
 
+void gotr_ecdhe_key_create(struct gotr_EcdhePrivateKey *priv);
 void gotr_ecdhe_key_get_public(const struct gotr_EcdhePrivateKey *priv, struct gotr_EcdhePublicKey *pub);
-void gotr_ecdhe_key_clear(struct gotr_EcdhePrivateKey *pk);
-struct gotr_EcdhePrivateKey *gotr_ecdhe_key_create();
 int gotr_ecc_ecdh(const struct gotr_EcdhePrivateKey *priv, const struct gotr_EcdhePublicKey *pub, struct gotr_HashCode *key_material);
+void gotr_ecdhe_key_clear(struct gotr_EcdhePrivateKey *priv);
 
 
 
