@@ -20,31 +20,25 @@
 #define GOTR_OP_MSG              ((unsigned char)4)
 #define GOTR_OP_MAX              ((unsigned char)5)
 
-#define GOTR_STATE_UNKNOWN             ((char)0)
-#define GOTR_STATE_CHANNEL_ESTABLISHED ((char)1)
-#define GOTR_STATE_FLAKE_GOT_y         ((char)2)
-#define GOTR_STATE_FLAKE_GOT_V         ((char)3)
-#define GOTR_STATE_FLAKE_VALIDATED     ((char)4)
-
 static struct gotr_user *gotr_new_user(struct gotr_chatroom *room, char *name);
 
-static int gotr_got_est_pair_channel(struct gotr_chatroom *room, char *msg);
-static int gotr_got_flake_y         (struct gotr_chatroom *room, char *msg);
-static int gotr_got_flake_V         (struct gotr_chatroom *room, char *msg);
-static int gotr_got_flake_validation(struct gotr_chatroom *room, char *msg);
-static int gotr_got_msg             (struct gotr_chatroom *room, char *msg);
-static int gotr_send_est_pair_channel(struct gotr_chatroom *room, char *msg);
-static int gotr_send_flake_z         (struct gotr_chatroom *room, char *msg);
-static int gotr_send_flake_R         (struct gotr_chatroom *room, char *msg);
-static int gotr_send_flake_validation(struct gotr_chatroom *room, char *msg);
-static int gotr_send_msg             (struct gotr_chatroom *room, char *msg);
+static int gotr_parse_est_pair_channel(struct gotr_chatroom *room, char *msg);
+static int gotr_parse_flake_y         (struct gotr_chatroom *room, char *msg);
+static int gotr_parse_flake_V         (struct gotr_chatroom *room, char *msg);
+static int gotr_parse_flake_validation(struct gotr_chatroom *room, char *msg);
+static int gotr_parse_msg             (struct gotr_chatroom *room, char *msg);
+static int gotr_pack_est_pair_channel(struct gotr_chatroom *room, char *msg);
+static int gotr_pack_flake_z         (struct gotr_chatroom *room, char *msg);
+static int gotr_pack_flake_R         (struct gotr_chatroom *room, char *msg);
+static int gotr_pack_flake_validation(struct gotr_chatroom *room, char *msg);
+static int gotr_pack_msg             (struct gotr_chatroom *room, char *msg);
 
 static int (*msg_handler[GOTR_OP_MAX])(struct gotr_chatroom *, char *) = {
-	[GOTR_OP_EST_PAIR_CHANNEL] = &gotr_got_est_pair_channel,
-	[GOTR_OP_FLAKE_SEND_z] = &gotr_got_flake_y,
-	[GOTR_OP_FLAKE_SEND_R] = &gotr_got_flake_V,
-	[GOTR_OP_FLAKE_VALIDATE] = &gotr_got_flake_validation,
-	[GOTR_OP_MSG] = &gotr_got_msg,
+	[GOTR_OP_EST_PAIR_CHANNEL] = &gotr_parse_est_pair_channel,
+	[GOTR_OP_FLAKE_SEND_z] = &gotr_parse_flake_y,
+	[GOTR_OP_FLAKE_SEND_R] = &gotr_parse_flake_V,
+	[GOTR_OP_FLAKE_VALIDATE] = &gotr_parse_flake_validation,
+	[GOTR_OP_MSG] = &gotr_parse_msg,
 };
 
 int gotr_init()
@@ -109,27 +103,27 @@ fail:
 	return ret;
 }
 
-static int gotr_got_est_pair_channel(struct gotr_chatroom *room, char *msg)
+static int gotr_parse_est_pair_channel(struct gotr_chatroom *room, char *msg)
 {
 	return 1;
 }
 
-static int gotr_got_flake_y(struct gotr_chatroom *room, char *msg)
+static int gotr_parse_flake_y(struct gotr_chatroom *room, char *msg)
 {
 	return 1;
 }
 
-static int gotr_got_flake_V(struct gotr_chatroom *room, char *msg)
+static int gotr_parse_flake_V(struct gotr_chatroom *room, char *msg)
 {
 	return 1;
 }
 
-static int gotr_got_flake_validation(struct gotr_chatroom *room, char *msg)
+static int gotr_parse_flake_validation(struct gotr_chatroom *room, char *msg)
 {
 	return 1;
 }
 
-static int gotr_got_msg(struct gotr_chatroom *room, char *msg)
+static int gotr_parse_msg(struct gotr_chatroom *room, char *msg)
 {
 	gotr_eprintf("got \"anonymous\" massage: %s", ++msg);
 	return 1;
@@ -161,6 +155,10 @@ int gotr_receive(struct gotr_chatroom *room, char *message)
 	return 1;
 }
 
+/**
+ * @brief BLABLA
+ * @todo error checking, docu, extract message packing
+ */
 void gotr_user_joined(struct gotr_chatroom *room, char *name) {
 	int err;
 	struct gotr_user *user;
@@ -215,6 +213,9 @@ struct gotr_user *gotr_new_user(struct gotr_chatroom *room, char *name)
 void gotr_leave(struct gotr_chatroom *room)
 {
 	struct gotr_user *user;
+
+	if (!room)
+		return;
 
 	while (room->users != NULL) {
 		user = room->users;

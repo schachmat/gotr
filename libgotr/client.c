@@ -131,6 +131,7 @@ main(int argc, char *argv[])
 	if (!gotr_init())
 		goto fail;
 
+	goto fail;
 	room = gotr_join(&send_all, &send_user, &receive_user);
 	while (1) {
 		FD_ZERO(&reads);

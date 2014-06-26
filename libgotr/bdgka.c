@@ -60,12 +60,15 @@ static gcry_mpi_t generator;
 static gcry_mpi_t gotr_gen_private_BD_key();
 static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey);
 
+static int test();
+
 int gotr_bdgka_init()
 {
 	generator = GCRYMPI_CONST_FOUR;
 	if(gcry_mpi_scan(&prime, GCRYMPI_FMT_HEX, gotr_bd_prime, 0, NULL))
 		return 0;
 	gcry_mpi_set_flag(prime, GCRYMPI_FLAG_CONST);
+//	test();
 	return 1;
 }
 
@@ -113,43 +116,49 @@ int gotr_gen_BD_flake_key(struct gotr_user *user)
 /**
  * @todo make static?
  */
-int gotr_gen_BD_circle_key_part(gcry_mpi_t *cur, gcry_mpi_t factors[4], unsigned int pow)
+int gotr_gen_BD_circle_key_part(gcry_mpi_t cur, gcry_mpi_t factors[4], unsigned int pow)
 {
 	gcry_mpi_t tmp = gcry_mpi_new(GOTR_PKEYSIZE);
 	gcry_mpi_t n = gcry_mpi_set_ui(NULL, pow);
 
-	if (!cur || !(*cur) || !factors || !factors[0] || !factors [1] || !factors[2] || !factors[3] || !tmp)
+	if (!cur || !factors || !factors[0] || !factors [1] || !factors[2] || !factors[3] || !tmp)
 		return 0;
 
 	gcry_mpi_powm(tmp, factors[0], n, prime);
-	gcry_mpi_mulm(*cur, *cur, tmp, prime);
+	gcry_mpi_mulm(cur, cur, tmp, prime);
 
 	gcry_mpi_set_ui(n, --pow);
 	gcry_mpi_powm(tmp, factors[1], n, prime);
-	gcry_mpi_mulm(*cur, *cur, tmp, prime);
+	gcry_mpi_mulm(cur, cur, tmp, prime);
 
 	gcry_mpi_set_ui(n, --pow);
 	gcry_mpi_powm(tmp, factors[2], n, prime);
-	gcry_mpi_mulm(*cur, *cur, tmp, prime);
+	gcry_mpi_mulm(cur, cur, tmp, prime);
 
 	gcry_mpi_set_ui(n, --pow);
 	gcry_mpi_powm(tmp, factors[3], n, prime);
-	gcry_mpi_mulm(*cur, *cur, tmp, prime);
+	gcry_mpi_mulm(cur, cur, tmp, prime);
 
 	gcry_mpi_release(tmp);
 	gcry_mpi_release(n);
 	return 1;
 }
 
-int gotr_gen_BD_circle_key(gcry_mpi_t *key, const struct gotr_user *users)
+/**
+ * @todo use W values instead of R
+ */
+int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users)
 {
-	const struct gotr_user *pre = users;
-	const struct gotr_user *cur = users;
-	gcry_mpi_t ret = gcry_mpi_copy(GCRYMPI_CONST_ONE);
+	const struct gotr_user *first = users;
+	const struct gotr_user *pre;
+	const struct gotr_user *cur;
 	gcry_mpi_t factors[4];
-	unsigned int pow;
+	unsigned int pow = 0;
 
-	if (!users)
+	while (first && first->state != GOTR_STATE_FLAKE_VALIDATED)
+		first = first->next;
+
+	if (!users || !first)
 		goto fail;
 
 //	/* if there is only one other user, circle key is equal to flake key */
@@ -158,34 +167,31 @@ int gotr_gen_BD_circle_key(gcry_mpi_t *key, const struct gotr_user *users)
 //		return 1;
 //	}
 
+	pre = first;
+	gcry_mpi_release(key);
+	key = gcry_mpi_copy(GCRYMPI_CONST_ONE);
 
-
-
-//	gcry_mpi_powm(ret, users->R[0], GCRYMPI_CONST_TWO, prime);
-//	gcry_mpi_mulm(ret, ret, users->V[1], prime);
-
-
-
-
-	for (pow = 4, cur = users->next; cur; pow += 4, cur = cur->next) {
+	for (cur = first->next; cur; cur = cur->next) {
+		if (cur->state != GOTR_STATE_FLAKE_VALIDATED)
+			continue;
 		factors[0] = cur->V[0];
 		factors[1] = cur->R[1];
 		factors[2] = pre->R[0];
 		factors[3] = pre->V[1];
-		gotr_gen_BD_circle_key_part(&ret, factors, pow);
+		gotr_gen_BD_circle_key_part(key, factors, pow += 4);
 		pre = cur;
 	}
 
 	factors[0] = gcry_mpi_new(GOTR_PKEYSIZE);
-	gcry_mpi_powm(factors[0], cur->y[0], cur->r[1], prime);
-	factors[1] = users->R[1];
+	gcry_mpi_powm(factors[0], first->y[0], first->r[1], prime);
+	factors[1] = first->R[1];
 	factors[2] = pre->R[0];
 	factors[3] = pre->V[1];
-	gotr_gen_BD_circle_key_part(&ret, factors, pow);
+	gotr_gen_BD_circle_key_part(key, factors, pow + 4);
 
 	return 1;
 fail:
-	gcry_mpi_release(*key);
+	gcry_mpi_release(key);
 	return 0;
 }
 
@@ -220,38 +226,53 @@ static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey)
 /**
  * for testing purposes only.
  */
-//static int test()
-//{
-//	gotr_init();
-//
-//	/// bdgka test
-//	struct gotr_user u[2];
-//	gotr_gen_BD_keypair(&u[0].r[0], &u[0].z[0]);
-//	gotr_gen_BD_keypair(&u[0].r[1], &u[0].z[1]);
-//	u[1].y[0] = u[0].z[0];
-//	u[1].y[1] = u[0].z[1];
-//	gotr_gen_BD_keypair(&u[1].r[0], &u[1].z[0]);
-//	gotr_gen_BD_keypair(&u[1].r[1], &u[1].z[1]);
-//	u[0].y[0] = u[1].z[0];
-//	u[0].y[1] = u[1].z[1];
-//	if (!gotr_gen_BD_X_value(&u[0].R[0], u[0].y[1], u[0].z[1], u[0].r[0]))
-//		gotr_eprintf("X0 failed");
-//	if (!gotr_gen_BD_X_value(&u[0].R[1], u[0].z[0], u[0].y[0], u[0].r[1]))
-//		gotr_eprintf("X1 failed");
-//	if (!gotr_gen_BD_X_value(&u[1].R[0], u[1].y[1], u[1].z[1], u[1].r[0]))
-//		gotr_eprintf("X2 failed");
-//	if (!gotr_gen_BD_X_value(&u[1].R[1], u[1].z[0], u[1].y[0], u[1].r[1]))
-//		gotr_eprintf("X3 failed");
-//	u[1].V[0] = u[0].R[0];
-//	u[1].V[1] = u[0].R[1];
-//	u[0].V[0] = u[1].R[0];
-//	u[0].V[1] = u[1].R[1];
-//	if (!gotr_gen_BD_flake_key(&u[0]))
-//		gotr_eprintf("f0 failed");
-//	if (!gotr_gen_BD_flake_key(&u[1]))
-//		gotr_eprintf("f1 failed");
-//	gcry_mpi_dump(u[0].flake_key);
-//	gotr_eprintf("");
-//	gcry_mpi_dump(u[1].flake_key);
-//	return 0 == gcry_mpi_cmp(u[0].flake_key, u[1].flake_key);
-//}
+static int test()
+{
+	struct gotr_user u[2];
+	gotr_gen_BD_keypair(&u[0].r[0], &u[0].z[0]);
+	gotr_gen_BD_keypair(&u[0].r[1], &u[0].z[1]);
+	u[1].y[0] = u[0].z[0];
+	u[1].y[1] = u[0].z[1];
+	gotr_gen_BD_keypair(&u[1].r[0], &u[1].z[0]);
+	gotr_gen_BD_keypair(&u[1].r[1], &u[1].z[1]);
+	u[0].y[0] = u[1].z[0];
+	u[0].y[1] = u[1].z[1];
+	if (!gotr_gen_BD_X_value(&u[0].R[0], u[0].y[1], u[0].z[1], u[0].r[0]))
+		gotr_eprintf("X0 failed");
+	if (!gotr_gen_BD_X_value(&u[0].R[1], u[0].z[0], u[0].y[0], u[0].r[1]))
+		gotr_eprintf("X1 failed");
+	if (!gotr_gen_BD_X_value(&u[1].R[0], u[1].y[1], u[1].z[1], u[1].r[0]))
+		gotr_eprintf("X2 failed");
+	if (!gotr_gen_BD_X_value(&u[1].R[1], u[1].z[0], u[1].y[0], u[1].r[1]))
+		gotr_eprintf("X3 failed");
+	u[1].V[0] = u[0].R[0];
+	u[1].V[1] = u[0].R[1];
+	u[0].V[0] = u[1].R[0];
+	u[0].V[1] = u[1].R[1];
+	if (!gotr_gen_BD_flake_key(&u[0]))
+		gotr_eprintf("f0 failed");
+	if (!gotr_gen_BD_flake_key(&u[1]))
+		gotr_eprintf("f1 failed");
+	gcry_mpi_dump(u[0].flake_key);
+	gotr_eprintf("");
+	gcry_mpi_dump(u[1].flake_key);
+	gotr_eprintf("");
+
+	u[0].state = u[1].state = GOTR_STATE_FLAKE_VALIDATED;
+	u[0].next = u[1].next = NULL;
+	if (!gotr_gen_BD_circle_key(u[0].flake_key, &u[0]))
+		gotr_eprintf("c0 failed");
+	if (gcry_mpi_cmp(u[0].flake_key, u[1].flake_key))
+		gotr_eprintf("flake != c0");
+	gcry_mpi_dump(u[0].flake_key);
+	gotr_eprintf("");
+	if (!gotr_gen_BD_circle_key(u[1].flake_key, &u[1]))
+		gotr_eprintf("c1 failed");
+	if (gcry_mpi_cmp(u[1].flake_key, u[0].flake_key))
+		gotr_eprintf("flake != c1");
+	gcry_mpi_dump(u[1].flake_key);
+	gotr_eprintf("");
+	gotr_eprintf("circle keys match");
+
+	return 0 == gcry_mpi_cmp(u[0].flake_key, u[1].flake_key);
+}
