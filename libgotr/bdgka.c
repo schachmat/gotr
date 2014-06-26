@@ -123,7 +123,50 @@ int gotr_gen_BD_circle_key_part(gcry_mpi_t *cur, gcry_mpi_t factors[4], unsigned
 
 int gotr_gen_BD_circle_key(gcry_mpi_t *key, const struct gotr_user *users)
 {
+	const struct gotr_user *pre = users;
+	const struct gotr_user *cur = users;
+	gcry_mpi_t ret = gcry_mpi_copy(GCRYMPI_CONST_ONE);
+	gcry_mpi_t factors[4];
+	unsigned int pow;
+
+	if (!users)
+		goto fail;
+
+//	/* if there is only one other user, circle key is equal to flake key */
+//	if (!users->next) {
+//		*key = gcry_mpi_copy(users->flake_key);
+//		return 1;
+//	}
+
+
+
+
+//	gcry_mpi_powm(ret, users->R[0], GCRYMPI_CONST_TWO, prime);
+//	gcry_mpi_mulm(ret, ret, users->V[1], prime);
+
+
+
+
+	for (pow = 4, cur = users->next; cur; pow += 4, cur = cur->next) {
+		factors[0] = cur->V[0];
+		factors[1] = cur->R[1];
+		factors[2] = pre->R[0];
+		factors[3] = pre->V[1];
+		gotr_gen_BD_circle_key_part(&ret, factors, pow);
+		pre = cur;
+	}
+
+	factors[0] = gcry_mpi_new(GOTR_PKEYSIZE);
+	gcry_mpi_powm(factors[0], cur->y[0], cur->r[1], prime);
+	factors[1] = users->R[1];
+	factors[2] = pre->R[0];
+	factors[3] = pre->V[1];
+	gotr_gen_BD_circle_key_part(&ret, factors, pow);
+
 	return 1;
+fail:
+	gcry_mpi_release(*key);
+	return 0;
 }
 
 /**
