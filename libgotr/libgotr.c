@@ -20,7 +20,7 @@
 #define GOTR_OP_MSG              ((unsigned char)4)
 #define GOTR_OP_MAX              ((unsigned char)5)
 
-static struct gotr_user *gotr_new_user(struct gotr_chatroom *room, char *name);
+static struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_data);
 
 static int gotr_parse_est_pair_channel(struct gotr_chatroom *room, char *msg);
 static int gotr_parse_flake_y         (struct gotr_chatroom *room, char *msg);
@@ -159,7 +159,7 @@ int gotr_receive(struct gotr_chatroom *room, char *message)
  * @brief BLABLA
  * @todo error checking, docu, extract message packing
  */
-void gotr_user_joined(struct gotr_chatroom *room, char *name) {
+void gotr_user_joined(struct gotr_chatroom *room, void *user_data) {
 	int err;
 	struct gotr_user *user;
 	unsigned char *message;
@@ -169,7 +169,7 @@ void gotr_user_joined(struct gotr_chatroom *room, char *name) {
 	struct gotr_eddsa_public_key *message_dsa_pub_key;
 	char *b64_message;
 
-	user = gotr_new_user(room, name);
+	user = gotr_new_user(room, user_data);
 
 	message_size = sizeof(unsigned char)        // op
 		+ sizeof(struct gotr_EcdhePublicKey)    // DH public key
@@ -198,13 +198,14 @@ void gotr_user_joined(struct gotr_chatroom *room, char *name) {
 	free(message);
 }
 
-struct gotr_user *gotr_new_user(struct gotr_chatroom *room, char *name)
+struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_data)
 {
 	struct gotr_user *user;
 
 	if (!room || !(user = malloc(sizeof(struct gotr_user))))
 		return NULL;
 
+	user->data = user_data;
 	user->state = GOTR_STATE_UNKNOWN;
 	user->next = room->users;
 	return room->users = user;

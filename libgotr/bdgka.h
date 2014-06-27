@@ -18,6 +18,9 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#ifndef _GOTR_BDGKA_H
+#define _GOTR_BDGKA_H
+
 #include <gcrypt.h>
 
 /**
@@ -48,3 +51,5 @@ void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey);
 int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t denom, const gcry_mpi_t pow);
 
 int gotr_gen_BD_flake_key(struct gotr_user *user);
+
+#endif

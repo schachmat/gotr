@@ -18,8 +18,8 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __B64_H__
-#define __B64_H__
+#ifndef _GOTR_B64_H
+#define _GOTR_B64_H
 
 #include <stdlib.h>
 
