@@ -10,6 +10,6 @@ ${PNG}: ${TEX}
 
 clean:
 	@echo cleaning
-	@rm -f ${PNG}
+	@rm -f ${PNG} *.{aux,log,pdf}
 
 .PHONY: all clean
