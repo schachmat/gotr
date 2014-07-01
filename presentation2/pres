@@ -1,0 +1,8 @@
+drawbacks
+- does not scale well (O(bla) traffic)
+- only synchronous messaging, fast connection recommended
+- check other asumptions
+
+osi layer communication
+
+circle key diagram
