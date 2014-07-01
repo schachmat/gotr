@@ -1,14 +1,16 @@
+BDGKA
+@bdgka0.png
+@bdgka1.png
+@bdgka2.png
+@bdgka3.png
+hotplug GKA
+@flake.png
+@circle.png
+
 drawbacks
 - does not scale well (O(bla) traffic)
 - only synchronous messaging, fast connection recommended
 - check other asumptions
 - todo: digest checking
 
-osi layer communication
-
-BDGKA
-@bdgka0.png
-!math and science
-hotplug GKA
-@flake.png
-@circle.png
+osi layer communication diagramm
