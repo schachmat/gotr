@@ -79,8 +79,10 @@ void gotr_mpi_print_unsigned(void *buf, size_t size, gcry_mpi_t val)
 		unsigned int nbits;
 		const void *p;
 
-		p = gcry_mpi_get_opaque(val, &nbits);
-		//GNUNET_assert (p);
+		if (!(p = gcry_mpi_get_opaque(val, &nbits)))
+			gotr_eprintf("something in crypto failed");
+			abort();
+		}
 		rsize = (nbits+7)/8;
 		if (rsize > size)
 			rsize = size;
