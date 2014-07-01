@@ -23,18 +23,18 @@ enum {
 };
 
 const size_t EST_PAIR_CHANNEL_SIZE =
-		sizeof(unsigned char)                   // op
-		+ sizeof(struct gotr_EcdhePublicKey)    // DH public key
+		sizeof(uint32_t)                        // op
 		+ sizeof(struct gotr_EddsaSignature)    // signature
+		+ sizeof(struct gotr_EcdhePublicKey)    // DH public key
 		+ sizeof(struct gotr_eddsa_public_key); // public key for signature
 
 static struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_data);
 
-static int gotr_pack_est_pair_channel(const struct gotr_eddsa_private_key *my_private_key, const struct gotr_eddsa_public_key *my_public_key, struct gotr_EcdhePrivateKey *dhe_privkey, unsigned char *message);
-static int gotr_pack_flake_z         (struct gotr_chatroom *room, char *msg);
-static int gotr_pack_flake_R         (struct gotr_chatroom *room, char *msg);
-static int gotr_pack_flake_validation(struct gotr_chatroom *room, char *msg);
-static int gotr_pack_msg             (struct gotr_chatroom *room, char *msg);
+static unsigned char *gotr_pack_est_pair_channel(const struct gotr_chatroom *room, struct gotr_user *user);
+static unsigned char *gotr_pack_flake_z         (const struct gotr_chatroom *room, struct gotr_user *user);
+static unsigned char *gotr_pack_flake_R         (const struct gotr_chatroom *room, struct gotr_user *user);
+static unsigned char *gotr_pack_flake_validation(const struct gotr_chatroom *room, struct gotr_user *user);
+static unsigned char *gotr_pack_msg             (const struct gotr_chatroom *room, char *msg);
 static int gotr_parse_est_pair_channel(struct gotr_chatroom *room, char *msg);
 static int gotr_parse_flake_y         (struct gotr_chatroom *room, char *msg);
 static int gotr_parse_flake_V         (struct gotr_chatroom *room, char *msg);
@@ -79,8 +79,8 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send
 	room->receive_usr = receive_usr;
 	
 	gotr_eprintf("generating keypair, please wait...");
-	gotr_eddsa_key_create(&room->my_priv_key);
-	gotr_eddsa_key_get_public(&room->my_priv_key, &room->my_pub_key);
+	gotr_eddsa_key_create(&room->my_privkey);
+	gotr_eddsa_key_get_public(&room->my_privkey, &room->my_pubkey);
 	gotr_eprintf("done generating keypair.");
 
 	return room;
@@ -98,7 +98,7 @@ int gotr_send(struct gotr_chatroom *room, char *message)
 		goto fail;
 	}
 
-	if(!(msg = otrl_base64_otr_encode(buf, len+1))) {
+	if(!(msg = gotr_b64_enc(buf, len+1))) {
 		gotr_eprintf("unable to base64 encode message");
 		goto fail;
 	}
@@ -112,32 +112,30 @@ fail:
 	return ret;
 }
 
-static int gotr_pack_est_pair_channel(
-		const struct gotr_eddsa_private_key *my_priv_key,
-		const struct gotr_eddsa_public_key *my_pub_key,
-		struct gotr_EcdhePrivateKey *dhe_privkey,
-		unsigned char *message)
+unsigned char *gotr_pack_est_pair_channel(const struct gotr_chatroom *room, struct gotr_user *user)
 {
-	int err;
-	unsigned char *message_op;
-	struct gotr_EcdhePublicKey *message_dhe_pub_key;
-	struct gotr_EddsaSignature *message_signature;
-	struct gotr_eddsa_public_key *message_dsa_pub_key;
+	struct est_pair_channel *msg;
 
-	message_op = message;
-	*message_op = (unsigned char)GOTR_OP_EST_PAIR_CHANNEL;
+	if(!room || !user || !(msg = malloc(sizeof(struct est_pair_channel))))
+		return NULL;
 
-	gotr_ecdhe_key_create(dhe_privkey);
-	message_dhe_pub_key = (struct gotr_EcdhePublicKey *)(message_op + 1);
-	gotr_ecdhe_key_get_public(dhe_privkey, message_dhe_pub_key);
+	memset(msg, 0, EST_PAIR_CHANNEL_SIZE);
 
-	message_signature = (struct gotr_EddsaSignature *)(message_dhe_pub_key + 1);
-	err = gotr_eddsa_sign(my_priv_key, message, sizeof(unsigned char) + sizeof(struct gotr_EcdhePublicKey), message_signature);
+	msg->op = htonl(GOTR_OP_EST_PAIR_CHANNEL);
 
-	message_dsa_pub_key = (struct gotr_eddsa_public_key *)(message_signature + 1);
-	memcpy(message_dsa_pub_key, my_pub_key, sizeof(struct gotr_EcdhePublicKey));
-	
-	return GOTR_OK;
+	memcpy(&msg->sender_pub, &room->my_pubkey, sizeof(room->my_pubkey));
+
+	gotr_ecdhe_key_create(&user->dhe_privkey);
+	gotr_ecdhe_key_get_public(&user->dhe_privkey, &user->dhe_pubkey);
+	memcpy(&msg->dh_pub, &user->dhe_pubkey, sizeof(user->dhe_pubkey));
+
+	if(!gotr_eddsa_sign(&room->my_privkey, msg, sizeof(struct est_pair_channel), &msg->sig)) {
+		gotr_eprintf("could not sign est_pair_channel message");
+		free(msg);
+		return NULL;
+	}
+
+	return (unsigned char *)msg;
 }
 
 static int gotr_parse_est_pair_channel(struct gotr_chatroom *room, char *msg)
@@ -177,7 +175,7 @@ int gotr_receive(struct gotr_chatroom *room, char *message)
 		return 0;
 	}
 
-	if ((otrl_base64_otr_decode(message, (unsigned char **)&msg, &len))) {
+	if ((gotr_b64_dec(message, (unsigned char **)&msg, &len))) {
 		gotr_eprintf("could not decode message: %s", message);
 		return 0;
 	}
@@ -194,24 +192,36 @@ int gotr_receive(struct gotr_chatroom *room, char *message)
 
 /**
  * @brief BLABLA
- * @todo error checking, docu
+ * @todo docu
  */
 void gotr_user_joined(struct gotr_chatroom *room, void *user_data) {
+	unsigned char *packed_msg;
+	char *b64_msg;
 	struct gotr_user *user;
-	unsigned char *message;
-	char *b64_message;
 
-	user = gotr_new_user(room, user_data);
+	if(!room) {
+		gotr_eprintf("passed room was NULL");
+		return;
+	}
 
-	message = malloc(EST_PAIR_CHANNEL_SIZE);
-	gotr_pack_est_pair_channel(&room->my_priv_key, &room->my_pub_key, &user->dhe_privkey, message);
+	if(!(user = gotr_new_user(room, user_data))) {
+		gotr_eprintf("could not create new user");
+		return;
+	}
 
-	b64_message = otrl_base64_otr_encode(message, EST_PAIR_CHANNEL_SIZE);
+	if(!(packed_msg = gotr_pack_est_pair_channel(room, user))) {
+		gotr_eprintf("could not pack est_pair_channel message");
+		return;
+	}
 
-	room->send_usr(room, user, b64_message);
+	if((b64_msg = gotr_b64_enc(packed_msg, sizeof(struct est_pair_channel)))) {
+		room->send_usr(room, user, b64_msg);
+		free(b64_msg);
+	} else {
+		gotr_eprintf("could not b64 encode est_pair_channel message");
+	}
 
-	free(b64_message);
-	free(message);
+	free(packed_msg);
 }
 
 struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_data)
@@ -239,7 +249,7 @@ void gotr_leave(struct gotr_chatroom *room)
 		room->users = user->next;
 	}
 
-	gotr_eddsa_key_clear(&room->my_priv_key);
+	gotr_eddsa_key_clear(&room->my_privkey);
 
 	free(room);
 }

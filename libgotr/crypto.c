@@ -79,7 +79,7 @@ void gotr_mpi_print_unsigned(void *buf, size_t size, gcry_mpi_t val)
 		unsigned int nbits;
 		const void *p;
 
-		if (!(p = gcry_mpi_get_opaque(val, &nbits)))
+		if (!(p = gcry_mpi_get_opaque(val, &nbits))) {
 			gotr_eprintf("something in crypto failed");
 			abort();
 		}
@@ -223,8 +223,7 @@ gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv,
 		  __LINE__, gcry_strerror (rc));*/
 		gcry_sexp_release(data);
 		gcry_sexp_release(priv_sexp);
-		//return GNUNET_SYSERR;
-		return -1;
+		return 0;
 	}
 	gcry_sexp_release(priv_sexp);
 	gcry_sexp_release(data);
@@ -235,15 +234,13 @@ gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv,
 	{
 		//GNUNET_break (0);
 		gcry_sexp_release(sig_sexp);
-		//return GNUNET_SYSERR;
-		return -1;
+		return 0;
 	}
 	gcry_sexp_release(sig_sexp);
 	gotr_mpi_print_unsigned(sig->r, sizeof(sig->r), rs[0]);
 	gotr_mpi_print_unsigned(sig->s, sizeof(sig->s), rs[1]);
 	gcry_mpi_release(rs[0]);
 	gcry_mpi_release(rs[1]);
-	//return GNUNET_OK;
 	return 1;
 }
 

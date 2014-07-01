@@ -187,11 +187,11 @@ size_t otrl_base64_decode(unsigned char *data, const char *base64data,
 }
 
 /*
- * Base64-encode a block of data, stick "?OTR:" and "." around it, and
+ * Base64-encode a block of data, stick "?GOTR?1" and "." around it, and
  * return the result, or NULL in the event of a memory error.  The
  * caller must free() the return value.
  */
-char *otrl_base64_otr_encode(const unsigned char *buf, size_t buflen)
+char *gotr_b64_enc(const unsigned char *buf, size_t buflen)
 {
 	char *base64buf;
 	size_t base64len;
@@ -216,7 +216,7 @@ char *otrl_base64_otr_encode(const unsigned char *buf, size_t buflen)
  * The caller must free() the result.  Return 0 on success, -1 on a
  * memory error, or -2 on invalid input.
  */
-int otrl_base64_otr_decode(const char *msg, unsigned char **bufp, size_t *lenp)
+int gotr_b64_dec(const char *msg, unsigned char **bufp, size_t *lenp)
 {
 	char *otrtag, *endtag;
 	size_t msglen, rawlen;

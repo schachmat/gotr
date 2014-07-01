@@ -12,12 +12,19 @@ typedef enum {
 	GOTR_STATE_FLAKE_VALIDATED,
 } GOTR_STATE;
 
+struct est_pair_channel {
+	uint32_t                     op;
+	struct gotr_EddsaSignature   sig;
+	struct gotr_EcdhePublicKey   dh_pub;
+	struct gotr_eddsa_public_key sender_pub;
+};
+
 struct four_mpis {
 	unsigned char a1[512];
 	unsigned char a2[512];
 	unsigned char a3[512];
 	unsigned char a4[512];
-}
+};
 
 #define GOTR_OK 1
 
@@ -59,7 +66,7 @@ struct gotr_user {
 //	char *name;
 	void *data;
 	GOTR_STATE state;
-	struct gotr_eddsa_public_key static_pubkey;
+	struct gotr_eddsa_public_key user_pubkey;
 	struct gotr_EcdhePrivateKey dhe_privkey;
 	struct gotr_EcdhePublicKey dhe_pubkey;
 	gcry_mpi_t r[2];
@@ -75,8 +82,8 @@ struct gotr_chatroom {
 	//sid
 
 	void *data;
-	struct gotr_eddsa_private_key my_priv_key;  //TODO is it secure to copy the private key around? -> pointer? use secure mem.?
-	struct gotr_eddsa_public_key my_pub_key;
+	struct gotr_eddsa_private_key my_privkey;  /// @todo is it secure to copy the private key around? -> pointer? use secure mem.?
+	struct gotr_eddsa_public_key my_pubkey;
 	struct gotr_user *users;         ///< a list of all users in the room
 	gotr_cb_send_all send_all;       ///< callback to send a message to every participant in this room
 	gotr_cb_send_usr send_usr;       ///< callback to send a message to a specific user
