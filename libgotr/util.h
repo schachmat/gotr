@@ -4,11 +4,15 @@
 #include "libgotr.h"
 #include "crypto.h"
 
-#define GOTR_STATE_UNKNOWN             ((char)0)
-#define GOTR_STATE_CHANNEL_ESTABLISHED ((char)1)
-#define GOTR_STATE_FLAKE_GOT_y         ((char)2)
-#define GOTR_STATE_FLAKE_GOT_V         ((char)3)
-#define GOTR_STATE_FLAKE_VALIDATED     ((char)4)
+typedef enum {
+	GOTR_STATE_UNKNOWN,
+	GOTR_STATE_CHANNEL_ESTABLISHED,
+	GOTR_STATE_FLAKE_GOT_y,
+	GOTR_STATE_FLAKE_GOT_V,
+	GOTR_STATE_FLAKE_VALIDATED,
+} GOTR_STATE;
+
+#define GOTR_OK 1
 
 /**
  * stores key material and other information related to a specific user
@@ -47,7 +51,7 @@
 struct gotr_user {
 //	char *name;
 	void *data;
-	char state;
+	GOTR_STATE state;
 	struct gotr_eddsa_public_key static_pubkey;
 	struct gotr_EcdhePrivateKey dhe_privkey;
 	struct gotr_EcdhePublicKey dhe_pubkey;
@@ -63,6 +67,7 @@ struct gotr_user {
 struct gotr_chatroom {
 	//sid
 
+	void *data;
 	struct gotr_eddsa_private_key my_priv_key;  //TODO is it secure to copy the private key around? -> pointer? use secure mem.?
 	struct gotr_eddsa_public_key my_pub_key;
 	struct gotr_user *users;         ///< a list of all users in the room

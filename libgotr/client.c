@@ -132,7 +132,7 @@ main(int argc, char *argv[])
 		goto fail;
 
 	goto fail;
-	room = gotr_join(&send_all, &send_user, &receive_user);
+	room = gotr_join(&send_all, &send_user, &receive_user, NULL);
 	while (1) {
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);
