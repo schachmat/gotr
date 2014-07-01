@@ -19,6 +19,12 @@ struct est_pair_channel {
 	struct gotr_eddsa_public_key sender_pub;
 };
 
+struct flake_send_z {
+	uint32_t                     op;
+	struct gotr_EddsaSignature   sig;
+	unsigned char                encrypted[];
+};
+
 struct four_mpis {
 	unsigned char a1[512];
 	unsigned char a2[512];
