@@ -12,6 +12,13 @@ typedef enum {
 	GOTR_STATE_FLAKE_VALIDATED,
 } GOTR_STATE;
 
+struct four_mpis {
+	unsigned char a1[512];
+	unsigned char a2[512];
+	unsigned char a3[512];
+	unsigned char a4[512];
+}
+
 #define GOTR_OK 1
 
 /**
