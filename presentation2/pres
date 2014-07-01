@@ -2,7 +2,12 @@ drawbacks
 - does not scale well (O(bla) traffic)
 - only synchronous messaging, fast connection recommended
 - check other asumptions
+- todo: digest checking
 
 osi layer communication
 
-circle key diagram
+BDGKA
+!math and science
+hotplug GKA
+@flake.png
+@circle.png
