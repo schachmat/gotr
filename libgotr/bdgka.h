@@ -23,6 +23,8 @@
 
 #include <gcrypt.h>
 
+#include "util.h"
+
 /**
  * initializes cryptographic constants.
  *

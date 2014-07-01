@@ -2,11 +2,10 @@
 #define _GOTR_LIBGOTR_H
 
 struct gotr_chatroom;
-struct gotr_user;
 
-typedef int (*gotr_cb_send_all)(const struct gotr_chatroom *room, const char *b64_msg);
-typedef int (*gotr_cb_send_usr)(const struct gotr_chatroom *room, void *user_data, const char *b64_msg);
-typedef void (*gotr_cb_receive_usr)(const struct gotr_chatroom *room, void *user_data, const char *plain_msg);
+typedef int (*gotr_cb_send_all)(void *room_data, const char *b64_msg);
+typedef int (*gotr_cb_send_usr)(void *room_data, void *user_data, const char *b64_msg);
+typedef void (*gotr_cb_receive_usr)(void *room_data, void *user_data, const char *plain_msg);
 
 int gotr_init();
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr, gotr_cb_receive_usr receive_usr, void *room_data);

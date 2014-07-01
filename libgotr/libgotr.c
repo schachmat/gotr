@@ -88,6 +88,7 @@ int gotr_send(struct gotr_chatroom *room, char *plain_msg)
 	char *b64_msg;
 	int ret = 0;
 
+	/// @todo check args for NULL?
 	if (snprintf((char *)packed_msg, len+2, "%c%s", GOTR_OP_MSG, plain_msg) != len+1) {
 		gotr_eprintf("snprintf failed with wrong message length");
 		goto fail;
@@ -98,7 +99,7 @@ int gotr_send(struct gotr_chatroom *room, char *plain_msg)
 		goto fail;
 	}
 
-	if(!(ret = room->send_all(room, b64_msg)))
+	if(!(ret = room->send_all(room->data, b64_msg)))
 		gotr_eprintf("unable to broadcast message");
 
 	free(b64_msg);
@@ -230,7 +231,7 @@ void gotr_user_joined(struct gotr_chatroom *room, void *user_data) {
 	}
 
 	if((b64_msg = gotr_b64_enc(packed_msg, sizeof(struct est_pair_channel)))) {
-		room->send_usr(room, user, b64_msg);
+		room->send_usr(room->data, user->data, b64_msg);
 		free(b64_msg);
 	} else {
 		gotr_eprintf("could not b64 encode est_pair_channel message");
