@@ -7,3 +7,7 @@ libgotr/lib
 *.o
 .DS_Store
 */cscope.out
+presentation2/*.aux
+presentation2/*.log
+presentation2/*.pdf
+
