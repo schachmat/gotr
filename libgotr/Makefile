@@ -1,8 +1,8 @@
 include config.mk
 
-SRC = libgotr.c util.c bdgka.c b64.c crypto.c
+SRC = libgotr_plugin.c libgotr.c util.c bdgka.c b64.c crypto.c
 LIB = libgotr.a
-INC = libgotr.h util.h bdgka.h b64.h crypto.h
+INC = libgotr_plugin.h libgotr.h util.h bdgka.h b64.h crypto.h
 OBJ = ${SRC:.c=.o}
 
 CLIENT = client

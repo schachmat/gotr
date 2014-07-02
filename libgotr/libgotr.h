@@ -1,18 +1,29 @@
 #ifndef _GOTR_LIBGOTR_H
 #define _GOTR_LIBGOTR_H
 
+#define GOTR_GCRYPT_VERSION "1.6.1"
+
 struct gotr_chatroom;
+struct gotr_user;
 
-typedef int (*gotr_cb_send_all)(void *room_data, const char *b64_msg);
-typedef int (*gotr_cb_send_usr)(void *room_data, void *user_data, const char *b64_msg);
-typedef void (*gotr_cb_receive_usr)(void *room_data, void *user_data, const char *plain_msg);
+enum {
+	GOTR_OP_EST_PAIR_CHANNEL = 0,
+	GOTR_OP_FLAKE_SEND_z = 1,
+	GOTR_OP_FLAKE_SEND_R = 2,
+	GOTR_OP_FLAKE_VALIDATE = 3,
+	GOTR_OP_MSG = 4,
+	GOTR_OP_MAX = 5
+};
 
-int gotr_init();
-struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_usr send_usr, gotr_cb_receive_usr receive_usr, void *room_data);
-void gotr_user_joined(struct gotr_chatroom *room, void *user_data);
-void gotr_keyupdate(struct gotr_chatroom *room);
-int gotr_send(struct gotr_chatroom *room, char *plain_msg);
-int gotr_receive(struct gotr_chatroom *room, char *b64_msg);
-void gotr_leave(struct gotr_chatroom *room); //room will be freed
+unsigned char *gotr_pack_est_pair_channel(const struct gotr_chatroom *room, struct gotr_user *user);
+unsigned char *gotr_pack_flake_z         (const struct gotr_chatroom *room, struct gotr_user *user);
+unsigned char *gotr_pack_flake_R         (const struct gotr_chatroom *room, struct gotr_user *user);
+unsigned char *gotr_pack_flake_validation(const struct gotr_chatroom *room, struct gotr_user *user);
+unsigned char *gotr_pack_msg             (const struct gotr_chatroom *room, char *msg);
+int gotr_parse_est_pair_channel(struct gotr_chatroom *room, char *packed_msg);
+int gotr_parse_flake_y         (struct gotr_chatroom *room, char *packed_msg);
+int gotr_parse_flake_V         (struct gotr_chatroom *room, char *packed_msg);
+int gotr_parse_flake_validation(struct gotr_chatroom *room, char *packed_msg);
+int gotr_parse_msg             (struct gotr_chatroom *room, char *packed_msg);
 
 #endif

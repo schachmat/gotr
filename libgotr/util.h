@@ -1,7 +1,7 @@
 #ifndef _GOTR_UTIL_H
 #define _GOTR_UTIL_H
 
-#include "libgotr.h"
+#include "libgotr_plugin.h"
 #include "crypto.h"
 
 typedef enum {
