@@ -11,7 +11,6 @@
 #include <unistd.h>
 
 #include "libgotr.h"
-#include "bdgka.h"
 
 /* where are we talking */
 #define ROOMDIR "/tmp/gotrusers/"
