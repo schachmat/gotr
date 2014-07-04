@@ -10,7 +10,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#include "libgotr.h"
+#include "gotr.h"
 
 /* where are we talking */
 #define ROOMDIR "/tmp/gotrusers/"

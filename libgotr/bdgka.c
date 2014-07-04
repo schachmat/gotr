@@ -22,7 +22,6 @@
 
 #include <gcrypt.h>
 
-#include "libgotr.h"
 #include "bdgka.h"
 #include "util.h"
 

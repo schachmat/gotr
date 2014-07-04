@@ -7,13 +7,6 @@
 #include "util.h"
 
 
-void gotr_rand_poll()
-{
-	static unsigned char rand_amount = 255;
-	if(!(rand_amount--))
-		gcry_fast_random_poll();
-}
-
 void gotr_eprintf(const char *format, ...)
 {
 	va_list ap;

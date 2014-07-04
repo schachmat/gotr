@@ -26,6 +26,12 @@
 #include <gcrypt.h>
 #include <stdint.h>
 
+// --- RANDOM ---
+
+
+void gotr_rand_poll();
+
+
 // --- HASHING ---
 
 struct gotr_HashCode {

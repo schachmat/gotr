@@ -24,6 +24,8 @@
 #include <gcrypt.h>
 
 #include "util.h"
+#include "user.h"
+#include "messaging.h"
 
 /**
  * initializes cryptographic constants.

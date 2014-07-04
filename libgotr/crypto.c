@@ -27,6 +27,16 @@
 
 #define CURVE "Ed25519"
 
+// --- RANDOM ---
+
+void gotr_rand_poll()
+{
+	static unsigned char rand_amount = 255;
+	if(!(rand_amount--))
+		gcry_fast_random_poll();
+}
+
+
 // --- HASHING ---
 
 /**

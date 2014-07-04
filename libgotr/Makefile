@@ -1,13 +1,13 @@
 include config.mk
 
-SRC = libgotr_plugin.c libgotr.c util.c bdgka.c b64.c crypto.c
+SRC = messaging.c gotr.c util.c bdgka.c b64.c crypto.c
 LIB = libgotr.a
-INC = libgotr_plugin.h libgotr.h util.h bdgka.h b64.h crypto.h
+INC = messaging.h gotr.h util.h bdgka.h b64.h crypto.h
 OBJ = ${SRC:.c=.o}
 
 CLIENT = client
 CLIENT_SRC = client.c
-CLIENT_INC = libgotr.h crypto.h
+CLIENT_INC = gotr.h
 CLIENT_OBJ = ${CLIENT_SRC:.c=.o}
 
 all: options cscope ${LIB} ${CLIENT}
