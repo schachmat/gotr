@@ -18,11 +18,11 @@
  * Boston, MA 02111-1307, USA.
  */
 
-/* Bourmester-Desmeth Group Key Agreement */
+/* Bourmester-Desmeth based hotplug capable Group Key Agreement */
 
 #include <gcrypt.h>
 
-#include "bdgka.h"
+#include "gka.h"
 #include "util.h"
 
 #define GOTR_SKEYSIZE (4096)
@@ -61,7 +61,7 @@ static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey);
 
 static int test();
 
-int gotr_bdgka_init()
+int gotr_gka_init()
 {
 	generator = GCRYMPI_CONST_FOUR;
 	if(gcry_mpi_scan(&prime, GCRYMPI_FMT_HEX, gotr_bd_prime, 0, NULL))

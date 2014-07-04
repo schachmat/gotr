@@ -5,7 +5,7 @@
 #include "gotr.h"
 #include "messaging.h"
 #include "b64.h"
-#include "bdgka.h"
+#include "gka.h"
 
 struct gotr_user;
 
@@ -34,7 +34,7 @@ int gotr_init()
 
 	gotr_rand_poll();
 
-	return gotr_bdgka_init();
+	return gotr_gka_init();
 }
 
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user send_usr, gotr_cb_receive_usr receive_usr, void *room_closure)

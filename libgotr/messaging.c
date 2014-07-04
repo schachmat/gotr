@@ -9,7 +9,7 @@
 #include "crypto.h"
 #include "gotr.h"
 #include "b64.h"
-#include "bdgka.h"
+#include "gka.h"
 
 unsigned char *gotr_pack_est_pair_channel(const struct gotr_roomdata *room, struct gotr_user *user)
 {

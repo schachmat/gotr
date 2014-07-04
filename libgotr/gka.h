@@ -18,8 +18,8 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#ifndef _GOTR_BDGKA_H
-#define _GOTR_BDGKA_H
+#ifndef _GOTR_GKA_H
+#define _GOTR_GKA_H
 
 #include <gcrypt.h>
 
@@ -32,7 +32,7 @@
  *
  * @return 1 on success, 0 on failure
  */
-int gotr_bdgka_init();
+int gotr_gka_init();
 
 /**
  * generate a BD key pair.
