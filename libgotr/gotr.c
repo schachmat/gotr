@@ -6,6 +6,7 @@
 #include "messaging.h"
 #include "b64.h"
 #include "gka.h"
+#include "key.h"
 
 struct gotr_user;
 
@@ -37,7 +38,7 @@ int gotr_init()
 	return gotr_gka_init();
 }
 
-struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user send_usr, gotr_cb_receive_usr receive_usr, void *room_closure)
+struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user send_usr, gotr_cb_receive_usr receive_usr, const void *room_closure, const char *privkey_filename)
 {
 	struct gotr_chatroom *room;
 
@@ -47,11 +48,8 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user sen
 	room->send_usr = send_usr;
 	room->receive_usr = receive_usr;
 
-	gotr_eprintf("generating keypair, please wait...");
-	gotr_eddsa_key_create(&room->data.my_privkey);
+	load_privkey(privkey_filename, &room->data.my_privkey);
 	gotr_eddsa_key_get_public(&room->data.my_privkey, &room->data.my_pubkey);
-	gotr_eprintf("done generating keypair.");
-
 	return room;
 }
 
@@ -65,7 +63,7 @@ int gotr_send(struct gotr_chatroom *room, char *plain_msg)
 		return 0;
 	}
 
-	if(!(ret = room->send_all(room->data.closure, b64_msg)))
+	if(!(ret = room->send_all((void *)room->data.closure, b64_msg)))
 		gotr_eprintf("unable to broadcast message");
 
 	free(b64_msg);
@@ -141,7 +139,7 @@ void gotr_user_joined(struct gotr_chatroom *room, void *user_closure) {
 	}
 
 	if((b64_msg = gotr_b64_enc(packed_msg, sizeof(struct est_pair_channel)))) {
-		room->send_usr(room->data.closure, user->closure, b64_msg);
+		room->send_usr((void *)room->data.closure, user->closure, b64_msg);
 		free(b64_msg);
 	} else {
 		gotr_eprintf("could not b64 encode est_pair_channel message");

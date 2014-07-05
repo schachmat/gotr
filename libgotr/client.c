@@ -16,7 +16,7 @@
 #define ROOMDIR "/tmp/gotrusers/"
 #define UNIX_PATH_MAX 104
 #define BUFLEN 2048
-#define USAGE "usage: client NICKNAME"
+#define USAGE "usage: client NICKNAME [KEYFILE]"
 
 /* variables */
 static char *nick;
@@ -130,8 +130,7 @@ main(int argc, char *argv[])
 	if (!gotr_init())
 		goto fail;
 
-	goto fail;
-	room = gotr_join(&send_all, &send_user, &receive_user, NULL);
+	room = gotr_join(&send_all, &send_user, &receive_user, NULL, argc > 2 ? argv[2] : NULL);
 	while (1) {
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);

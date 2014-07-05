@@ -4,7 +4,7 @@
 #include "crypto.h"
 
 struct gotr_roomdata {
-	void *closure;
+	const void *closure;
 	struct gotr_eddsa_private_key my_privkey;
 	struct gotr_eddsa_public_key my_pubkey;
 	struct gotr_user *users;         ///< a list of all users in the room

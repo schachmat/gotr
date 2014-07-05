@@ -1,8 +1,8 @@
 include config.mk
 
-SRC = messaging.c gotr.c util.c gka.c b64.c crypto.c
+SRC = messaging.c gotr.c util.c gka.c b64.c crypto.c key.c
 LIB = libgotr.a
-INC = messaging.h gotr.h util.h gka.h b64.h crypto.h user.h
+INC = messaging.h gotr.h util.h gka.h b64.h crypto.h key.h user.h
 OBJ = ${SRC:.c=.o}
 
 CLIENT = client
