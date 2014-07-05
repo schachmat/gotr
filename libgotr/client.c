@@ -192,7 +192,6 @@ main(int argc, char *argv[])
 
 	room = gotr_join(&send_all, &send_user, &receive_user, NULL, argc > 2 ? argv[2] : NULL);
 
-	/// @todo join all users
 	for_all(&join, NULL);
 
 	while (1) {

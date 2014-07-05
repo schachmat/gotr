@@ -60,6 +60,7 @@ static gcry_mpi_t generator;
 
 static gcry_mpi_t gotr_gen_private_BD_key();
 static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey);
+static int gotr_gen_BD_circle_key_part(gcry_mpi_t cur, gcry_mpi_t factors[4], unsigned int pow);
 
 int gotr_gka_init()
 {
@@ -117,7 +118,7 @@ int gotr_gen_BD_flake_key(gcry_mpi_t *ret,
 }
 
 /**
- * @todo make static?
+ * @todo docu
  */
 int gotr_gen_BD_circle_key_part(gcry_mpi_t cur, gcry_mpi_t factors[4], unsigned int pow)
 {

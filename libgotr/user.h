@@ -31,14 +31,23 @@ typedef enum {
 } gotr_send_next;
 
 /**
- * stores key material and other information related to a specific user
+ * @struct gotr_user user.h user.h
+ * stores key material and other information related to a specific user.
+ * This struct represents the cryptographic state of our channel to this other
+ * user.
  *
  * @var gotr_user::closure
  * a pointer that is given to the callbacks when referring to this user.
- * @var gotr_user::state
- * progress in the key exchange algorithm.
+ * @var gotr_user::expected_msgtype
+ * the next message from the other user should have this type.
+ * @var gotr_user::next_msgtype
+ * the next message, we send to the other user should have the given type.
  * @var gotr_user::user_pubkey
- * the long term static key of this user.
+ * other users long term public key for EDDSA.
+ * @var gotr_user::dhe_privkey
+ * own private key for the ECDHE
+ * @var gotr_user::dhe_pubkey
+ * other users public key for the ECDHE
  * @var gotr_user::r
  * own (ephemeral) private key to this user.
  * @f$r_{ij0}@f$ and @f$r_{ij1}@f$
@@ -58,11 +67,10 @@ typedef enum {
  * other users X values for the flake key.
  * @f$V_{ij0} = R_{ji0} = (\frac{z_{ji1}}{y_{ji0}})^{r_{ji0}} \mod{prime}@f$
  * and @f$V_{ij1} = R_{ji1} = (\frac{y_{ji1}}{z_{ji0}})^{r_{ji1}} \mod{prime}@f$
+ * @var gotr_user::flake_key
+ * the flake key we agreed on with the other user
  * @var gotr_user::next
  * link to next user in the list
- * @todo cleanup function to free all members
- * @todo move crypto parameters to private data structure not visible/writable
- * by host
  */
 struct gotr_user {
 	void *closure;
