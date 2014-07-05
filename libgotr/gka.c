@@ -158,7 +158,7 @@ int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users)
 	gcry_mpi_t factors[4];
 	unsigned int pow = 0;
 
-	while (first && first->state != GOTR_STATE_FLAKE_VALIDATED)
+	while (first && first->expected_msgtype != GOTR_EXPECT_MSG)
 		first = first->next;
 
 	if (!users || !first)
@@ -175,7 +175,7 @@ int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users)
 	key = gcry_mpi_copy(GCRYMPI_CONST_ONE);
 
 	for (cur = first->next; cur; cur = cur->next) {
-		if (cur->state != GOTR_STATE_FLAKE_VALIDATED)
+		if (cur->expected_msgtype != GOTR_EXPECT_MSG)
 			continue;
 		factors[0] = cur->V[0];
 		factors[1] = cur->R[1];

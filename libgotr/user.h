@@ -11,12 +11,24 @@ struct gotr_roomdata {
 };
 
 typedef enum {
-	GOTR_STATE_UNKNOWN,
-	GOTR_STATE_CHANNEL_ESTABLISHED,
-	GOTR_STATE_FLAKE_GOT_y,
-	GOTR_STATE_FLAKE_GOT_V,
-	GOTR_STATE_FLAKE_VALIDATED,
-} GOTR_STATE;
+	GOTR_EXPECT_PAIR_CHAN_INIT,
+	GOTR_EXPECT_PAIR_CHAN_ESTABLISH,
+	GOTR_EXPECT_FLAKE_y,
+	GOTR_EXPECT_FLAKE_V,
+	GOTR_EXPECT_FLAKE_VALIDATE,
+	GOTR_EXPECT_MSG,
+	GOTR_MAX_EXPECTS
+} gotr_expect_next;
+
+typedef enum {
+	GOTR_SEND_PAIR_CHAN_INIT,
+	GOTR_SEND_PAIR_CHAN_ESTABLISH,
+	GOTR_SEND_FLAKE_z,
+	GOTR_SEND_FLAKE_R,
+	GOTR_SEND_FLAKE_VALIDATE,
+	GOTR_SEND_MSG,
+	GOTR_MAX_SENDS
+} gotr_send_next;
 
 /**
  * stores key material and other information related to a specific user
@@ -54,7 +66,8 @@ typedef enum {
  */
 struct gotr_user {
 	void *closure;
-	GOTR_STATE state;
+	gotr_expect_next expected_msgtype;
+	gotr_send_next next_msgtype;
 	struct gotr_eddsa_public_key user_pubkey;
 	struct gotr_EcdhePrivateKey dhe_privkey;
 	struct gotr_EcdhePublicKey dhe_pubkey;

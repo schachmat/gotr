@@ -19,8 +19,15 @@
 #define BUFLEN 2048
 #define USAGE "usage: client NICKNAME [KEYFILE]"
 
+struct link {
+	char *name;
+	struct gotr_user *user;
+	struct link *next;
+};
+
 /* variables */
 static char *nick;
+static struct link *links;
 static int sock_fd;
 static struct sockaddr_un receiver;
 static struct gotr_chatroom *room = NULL;
@@ -39,9 +46,8 @@ die(const char *message)
 	exit(1);
 }
 
-/* sends the message to all clients in the room */
 static int
-send_all(void *room_data, const char *message)
+for_all(void (*fn)(char* name, void* data), void* data)
 {
 	DIR *directory;
 	struct dirent *dir;
@@ -51,17 +57,48 @@ send_all(void *room_data, const char *message)
 		return 0;
 	}
 
-	while ((dir = readdir(directory))) {
-		strncpy(receiver.sun_path, dir->d_name, UNIX_PATH_MAX);
-		if (!strcmp(dir->d_name, nick))
-			continue;
-		if (sendto(sock_fd, message, strlen(message), 0,
-				(struct sockaddr *) &receiver, sizeof(struct sockaddr_un)) == -1
-				&& errno != ECONNREFUSED && errno != ENOTSOCK)
-			perror("client: sendto failed");
-	}
+	while ((dir = readdir(directory)) && fn)
+		fn(dir->d_name, (char *)data);
 
 	closedir(directory);
+	return 1;
+}
+
+static void
+join(char *name, void *unused)
+{
+	struct link *lnk;
+
+	lnk = malloc(sizeof(struct link));
+	lnk->name = malloc(strlen(name) + 1);
+	strncpy(lnk->name, name, strlen(name) + 1);
+	lnk->next = links;
+	if ((lnk->user = gotr_user_joined(room, name)))
+		links = lnk;
+}
+
+static void
+send_msg(char *name, void *message)
+{
+	strncpy(receiver.sun_path, name, UNIX_PATH_MAX);
+	if (strcmp(name, nick) && sendto(sock_fd, (char *)message, strlen((char *)message), 0,
+				(struct sockaddr *) &receiver, sizeof(struct sockaddr_un)) == -1
+			&& errno != ECONNREFUSED && errno != ENOTSOCK)
+		perror("client: sendto failed");
+}
+
+/* sends the message to all clients in the room */
+static int
+send_all(void *room_data, const char *message)
+{
+	char *nm;
+
+	nm = malloc(strlen(message) + 2);
+	snprintf(nm, strlen(message) + 2, "a%s", message);
+
+	for_all(&send_msg, (void *)nm);
+
+	free(nm);
 	return 1;
 }
 
@@ -69,12 +106,10 @@ send_all(void *room_data, const char *message)
 static int
 send_user(void *room_data, void *user_data, const char *message)
 {
-	strncpy(receiver.sun_path, (char *)user_data, UNIX_PATH_MAX);
-	if (sendto(sock_fd, message, strlen(message), 0, (struct sockaddr *) &receiver,
-			sizeof(struct sockaddr_un)) == -1) {
-		perror("could not send message");
-		return 0;
-	}
+	char *nm = malloc(strlen(message) + 2);
+	snprintf(nm, strlen(message) + 2, "u%s", message);
+	send_msg((char *)user_data, nm);
+	free(nm);
 	return 1;
 }
 
@@ -93,9 +128,23 @@ handle_sigint(int signum)
 	gotr_leave(room);
 }
 
+static struct gotr_user *
+derive_user(const char *name)
+{
+	struct link *cur = links;
+	while (cur) {
+		if (!strcmp(cur->name, name))
+			return cur->user;
+		cur = cur->next;
+	}
+	return NULL;
+}
+
 int
 main(int argc, char *argv[])
 {
+	struct link *lnk;
+	struct gotr_user *new_user;
 	struct stat finfo;
 	struct timeval timeout = {1, 0};
 	fd_set reads;
@@ -142,6 +191,10 @@ main(int argc, char *argv[])
 		goto fail;
 
 	room = gotr_join(&send_all, &send_user, &receive_user, NULL, argc > 2 ? argv[2] : NULL);
+
+	/// @todo join all users
+	for_all(&join, NULL);
+
 	while (1) {
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);
@@ -155,7 +208,22 @@ main(int argc, char *argv[])
 				recv_address_len = sizeof(struct sockaddr);
 				buf_len = recvfrom(sock_fd, buf, BUFLEN - 1, 0, (struct sockaddr *)&recv_address, &recv_address_len);
 				buf[buf_len] = '\0';
-				gotr_receive(room, buf);
+				printf("got msg: %s\n", buf);
+				if ('a' == buf[0]) {
+					gotr_receive(room, buf+1);
+				} else if ('u' == buf[0]) {
+					new_user = derive_user(recv_address.sun_path);
+					if (!new_user) {
+						lnk = malloc(sizeof(struct link));
+						lnk->name = malloc(strlen(recv_address.sun_path) + 1);
+						strncpy(lnk->name, recv_address.sun_path, strlen(recv_address.sun_path) + 1);
+						lnk->next = links;
+						if ((lnk->user = gotr_receive_user(room, new_user, recv_address.sun_path, buf+1)))
+							links = lnk;
+					} else {
+						gotr_receive_user(room, new_user, recv_address.sun_path, buf+1);
+					}
+				}
 				//fprintf(stderr, "nice massage from %s: %s", recv_address.sun_path, buf);
 			}
 			if (FD_ISSET(STDIN_FILENO, &reads)) {

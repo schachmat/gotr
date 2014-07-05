@@ -12,13 +12,27 @@ struct gotr_user;
 
 struct gotr_chatroom {
 	gotr_cb_send_all send_all;       ///< callback to send a message to every participant in this room
-	gotr_cb_send_user send_usr;       ///< callback to send a message to a specific user
-	gotr_cb_receive_usr receive_usr; ///< callback to notify the client about a decrypted message he has to print
+	gotr_cb_send_user send_user;       ///< callback to send a message to a specific user
+	gotr_cb_receive_user receive_user; ///< callback to notify the client about a decrypted message he has to print
 	struct gotr_roomdata data;
 };
 
 static int test();
 static struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_closure);
+static int (*handler_in[GOTR_MAX_EXPECTS])(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len) = {
+	[GOTR_EXPECT_PAIR_CHAN_INIT]      = gotr_parse_pair_channel_init,
+	[GOTR_EXPECT_PAIR_CHAN_ESTABLISH] = gotr_parse_pair_channel_est,
+	[GOTR_EXPECT_FLAKE_y]             = gotr_parse_flake_y,
+	[GOTR_EXPECT_FLAKE_V]             = gotr_parse_flake_V,
+	[GOTR_EXPECT_FLAKE_VALIDATE]      = gotr_parse_flake_validation,
+};
+static unsigned char *(*handler_out[GOTR_MAX_SENDS])(const struct gotr_roomdata *room, struct gotr_user *user) = {
+	[GOTR_SEND_PAIR_CHAN_INIT]      = gotr_pack_pair_channel_init,
+	[GOTR_SEND_PAIR_CHAN_ESTABLISH] = gotr_pack_pair_channel_est,
+	[GOTR_SEND_FLAKE_z]             = gotr_pack_flake_z,
+	[GOTR_SEND_FLAKE_R]             = gotr_pack_flake_R,
+	[GOTR_SEND_FLAKE_VALIDATE]      = gotr_pack_flake_validation,
+};
 
 int gotr_init()
 {
@@ -32,6 +46,11 @@ int gotr_init()
 		gotr_eprintf("failed to set libgcrypt option DISABLE_SECMEM: %s",
 				gcry_strerror(err));
 
+	/* ecc is slow otherwise */
+	if ((err = gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0)))
+		gotr_eprintf("failed to set libgcrypt option ENABLE_QUICK_RANDOM: %s",
+				gcry_strerror(err));
+
 	gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
 
 	gotr_rand_poll();
@@ -39,16 +58,16 @@ int gotr_init()
 	return gotr_gka_init();
 }
 
-struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user send_usr, gotr_cb_receive_usr receive_usr, const void *room_closure, const char *privkey_filename)
+struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user send_user, gotr_cb_receive_user receive_user, const void *room_closure, const char *privkey_filename)
 {
 	struct gotr_chatroom *room;
 
-	test();
+//	test();
 	room = malloc(sizeof(struct gotr_chatroom));
 	room->data.closure = room_closure;
 	room->send_all = send_all;
-	room->send_usr = send_usr;
-	room->receive_usr = receive_usr;
+	room->send_user = send_user;
+	room->receive_user = receive_user;
 
 	load_privkey(privkey_filename, &room->data.my_privkey);
 	gotr_eddsa_key_get_public(&room->data.my_privkey, &room->data.my_pubkey);
@@ -88,66 +107,77 @@ int gotr_receive(struct gotr_chatroom *room, char *b64_msg)
 	}
 	packed_msg[len-1] = '\0';
 
-	gotr_parse_msg(&room->data, packed_msg);
+	gotr_parse_msg(&room->data, packed_msg, len);
 
 	free(packed_msg);
 	return 1;
 }
 
-int gotr_receive_user(struct gotr_chatroom *room, struct gotr_user *user, char *b64_msg)
+struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user *user, void *user_closure, char *b64_msg)
 {
 	size_t len = 0;
 	char *packed_msg = NULL;
 
-	if (!room || !user || !b64_msg) {
+	if (!room || !b64_msg) {
 		gotr_eprintf("called gotr_receive_user with NULL argument");
-		return 0;
+		return NULL;
 	}
+
+	if (!user && !(user = gotr_user_joined(room, user_closure)))
+		return NULL;
 
 	if ((gotr_b64_dec(b64_msg, (unsigned char **)&packed_msg, &len))) {
 		gotr_eprintf("could not decode message: %s", b64_msg);
-		return 0;
+		return NULL;
 	}
 	packed_msg[len-1] = '\0';
 
-	/// @todo unpack (and handle)
+	gotr_eprintf("got msg from %s: %s", user->closure, b64_msg);
+	if (handler_in[user->expected_msgtype] &&
+			!handler_in[user->expected_msgtype](&room->data, user, packed_msg, len))
+		gotr_eprintf("could not unpack message");
+
+	if (handler_out[user->next_msgtype])
+		/* bla = */handler_out[user->next_msgtype](&room->data, user);
 
 	free(packed_msg);
-	return 1;
+	return user;
 }
 
 /**
  * @brief BLABLA
  * @todo docu
  */
-void gotr_user_joined(struct gotr_chatroom *room, void *user_closure) {
+struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, void *user_closure)
+{
 	unsigned char *packed_msg;
 	char *b64_msg;
 	struct gotr_user *user;
 
 	if(!room) {
 		gotr_eprintf("passed room was NULL");
-		return;
+		return NULL;
 	}
 
 	if(!(user = gotr_new_user(room, user_closure))) {
 		gotr_eprintf("could not create new user");
-		return;
+		return NULL;
 	}
 
-	if(!(packed_msg = gotr_pack_est_pair_channel(&room->data, user))) {
-		gotr_eprintf("could not pack est_pair_channel message");
-		return;
+	if(!(packed_msg = gotr_pack_pair_channel_init(&room->data, user))) {
+		gotr_eprintf("could not pack msg_pair_channel_init message");
+		return NULL;
 	}
 
-	if((b64_msg = gotr_b64_enc(packed_msg, sizeof(struct est_pair_channel)))) {
-		room->send_usr((void *)room->data.closure, user->closure, b64_msg);
+	if((b64_msg = gotr_b64_enc(packed_msg, sizeof(struct msg_pair_channel_init)))) {
+		room->send_user((void *)room->data.closure, user->closure, b64_msg);
 		free(b64_msg);
 	} else {
-		gotr_eprintf("could not b64 encode est_pair_channel message");
+		gotr_eprintf("could not b64 encode msg_pair_channel_init message");
 	}
 
 	free(packed_msg);
+	return user;
 }
 
 struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_closure)
@@ -158,7 +188,8 @@ struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_closure)
 		return NULL;
 
 	user->closure = user_closure;
-	user->state = GOTR_STATE_UNKNOWN;
+	user->expected_msgtype = GOTR_EXPECT_PAIR_CHAN_INIT;
+	user->next_msgtype = GOTR_SEND_PAIR_CHAN_INIT;
 	user->next = room->data.users;
 	return room->data.users = user;
 }
@@ -216,7 +247,6 @@ static int test()
 	gcry_mpi_dump(u[1].flake_key);
 	gotr_eprintf("");
 
-	u[0].state = u[1].state = GOTR_STATE_FLAKE_VALIDATED;
 	u[0].next = u[1].next = NULL;
 	if (!gotr_gen_BD_circle_key(u[0].flake_key, &u[0]))
 		gotr_eprintf("c0 failed");
