@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,8 +21,9 @@
 
 /* variables */
 static char *nick;
-int sock_fd;
+static int sock_fd;
 static struct sockaddr_un receiver;
+static struct gotr_chatroom *room = NULL;
 
 /* prototypes */
 static void die(const char *message);
@@ -83,6 +85,14 @@ receive_user(void *room_data, void *user_data, const char *message)
 	fprintf(stderr, "%s: %s", (char *)user_data, message);
 }
 
+static void
+handle_sigint(int signum)
+{
+	close(sock_fd);
+	unlink(nick);
+	gotr_leave(room);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -94,7 +104,6 @@ main(int argc, char *argv[])
 	socklen_t recv_address_len;
 	char buf[BUFLEN];
 	ssize_t buf_len;
-	struct gotr_chatroom *room = NULL;
 
 	errno = 0;
 
@@ -126,6 +135,8 @@ main(int argc, char *argv[])
 		perror("main: bind() failed");
 		goto fail;
 	}
+
+	signal(SIGINT, &handle_sigint);
 
 	if (!gotr_init())
 		goto fail;
