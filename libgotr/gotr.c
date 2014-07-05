@@ -17,6 +17,7 @@ struct gotr_chatroom {
 	struct gotr_roomdata data;
 };
 
+static int test();
 static struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_closure);
 
 int gotr_init()
@@ -42,6 +43,7 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user sen
 {
 	struct gotr_chatroom *room;
 
+	test();
 	room = malloc(sizeof(struct gotr_chatroom));
 	room->data.closure = room_closure;
 	room->send_all = send_all;
@@ -177,4 +179,58 @@ void gotr_leave(struct gotr_chatroom *room)
 	gotr_eddsa_key_clear(&room->data.my_privkey);
 
 	free(room);
+}
+
+/**
+ * for testing purposes only.
+ */
+static int test()
+{
+	struct gotr_user u[2];
+	gotr_gen_BD_keypair(&u[0].r[0], &u[0].z[0]);
+	gotr_gen_BD_keypair(&u[0].r[1], &u[0].z[1]);
+	u[1].y[0] = u[0].z[0];
+	u[1].y[1] = u[0].z[1];
+	gotr_gen_BD_keypair(&u[1].r[0], &u[1].z[0]);
+	gotr_gen_BD_keypair(&u[1].r[1], &u[1].z[1]);
+	u[0].y[0] = u[1].z[0];
+	u[0].y[1] = u[1].z[1];
+	if (!gotr_gen_BD_X_value(&u[0].R[0], u[0].y[1], u[0].z[1], u[0].r[0]))
+		gotr_eprintf("X0 failed");
+	if (!gotr_gen_BD_X_value(&u[0].R[1], u[0].z[0], u[0].y[0], u[0].r[1]))
+		gotr_eprintf("X1 failed");
+	if (!gotr_gen_BD_X_value(&u[1].R[0], u[1].y[1], u[1].z[1], u[1].r[0]))
+		gotr_eprintf("X2 failed");
+	if (!gotr_gen_BD_X_value(&u[1].R[1], u[1].z[0], u[1].y[0], u[1].r[1]))
+		gotr_eprintf("X3 failed");
+	u[1].V[0] = u[0].R[0];
+	u[1].V[1] = u[0].R[1];
+	u[0].V[0] = u[1].R[0];
+	u[0].V[1] = u[1].R[1];
+	if (!gotr_gen_BD_flake_key(&u[0].flake_key, u[0].y[0], u[0].r[1], u[0].R[0], u[0].R[1], u[0].V[1]))
+		gotr_eprintf("f0 failed");
+	if (!gotr_gen_BD_flake_key(&u[1].flake_key, u[1].y[0], u[1].r[1], u[1].R[0], u[1].R[1], u[1].V[1]))
+		gotr_eprintf("f1 failed");
+	gcry_mpi_dump(u[0].flake_key);
+	gotr_eprintf("");
+	gcry_mpi_dump(u[1].flake_key);
+	gotr_eprintf("");
+
+	u[0].state = u[1].state = GOTR_STATE_FLAKE_VALIDATED;
+	u[0].next = u[1].next = NULL;
+	if (!gotr_gen_BD_circle_key(u[0].flake_key, &u[0]))
+		gotr_eprintf("c0 failed");
+	if (gcry_mpi_cmp(u[0].flake_key, u[1].flake_key))
+		gotr_eprintf("flake != c0");
+	gcry_mpi_dump(u[0].flake_key);
+	gotr_eprintf("");
+	if (!gotr_gen_BD_circle_key(u[1].flake_key, &u[1]))
+		gotr_eprintf("c1 failed");
+	if (gcry_mpi_cmp(u[1].flake_key, u[0].flake_key))
+		gotr_eprintf("flake != c1");
+	gcry_mpi_dump(u[1].flake_key);
+	gotr_eprintf("");
+	gotr_eprintf("circle keys match");
+
+	return 0 == gcry_mpi_cmp(u[0].flake_key, u[1].flake_key);
 }

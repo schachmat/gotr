@@ -25,7 +25,7 @@ typedef enum {
  * a pointer that is given to the callbacks when referring to this user.
  * @var gotr_user::state
  * progress in the key exchange algorithm.
- * @var gotr_user::static_pubkey
+ * @var gotr_user::user_pubkey
  * the long term static key of this user.
  * @var gotr_user::r
  * own (ephemeral) private key to this user.

@@ -1,5 +1,4 @@
-/**
- * This file is part of libgotr.
+/* This file is part of libgotr.
  * (C) 2014 Markus Teich, Jannik Theiß
  *
  * libgotr is free software; you can redistribute it and/or modify
@@ -18,7 +17,10 @@
  * Boston, MA 02111-1307, USA.
  */
 
-/* Bourmester-Desmeth based hotplug capable Group Key Agreement */
+/**
+ * @file gka.c
+ * @brief Bourmester-Desmeth based hotplug capable Group Key Agreement
+ */
 
 #include <gcrypt.h>
 
@@ -59,15 +61,12 @@ static gcry_mpi_t generator;
 static gcry_mpi_t gotr_gen_private_BD_key();
 static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey);
 
-static int test();
-
 int gotr_gka_init()
 {
 	generator = GCRYMPI_CONST_FOUR;
 	if(gcry_mpi_scan(&prime, GCRYMPI_FMT_HEX, gotr_bd_prime, 0, NULL))
 		return 0;
 	gcry_mpi_set_flag(prime, GCRYMPI_FLAG_CONST);
-//	test();
 	return 1;
 }
 
@@ -87,26 +86,31 @@ int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t 
 	return 1;
 }
 
-int gotr_gen_BD_flake_key(struct gotr_user *user)
+int gotr_gen_BD_flake_key(gcry_mpi_t *ret,
+		gcry_mpi_t y0,
+		gcry_mpi_t r1,
+		gcry_mpi_t R0,
+		gcry_mpi_t R1,
+		gcry_mpi_t V1)
 {
 	gcry_mpi_t tmp = gcry_mpi_new(GOTR_PKEYSIZE);
 
-	if (!user || !user->y[0] || !user->r[1] || !user->R[0] || !user->R[1] || !user->V[1])
+	if (!y0 || !r1 || !R0 || !R1 || !V1)
 		return 0;
 
 	/// @todo should we abort if the flake key already is calculated?
-	user->flake_key = gcry_mpi_new(GOTR_PKEYSIZE);
+	*ret = gcry_mpi_new(GOTR_PKEYSIZE);
 
-	gcry_mpi_powm(user->flake_key, user->y[0], GCRYMPI_CONST_FOUR, prime);
-	gcry_mpi_powm(user->flake_key, user->flake_key, user->r[1], prime);
+	gcry_mpi_powm(*ret, y0, GCRYMPI_CONST_FOUR, prime);
+	gcry_mpi_powm(*ret, *ret, r1, prime);
 
-	gcry_mpi_powm(tmp, user->R[1], GCRYMPI_CONST_THREE, prime);
-	gcry_mpi_mulm(user->flake_key, user->flake_key, tmp, prime);
+	gcry_mpi_powm(tmp, R1, GCRYMPI_CONST_THREE, prime);
+	gcry_mpi_mulm(*ret, *ret, tmp, prime);
 
-	gcry_mpi_powm(tmp, user->R[0], GCRYMPI_CONST_TWO, prime);
-	gcry_mpi_mulm(user->flake_key, user->flake_key, tmp, prime);
+	gcry_mpi_powm(tmp, R0, GCRYMPI_CONST_TWO, prime);
+	gcry_mpi_mulm(*ret, *ret, tmp, prime);
 
-	gcry_mpi_mulm(user->flake_key, user->flake_key, user->V[1], prime);
+	gcry_mpi_mulm(*ret, *ret, V1, prime);
 
 	gcry_mpi_release(tmp);
 	return 1;
@@ -220,58 +224,4 @@ static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey)
 	gcry_mpi_t ret = gcry_mpi_new(GOTR_PKEYSIZE);
 	gcry_mpi_powm(ret, generator, privkey, prime);
 	return ret;
-}
-
-/**
- * for testing purposes only.
- */
-static int test()
-{
-	struct gotr_user u[2];
-	gotr_gen_BD_keypair(&u[0].r[0], &u[0].z[0]);
-	gotr_gen_BD_keypair(&u[0].r[1], &u[0].z[1]);
-	u[1].y[0] = u[0].z[0];
-	u[1].y[1] = u[0].z[1];
-	gotr_gen_BD_keypair(&u[1].r[0], &u[1].z[0]);
-	gotr_gen_BD_keypair(&u[1].r[1], &u[1].z[1]);
-	u[0].y[0] = u[1].z[0];
-	u[0].y[1] = u[1].z[1];
-	if (!gotr_gen_BD_X_value(&u[0].R[0], u[0].y[1], u[0].z[1], u[0].r[0]))
-		gotr_eprintf("X0 failed");
-	if (!gotr_gen_BD_X_value(&u[0].R[1], u[0].z[0], u[0].y[0], u[0].r[1]))
-		gotr_eprintf("X1 failed");
-	if (!gotr_gen_BD_X_value(&u[1].R[0], u[1].y[1], u[1].z[1], u[1].r[0]))
-		gotr_eprintf("X2 failed");
-	if (!gotr_gen_BD_X_value(&u[1].R[1], u[1].z[0], u[1].y[0], u[1].r[1]))
-		gotr_eprintf("X3 failed");
-	u[1].V[0] = u[0].R[0];
-	u[1].V[1] = u[0].R[1];
-	u[0].V[0] = u[1].R[0];
-	u[0].V[1] = u[1].R[1];
-	if (!gotr_gen_BD_flake_key(&u[0]))
-		gotr_eprintf("f0 failed");
-	if (!gotr_gen_BD_flake_key(&u[1]))
-		gotr_eprintf("f1 failed");
-	gcry_mpi_dump(u[0].flake_key);
-	gotr_eprintf("");
-	gcry_mpi_dump(u[1].flake_key);
-	gotr_eprintf("");
-
-	u[0].state = u[1].state = GOTR_STATE_FLAKE_VALIDATED;
-	u[0].next = u[1].next = NULL;
-	if (!gotr_gen_BD_circle_key(u[0].flake_key, &u[0]))
-		gotr_eprintf("c0 failed");
-	if (gcry_mpi_cmp(u[0].flake_key, u[1].flake_key))
-		gotr_eprintf("flake != c0");
-	gcry_mpi_dump(u[0].flake_key);
-	gotr_eprintf("");
-	if (!gotr_gen_BD_circle_key(u[1].flake_key, &u[1]))
-		gotr_eprintf("c1 failed");
-	if (gcry_mpi_cmp(u[1].flake_key, u[0].flake_key))
-		gotr_eprintf("flake != c1");
-	gcry_mpi_dump(u[1].flake_key);
-	gotr_eprintf("");
-	gotr_eprintf("circle keys match");
-
-	return 0 == gcry_mpi_cmp(u[0].flake_key, u[1].flake_key);
 }

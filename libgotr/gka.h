@@ -1,5 +1,4 @@
-/**
- * This file is part of libgotr.
+/* This file is part of libgotr.
  * (C) 2014 Markus Teich, Jannik Theiß
  *
  * libgotr is free software; you can redistribute it and/or modify
@@ -16,6 +15,11 @@
  * along with libgotr; see the file LICENSE.  If not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
+ */
+
+/**
+ * @file gka.h
+ * @brief Bourmester-Desmeth based hotplug capable Group Key Agreement
  */
 
 #ifndef _GOTR_GKA_H
@@ -54,6 +58,19 @@ void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey);
  */
 int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t denom, const gcry_mpi_t pow);
 
-int gotr_gen_BD_flake_key(struct gotr_user *user);
+/**
+ * calculate a flake key.
+ * @f$ret = y0^{4r1} * R1^3 * R0^2 * V1 \pmod{prime}@f$
+ *
+ * @param[out] ret The calculated flake key
+ * @param[in] y0
+ * @param[in] r1
+ * @param[in] R0
+ * @param[in] R1
+ * @param[in] V1
+ * @return 1 on success, 0 on failure (unset parameter)
+ */
+int gotr_gen_BD_flake_key(gcry_mpi_t *ret, gcry_mpi_t y0, gcry_mpi_t r1, gcry_mpi_t R0, gcry_mpi_t R1, gcry_mpi_t V1);
 
+int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users);
 #endif
