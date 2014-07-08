@@ -1,0 +1,53 @@
+\section{Group Key Agreement}
+\begin{frame}{Burmester-Desmedt GKA 1}
+	\begin{block}{Prerequisites}
+		\begin{itemize}
+			\item $p$ prime
+			\item $g \in Z_p^*$
+			\item satisfies DDH
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+\begin{frame}{Burmester-Desmedt GKA 2}
+	\begin{block}{Every User $U_i, i = 1, 2, \dots, n$}
+		\begin{itemize}
+			\item selects random $r_i \in Z_p$
+			\item broadcasts $z_i := g^{r_i} \mod p$
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+\begin{frame}{Burmester-Desmedt GKA 3}
+	\begin{block}{Every $U_i, i = 1, 2, \dots, n$ broadcasts}
+		\begin{itemize}
+			\item[] $X_i := (\frac{z_{i+1}}{z_{i-1}})^{r_i} \mod p$
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+\begin{frame}{Burmester-Desmedt GKA 4}
+	\begin{block}{Every $U_i, i = 1, 2, \dots, n$ computes}
+		\begin{itemize}
+			\item[] $\begin{aligned}
+				K_i :&= (z_{i-1})^{nr_i} * X_i^{n-1} * X_{i+1}^{n-2} * \dots * X_{i-2} \mod p\\
+					&= g^{r_1r_2 + r_2r_3 + \dots + r_nr_1} \mod p
+			\end{aligned}$
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+\begin{frame}{Burmester-Desmedt GKA fazit}
+	\begin{block}{Advantages}
+		\begin{itemize}
+			\item Extended DHE
+			\item Cheap calculations
+		\end{itemize}
+	\end{block}
+	\begin{alertblock}{Drawbacks}
+		\begin{itemize}
+			\item expensive rekeying
+			\item Not hot-plug capable
+		\end{itemize}
+	\end{alertblock}
+\end{frame}

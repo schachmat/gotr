@@ -1,14 +1,7 @@
-TC = pdflatex -shell-escape
-TEX = bdgka0.tex bdgka1.tex bdgka2.tex bdgka3.tex
-PNG = ${TEX:.tex=.png}
+TEX_FILES = $(find -iname '*.tex')
+IMG_SRCS = $(wildcard abbildungen/*)
 
-all: ${PNG}
-
-%.png: %.tex
-	${TC} $<
-
+all: $(TEX_FILES) $(IMG_SRCS) Makefile options.tex
+	pdflatex gotr.tex && pdflatex gotr.tex
 clean:
-	@echo cleaning
-	@rm -f ${PNG} *.{aux,log,pdf}
-
-.PHONY: all clean
+	rm -f *.aux *.bbl *.blg *.log *.pdf *.toc *.nav *.out *.snm *.vrb
