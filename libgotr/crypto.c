@@ -216,7 +216,7 @@ gotr_eddsa_key_get_public(const struct gotr_eddsa_private_key *priv,
 	int
 gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv,
 		const void *block, size_t size,
-		struct gotr_EddsaSignature *sig)
+		struct gotr_eddsa_signature *sig)
 {
 	gcry_sexp_t priv_sexp;
 	gcry_sexp_t sig_sexp;
@@ -266,7 +266,7 @@ gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv,
 	int
 gotr_eddsa_verify(const struct gotr_eddsa_public_key *pub,
 		const void *block, size_t size,
-		const struct gotr_EddsaSignature *sig)
+		const struct gotr_eddsa_signature *sig)
 {
 	gcry_sexp_t data;
 	gcry_sexp_t sig_sexpr;
@@ -435,7 +435,7 @@ data_to_eddsa_value(const void *block, size_t size)
 
 // --- ECDHE ---
 
-static gcry_sexp_t decode_private_ecdhe_key(const struct gotr_EcdhePrivateKey *priv);
+static gcry_sexp_t decode_private_ecdhe_key(const struct gotr_ecdhe_private_key *priv);
 
 /**
  * Create a new private key.
@@ -443,7 +443,7 @@ static gcry_sexp_t decode_private_ecdhe_key(const struct gotr_EcdhePrivateKey *p
  * @param priv where to write the private key
  */
 	void
-gotr_ecdhe_key_create(struct gotr_EcdhePrivateKey *priv)
+gotr_ecdhe_key_create(struct gotr_ecdhe_private_key *priv)
 {
 	gcry_sexp_t priv_sexp;
 	gcry_sexp_t s_keyparam;
@@ -490,8 +490,8 @@ gotr_ecdhe_key_create(struct gotr_EcdhePrivateKey *priv)
  * @param pub where to write the public key
  */
 	void
-gotr_ecdhe_key_get_public(const struct gotr_EcdhePrivateKey *priv,
-		struct gotr_EcdhePublicKey *pub)
+gotr_ecdhe_key_get_public(const struct gotr_ecdhe_private_key *priv,
+		struct gotr_ecdhe_public_key *pub)
 {
 	gcry_sexp_t sexp;
 	gcry_ctx_t ctx;
@@ -517,8 +517,8 @@ gotr_ecdhe_key_get_public(const struct gotr_EcdhePrivateKey *priv,
  * @return #GNUNET_SYSERR on error, #GNUNET_OK on success
  */
 	int
-gotr_ecc_ecdh(const struct gotr_EcdhePrivateKey *priv,
-		const struct gotr_EcdhePublicKey *pub,
+gotr_ecc_ecdh(const struct gotr_ecdhe_private_key *priv,
+		const struct gotr_ecdhe_public_key *pub,
 		struct gotr_HashCode *key_material)
 {
 	gcry_mpi_point_t result;
@@ -586,9 +586,9 @@ gotr_ecc_ecdh(const struct gotr_EcdhePrivateKey *priv,
  * @param pk location of the key
  */
 	void
-gotr_ecdhe_key_clear(struct gotr_EcdhePrivateKey *pk)
+gotr_ecdhe_key_clear(struct gotr_ecdhe_private_key *pk)
 {
-	memset(pk, 0, sizeof(struct gotr_EcdhePrivateKey));
+	memset(pk, 0, sizeof(struct gotr_ecdhe_private_key));
 }
 
 /**
@@ -599,7 +599,7 @@ gotr_ecdhe_key_clear(struct gotr_EcdhePrivateKey *pk)
  * @return NULL on error
  */
 	static gcry_sexp_t
-decode_private_ecdhe_key(const struct gotr_EcdhePrivateKey *priv)
+decode_private_ecdhe_key(const struct gotr_ecdhe_private_key *priv)
 {
 	gcry_sexp_t result;
 	int rc;

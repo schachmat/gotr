@@ -77,8 +77,8 @@ struct gotr_user {
 	gotr_expect_next expected_msgtype;
 	gotr_send_next next_msgtype;
 	struct gotr_eddsa_public_key user_pubkey;
-	struct gotr_EcdhePrivateKey dhe_privkey;
-	struct gotr_EcdhePublicKey dhe_pubkey;
+	struct gotr_ecdhe_private_key dhe_privkey;
+	struct gotr_ecdhe_public_key dhe_pubkey;
 	gcry_mpi_t r[2];
 	gcry_mpi_t z[2];
 	gcry_mpi_t y[2];

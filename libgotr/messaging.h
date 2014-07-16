@@ -9,18 +9,18 @@ struct gotr_user;
 struct gotr_roomdata;
 
 struct msg_pair_channel_init {
-	struct gotr_EcdhePublicKey   dh_pub;
+	struct gotr_ecdhe_public_key   dh_pub;
 };
 
 struct msg_pair_channel_est {
-	struct gotr_EddsaSignature   sig;
-	struct gotr_EcdhePublicKey   dh_pub;
+	struct gotr_eddsa_signature  sig;
+	struct gotr_ecdhe_public_key   dh_pub;
 	struct gotr_eddsa_public_key sender_pub;
 };
 
 struct msg_flake_z {
 	uint32_t                     op;
-	struct gotr_EddsaSignature   sig;
+	struct gotr_eddsa_signature  sig;
 	unsigned char                encrypted[];
 };
 

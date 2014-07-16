@@ -67,7 +67,7 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *u
 	if(!room || !user || !packed_msg || len != sizeof(struct msg_pair_channel_init))
 		return 0;
 
-	memcpy(&user->dhe_pubkey, &msg->dh_pub, sizeof(struct gotr_EcdhePublicKey));
+	memcpy(&user->dhe_pubkey, &msg->dh_pub, sizeof(struct gotr_ecdhe_public_key));
 /// @todo generate keys for enc and hmac:
 // gotr_ecc_ecdh(&user->dhe_privkey, &user->dhe_pubkey, &BLA);
 
