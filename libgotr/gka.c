@@ -19,14 +19,18 @@
 
 /**
  * @file gka.c
- * @brief Bourmester-Desmeth based hotplug capable Group Key Agreement
+ * @brief Bourmester-Desmeth based hotplug capable Group Key Agreement modified
+ * to use elliptic curves. See „Contributory Group Key Agreement Protocols,
+ * Revisited for Mobile Ad-Hoc Groups“ by Mark Manulis†
  */
 
+#include <assert.h>
 #include <gcrypt.h>
 
 #include "gka.h"
 #include "util.h"
 
+#define CURVE "Ed25519"
 #define GOTR_SKEYSIZE (4096)
 #define GOTR_PKEYSIZE (GOTR_SKEYSIZE+1)
 
@@ -57,24 +61,47 @@ static const char *gotr_bd_prime =
 
 static gcry_mpi_t prime;
 static gcry_mpi_t generator;
+static gcry_ctx_t ctx;
 
 static gcry_mpi_t gotr_gen_private_BD_key();
 static gcry_mpi_t gotr_gen_public_BD_key(const gcry_mpi_t privkey);
 static int gotr_gen_BD_circle_key_part(gcry_mpi_t cur, gcry_mpi_t factors[4], unsigned int pow);
 
+/// @todo return void
 int gotr_gka_init()
 {
+	gcry_error_t rc = 0;
+
 	generator = GCRYMPI_CONST_FOUR;
 	if(gcry_mpi_scan(&prime, GCRYMPI_FMT_HEX, gotr_bd_prime, 0, NULL))
 		return 0;
 	gcry_mpi_set_flag(prime, GCRYMPI_FLAG_CONST);
+
+	rc = gcry_mpi_ec_new(&ctx, NULL, CURVE);
+	gotr_assert_gpgerr(rc);
 	return 1;
+}
+
+void gotr_gka_exit()
+{
+	gcry_ctx_release(ctx);
 }
 
 void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey)
 {
 	*privkey = gotr_gen_private_BD_key();
 	*pubkey = gotr_gen_public_BD_key(*privkey);
+}
+
+int gotr_ecbd_gen_BD_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv)
+{
+	*ret = gcry_mpi_point_new(0);
+	gcry_mpi_ec_mul(*ret, priv, succ, ctx);
+//	if (!gcry_mpi_invm(*ret, denom, prime))
+//		return 0;
+//	gcry_mpi_mulm(*ret, *ret, num, prime);
+//	gcry_mpi_powm(*ret, *ret, pow, prime);
+	return 1;
 }
 
 int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t denom, const gcry_mpi_t pow)
