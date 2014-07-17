@@ -38,6 +38,8 @@
  */
 int gotr_gka_init();
 
+void gotr_gka_exit();
+
 /**
  * generate a BD key pair.
  *
@@ -73,4 +75,5 @@ int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t 
 int gotr_gen_BD_flake_key(gcry_mpi_t *ret, gcry_mpi_t y0, gcry_mpi_t r1, gcry_mpi_t R0, gcry_mpi_t R1, gcry_mpi_t V1);
 
 int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users);
+
 #endif
