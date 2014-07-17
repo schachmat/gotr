@@ -93,15 +93,20 @@ void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey)
 	*pubkey = gotr_gen_public_BD_key(*privkey);
 }
 
-int gotr_ecbd_gen_BD_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv)
+void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv)
 {
+	gcry_mpi_t tmp = gcry_mpi_new(0);
+	gcry_mpi_point_t tmpoint = gcry_mpi_point_new(0);
+
+	gotr_assert(succ && pred && priv);
+
 	*ret = gcry_mpi_point_new(0);
 	gcry_mpi_ec_mul(*ret, priv, succ, ctx);
-//	if (!gcry_mpi_invm(*ret, denom, prime))
-//		return 0;
-//	gcry_mpi_mulm(*ret, *ret, num, prime);
-//	gcry_mpi_powm(*ret, *ret, pow, prime);
-	return 1;
+	gcry_mpi_sub(tmp, tmp, priv);
+	gcry_mpi_ec_mul(tmpoint, tmp, pred, ctx);
+	gcry_mpi_ec_add(*ret, *ret, tmpoint, ctx);
+	gcry_mpi_point_release(tmpoint);
+	gcry_mpi_release(tmp);
 }
 
 int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t denom, const gcry_mpi_t pow)
