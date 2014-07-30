@@ -121,11 +121,17 @@ receive_user(void *room_data, void *user_data, const char *message)
 }
 
 static void
-handle_sigint(int signum)
+cleanup()
 {
 	close(sock_fd);
 	unlink(nick);
 	gotr_leave(room);
+}
+
+static void
+handle_sig(int signum)
+{
+	cleanup();
 }
 
 static struct gotr_user *
@@ -185,7 +191,10 @@ main(int argc, char *argv[])
 		goto fail;
 	}
 
-	signal(SIGINT, &handle_sigint);
+	signal(SIGINT, &handle_sig);
+	signal(SIGABRT, &handle_sig);
+	signal(SIGSEGV, &handle_sig);
+	atexit(&cleanup);
 
 	if (!gotr_init())
 		goto fail;
@@ -229,9 +238,7 @@ main(int argc, char *argv[])
 				if (fgets(buf, BUFLEN, stdin)) {
 					if (buf[0] == '/') { /* command */
 						if (buf[1] == 'q') {
-							close(sock_fd);
-							unlink(nick);
-							gotr_leave(room);
+							cleanup();
 							room = NULL;
 							return 0;
 						} else {
