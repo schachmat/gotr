@@ -48,6 +48,8 @@ void gotr_gka_exit();
  */
 void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey);
 
+void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey);
+
 /**
  * generate a BD X value.
  * @f$ret = (\frac{num}{denom})^{pow} \pmod{prime}@f$
@@ -76,4 +78,5 @@ int gotr_gen_BD_flake_key(gcry_mpi_t *ret, gcry_mpi_t y0, gcry_mpi_t r1, gcry_mp
 
 int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users);
 
+void gka_test();
 #endif

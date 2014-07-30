@@ -31,6 +31,7 @@
 #include "util.h"
 
 #define CURVE "Ed25519"
+#define SERIALIZED_POINT_LEN (256/8)
 #define GOTR_SKEYSIZE (4096)
 #define GOTR_PKEYSIZE (GOTR_SKEYSIZE+1)
 
@@ -87,10 +88,99 @@ void gotr_gka_exit()
 	gcry_ctx_release(ctx);
 }
 
+static gcry_mpi_point_t deserialize_point(const unsigned char *data, const int len)
+{
+	gcry_sexp_t s;
+	gcry_mpi_point_t ret;
+	gcry_error_t rc;
+
+	rc = gcry_sexp_build(&s, NULL, "(public-key(ecc(curve " CURVE ")(q %b)))",
+						 len, data);
+	gotr_assert_gpgerr(rc);
+
+	rc = gcry_mpi_ec_new(&ctx, s, NULL);
+	gotr_assert_gpgerr(rc);
+	gcry_sexp_release(s);
+
+	ret = gcry_mpi_ec_get_point("q", ctx, 0);
+	gotr_assert(ret);
+	return ret;
+}
+
+static unsigned char *serialize_point(gcry_mpi_point_t p)
+{
+	gcry_sexp_t s;
+	gcry_ctx_t ctx;
+	gcry_error_t rc;
+	gcry_mpi_t q;
+	unsigned char *ret = malloc(SERIALIZED_POINT_LEN);
+
+	rc = gcry_sexp_build(&s, NULL, "(public-key(ecc(curve " CURVE ")))");
+	gotr_assert_gpgerr(rc);
+	gotr_assert(NULL != s);
+
+	rc = gcry_mpi_ec_new(&ctx, s, NULL);
+	gotr_assert_gpgerr(rc);
+	gcry_sexp_release(s);
+
+	rc = gcry_mpi_ec_set_point("q", p, ctx);
+	gotr_assert_gpgerr(rc);
+
+	q = gcry_mpi_ec_get_mpi("q@eddsa", ctx, 0);
+	gotr_assert(NULL != q);
+	gcry_ctx_release(ctx);
+
+	gotr_mpi_print_unsigned(ret, SERIALIZED_POINT_LEN, q);
+	gcry_mpi_release(q);
+	return ret;
+}
+
+void gka_test()
+{
+	struct gotr_ecdhe_private_key priv;
+	struct gotr_ecdhe_public_key pub;
+	gcry_mpi_t vs;
+	gcry_mpi_point_t pp;
+	unsigned char *ser;
+
+	gotr_ecdhe_key_create(&priv);
+	gotr_ecdhe_key_get_public(&priv, &pub);
+
+	pp = gcry_mpi_ec_get_point("g", ctx, 0);
+	gcry_log_debugpnt(" g: ", pp, ctx);
+
+	gotr_mpi_scan_unsigned(&vs, priv.d, sizeof(priv.d));
+	pp = deserialize_point(pub.q_y, 32);
+
+	gotr_ecbd_gen_keypair(&vs, &pp);
+	gcry_log_debugmpi("vs    ", vs);
+	gcry_log_debugpnt("pp: ", pp, ctx);
+
+	ser = serialize_point(pp);
+	gcry_mpi_point_release(pp);
+	pp = deserialize_point(ser, 32);
+	gcry_log_debugpnt("pp: ", pp, ctx);
+	gcry_mpi_point_release(pp);
+
+	exit(1);
+}
+
 void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey)
 {
 	*privkey = gotr_gen_private_BD_key();
 	*pubkey = gotr_gen_public_BD_key(*privkey);
+}
+
+void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey)
+{
+	struct gotr_ecdhe_private_key priv;
+	struct gotr_ecdhe_public_key pub;
+
+	gotr_ecdhe_key_create(&priv);
+	gotr_mpi_scan_unsigned(privkey, priv.d, sizeof(priv.d));
+
+	gotr_ecdhe_key_get_public(&priv, &pub);
+	*pubkey = deserialize_point(pub.q_y, (int)sizeof(pub.q_y));
 }
 
 void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv)
@@ -102,7 +192,7 @@ void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, c
 
 	*ret = gcry_mpi_point_new(0);
 	gcry_mpi_ec_mul(*ret, priv, succ, ctx);
-	gcry_mpi_sub(tmp, tmp, priv);
+	gcry_mpi_neg(tmp, priv);
 	gcry_mpi_ec_mul(tmpoint, tmp, pred, ctx);
 	gcry_mpi_ec_add(*ret, *ret, tmpoint, ctx);
 	gcry_mpi_point_release(tmpoint);
