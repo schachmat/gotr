@@ -62,7 +62,8 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user sen
 {
 	struct gotr_chatroom *room;
 
-//	test();
+	test();
+	abort();
 	room = malloc(sizeof(struct gotr_chatroom));
 	room->data.closure = room_closure;
 	room->send_all = send_all;
@@ -217,6 +218,8 @@ void gotr_leave(struct gotr_chatroom *room)
  */
 static int test()
 {
+	gka_test();
+
 	struct gotr_user u[2];
 	gotr_gen_BD_keypair(&u[0].r[0], &u[0].z[0]);
 	gotr_gen_BD_keypair(&u[0].r[1], &u[0].z[1]);
