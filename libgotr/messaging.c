@@ -12,15 +12,17 @@
 #include "gka.h"
 
 struct msg_pair_channel_init {
-	struct gotr_ecdhe_public_key dh_pub;
+	struct gotr_dhe_pkey    dh_pub;    /*     0    32 */
+	/* size: 32 */
 };
 
 struct msg_pair_channel_est {
-	struct gotr_HashCode             hmac;
+	struct gotr_hash_code       hmac;          /*     0    64 */
 	struct {
-		struct gotr_eddsa_signature  sig_dh_pub;
-		struct gotr_eddsa_public_key sender_pub;
-	} enc;
+		struct gotr_dsa_sig     sig_dh_pub;    /*    64    64 */
+		struct gotr_dsa_pkey    dsa_pub;       /*   128    32 */
+	} enc;                                     /*    64    96 */
+	/* size: 160 */
 };
 
 struct msg_flake_z {
@@ -47,8 +49,8 @@ unsigned char *gotr_pack_pair_channel_init(const struct gotr_roomdata *room, str
 unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room, struct gotr_user *user, size_t *len)
 {
 	struct msg_pair_channel_est *msg;
-	struct gotr_ecdhe_public_key own_pub;
-	struct gotr_HashCode key_material;
+	struct gotr_dhe_pkey own_pub;
+	struct gotr_hash_code key_material;
 
 	if(!room || !user || !(msg = malloc(sizeof(struct msg_pair_channel_est))))
 		return NULL;
@@ -62,11 +64,11 @@ unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room, stru
 	/// @todo derive key material for hmac and symmetric enc
 
 	gotr_ecdhe_key_get_public(&user->dhe_privkey, &own_pub);
-	if(!gotr_eddsa_sign(&room->my_privkey, &own_pub, sizeof(struct gotr_ecdhe_public_key), &msg->enc.sig_dh_pub)) {
+	if(!gotr_eddsa_sign(&room->my_privkey, &own_pub, sizeof(struct gotr_dhe_pkey), &msg->enc.sig_dh_pub)) {
 		gotr_eprintf("could not sign pair channel establishment message.");
 		return NULL;
 	}
-	memcpy(&msg->enc.sender_pub, &room->my_pubkey, sizeof(struct gotr_eddsa_public_key));
+	memcpy(&msg->enc.dsa_pub, &room->my_pubkey, sizeof(struct gotr_dsa_pkey));
 
 	/// @todo encrypt msg->enc and then build hmac(msg->enc) into msg->hmac
 
@@ -102,7 +104,7 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *u
 	if(!room || !user || !packed_msg || len != sizeof(struct msg_pair_channel_init))
 		return 0;
 
-	memcpy(&user->dhe_pubkey, &msg->dh_pub, sizeof(struct gotr_ecdhe_public_key));
+	memcpy(&user->dhe_pubkey, &msg->dh_pub, sizeof(struct gotr_dhe_pkey));
 
 	user->expected_msgtype = GOTR_EXPECT_PAIR_CHAN_ESTABLISH;
 	return GOTR_OK;

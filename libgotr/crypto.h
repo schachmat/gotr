@@ -34,11 +34,11 @@ void gotr_rand_poll();
 
 // --- HASHING ---
 
-struct gotr_HashCode {
+struct gotr_hash_code {
 	uint32_t bits[512 / 8 / sizeof (uint32_t)];   /* = 16 */
 };
 
-void gotr_hash(const void *block, size_t size, struct gotr_HashCode *ret);
+void gotr_hash(const void *block, size_t size, struct gotr_hash_code *ret);
 
 
 
@@ -51,41 +51,41 @@ void gotr_mpi_scan_unsigned (gcry_mpi_t *result, const void *data, size_t size);
 
 // --- EdDSA ---
 
-struct gotr_eddsa_private_key {
+struct gotr_dsa_skey {
 	unsigned char d[256 / 8];
 };
 
-struct gotr_eddsa_public_key {
+struct gotr_dsa_pkey {
 	unsigned char q_y[256 / 8];
 };
 
-struct gotr_eddsa_signature {
+struct gotr_dsa_sig {
 	unsigned char r[256 / 8];
 	unsigned char s[256 / 8];
 };
 
-void gotr_eddsa_key_create(struct gotr_eddsa_private_key *priv);
-void gotr_eddsa_key_get_public(const struct gotr_eddsa_private_key *priv, struct gotr_eddsa_public_key *pub);
-int gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv, const void *block, size_t size, struct gotr_eddsa_signature *sig);
-int gotr_eddsa_verify(const struct gotr_eddsa_public_key *pub, const void *block, size_t size, const struct gotr_eddsa_signature *sig);
-void gotr_eddsa_key_clear(struct gotr_eddsa_private_key *priv);
+void gotr_eddsa_key_create(struct gotr_dsa_skey *priv);
+void gotr_eddsa_key_get_public(const struct gotr_dsa_skey *priv, struct gotr_dsa_pkey *pub);
+int gotr_eddsa_sign(const struct gotr_dsa_skey *priv, const void *block, size_t size, struct gotr_dsa_sig *sig);
+int gotr_eddsa_verify(const struct gotr_dsa_pkey *pub, const void *block, size_t size, const struct gotr_dsa_sig *sig);
+void gotr_eddsa_key_clear(struct gotr_dsa_skey *priv);
 
 
 
 // --- ECDHE ---
 
-struct gotr_ecdhe_private_key {
+struct gotr_dhe_skey {
 	unsigned char d[256 / 8];
 };
 
-struct gotr_ecdhe_public_key {
+struct gotr_dhe_pkey {
 	unsigned char q_y[256 / 8];
 };
 
-void gotr_ecdhe_key_create(struct gotr_ecdhe_private_key *priv);
-void gotr_ecdhe_key_get_public(const struct gotr_ecdhe_private_key *priv, struct gotr_ecdhe_public_key *pub);
-int gotr_ecdhe(const struct gotr_ecdhe_private_key *priv, const struct gotr_ecdhe_public_key *pub, struct gotr_HashCode *key_material);
-void gotr_ecdhe_key_clear(struct gotr_ecdhe_private_key *priv);
+void gotr_ecdhe_key_create(struct gotr_dhe_skey *priv);
+void gotr_ecdhe_key_get_public(const struct gotr_dhe_skey *priv, struct gotr_dhe_pkey *pub);
+int gotr_ecdhe(const struct gotr_dhe_skey *priv, const struct gotr_dhe_pkey *pub, struct gotr_hash_code *key_material);
+void gotr_ecdhe_key_clear(struct gotr_dhe_skey *priv);
 
 
 
@@ -93,21 +93,21 @@ void gotr_ecdhe_key_clear(struct gotr_ecdhe_private_key *priv);
 
 #define gotr_AES_KEY_LENGTH (256/8)
 
-struct gotr_SymmetricSessionKey {
+struct gotr_sym_key {
 	unsigned char aes_key[gotr_AES_KEY_LENGTH];
 	unsigned char twofish_key[gotr_AES_KEY_LENGTH];
 };
 
-struct gotr_SymmetricInitializationVector {
+struct gotr_sym_iv {
 	unsigned char aes_iv[gotr_AES_KEY_LENGTH / 2];
 	unsigned char twofish_iv[gotr_AES_KEY_LENGTH / 2];
 };
 
-void gotr_symmetric_create_session_key(struct gotr_SymmetricSessionKey *key);
-ssize_t gotr_symmetric_encrypt(const void *block, size_t size, const struct gotr_SymmetricSessionKey *sessionkey, const struct gotr_SymmetricInitializationVector *iv, void *result);
-ssize_t gotr_symmetric_decrypt(const void *block, size_t size, const struct gotr_SymmetricSessionKey *sessionkey, const struct gotr_SymmetricInitializationVector *iv, void *result);
-void gotr_symmetric_derive_iv(struct gotr_SymmetricInitializationVector *iv, const struct gotr_SymmetricSessionKey *skey, const void *salt, size_t salt_len, ...);
-void gotr_symmetric_derive_iv_v (struct gotr_SymmetricInitializationVector *iv, const struct gotr_SymmetricSessionKey *skey, const void *salt, size_t salt_len, va_list argp);
+void gotr_symmetric_create_session_key(struct gotr_sym_key *key);
+ssize_t gotr_symmetric_encrypt(const void *block, size_t size, const struct gotr_sym_key *sessionkey, const struct gotr_sym_iv *iv, void *result);
+ssize_t gotr_symmetric_decrypt(const void *block, size_t size, const struct gotr_sym_key *sessionkey, const struct gotr_sym_iv *iv, void *result);
+void gotr_symmetric_derive_iv(struct gotr_sym_iv *iv, const struct gotr_sym_key *skey, const void *salt, size_t salt_len, ...);
+void gotr_symmetric_derive_iv_v (struct gotr_sym_iv *iv, const struct gotr_sym_key *skey, const void *salt, size_t salt_len, va_list argp);
 
 
 

@@ -4,8 +4,8 @@
 #include "crypto.h"
 
 struct gotr_roomdata {
-	struct gotr_eddsa_private_key my_privkey;
-	struct gotr_eddsa_public_key my_pubkey;
+	struct gotr_dsa_skey my_privkey;
+	struct gotr_dsa_pkey my_pubkey;
 	struct gotr_user *users;         ///< a list of all users in the room
 	const void *closure;
 };
@@ -73,9 +73,9 @@ typedef enum {
  * link to next user in the list
  */
 struct gotr_user {
-	struct gotr_ecdhe_private_key dhe_privkey;
-	struct gotr_ecdhe_public_key dhe_pubkey;
-	struct gotr_eddsa_public_key user_pubkey;
+	struct gotr_dhe_skey dhe_privkey;
+	struct gotr_dhe_pkey dhe_pubkey;
+	struct gotr_dsa_pkey user_pubkey;
 	gcry_mpi_t r[2];
 	gcry_mpi_t z[2];
 	gcry_mpi_t y[2];

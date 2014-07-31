@@ -6,10 +6,10 @@
 #include "util.h"
 #include "key.h"
 
-void load_privkey(const char* abs_filename, struct gotr_eddsa_private_key *key)
+void load_privkey(const char* abs_filename, struct gotr_dsa_skey *key)
 {
 	FILE *fp;
-	size_t size = sizeof(struct gotr_eddsa_private_key);
+	size_t size = sizeof(struct gotr_dsa_skey);
 	mode_t oldmask;
 
 	if ((fp = fopen(abs_filename, "rb"))) {

@@ -145,8 +145,8 @@ void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey)
 
 void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey)
 {
-	struct gotr_ecdhe_private_key priv;
-	struct gotr_ecdhe_public_key pub;
+	struct gotr_dhe_skey priv;
+	struct gotr_dhe_pkey pub;
 
 	gotr_ecdhe_key_create(&priv);
 	gotr_mpi_scan_unsigned(privkey, priv.d, sizeof(priv.d));

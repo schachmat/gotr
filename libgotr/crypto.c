@@ -46,7 +46,7 @@ void gotr_rand_poll()
  * @param size the length of the data to #gotr_hash in @a block
  * @param ret pointer to where to write the hashcode
  */
-void gotr_hash(const void *block, size_t size, struct gotr_HashCode *ret)
+void gotr_hash(const void *block, size_t size, struct gotr_hash_code *ret)
 {
 	gcry_md_hash_buffer(GCRY_MD_SHA512, ret, block, size);
 }
@@ -130,7 +130,7 @@ void gotr_mpi_scan_unsigned(gcry_mpi_t *result, const void *data, size_t size)
 // --- EdDSA ---
 
 static int key_from_sexp(gcry_mpi_t * array, gcry_sexp_t sexp, const char *topname, const char *elems);
-static gcry_sexp_t decode_private_eddsa_key(const struct gotr_eddsa_private_key *priv);
+static gcry_sexp_t decode_private_eddsa_key(const struct gotr_dsa_skey *priv);
 static gcry_sexp_t data_to_eddsa_value(const void *block, size_t size);
 
 /**
@@ -139,7 +139,7 @@ static gcry_sexp_t data_to_eddsa_value(const void *block, size_t size);
  * @param priv where to write the private key
  */
 	void
-gotr_eddsa_key_create(struct gotr_eddsa_private_key *priv)
+gotr_eddsa_key_create(struct gotr_dsa_skey *priv)
 {
 	gcry_sexp_t priv_sexp;
 	gcry_sexp_t s_keyparam;
@@ -186,8 +186,8 @@ gotr_eddsa_key_create(struct gotr_eddsa_private_key *priv)
  * @param pub where to write the public key
  */
 	void
-gotr_eddsa_key_get_public(const struct gotr_eddsa_private_key *priv,
-		struct gotr_eddsa_public_key *pub)
+gotr_eddsa_key_get_public(const struct gotr_dsa_skey *priv,
+		struct gotr_dsa_pkey *pub)
 {
 	gcry_sexp_t sexp;
 	gcry_ctx_t ctx;
@@ -214,9 +214,9 @@ gotr_eddsa_key_get_public(const struct gotr_eddsa_private_key *priv,
  * @return #GNUNET_SYSERR on error, #GNUNET_OK on success
  */
 	int
-gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv,
+gotr_eddsa_sign(const struct gotr_dsa_skey *priv,
 		const void *block, size_t size,
-		struct gotr_eddsa_signature *sig)
+		struct gotr_dsa_sig *sig)
 {
 	gcry_sexp_t priv_sexp;
 	gcry_sexp_t sig_sexp;
@@ -264,9 +264,9 @@ gotr_eddsa_sign(const struct gotr_eddsa_private_key *priv,
  * @returns #GNUNET_OK if ok, #GNUNET_SYSERR if invalid
  */
 	int
-gotr_eddsa_verify(const struct gotr_eddsa_public_key *pub,
+gotr_eddsa_verify(const struct gotr_dsa_pkey *pub,
 		const void *block, size_t size,
-		const struct gotr_eddsa_signature *sig)
+		const struct gotr_dsa_sig *sig)
 {
 	gcry_sexp_t data;
 	gcry_sexp_t sig_sexpr;
@@ -315,9 +315,9 @@ gotr_eddsa_verify(const struct gotr_eddsa_public_key *pub,
  * @param priv location of the key
  */
 	void
-gotr_eddsa_key_clear(struct gotr_eddsa_private_key *priv)
+gotr_eddsa_key_clear(struct gotr_dsa_skey *priv)
 {
-	memset(priv, 0, sizeof(struct gotr_eddsa_private_key));
+	memset(priv, 0, sizeof(struct gotr_dsa_skey));
 }
 
 /**
@@ -380,7 +380,7 @@ static int key_from_sexp(gcry_mpi_t * array, gcry_sexp_t sexp, const char *topna
  * @return NULL on error
  */
 	static gcry_sexp_t
-decode_private_eddsa_key(const struct gotr_eddsa_private_key *priv)
+decode_private_eddsa_key(const struct gotr_dsa_skey *priv)
 {
 	gcry_sexp_t result;
 	int rc;
@@ -415,7 +415,7 @@ decode_private_eddsa_key(const struct gotr_eddsa_private_key *priv)
 	static gcry_sexp_t
 data_to_eddsa_value(const void *block, size_t size)
 {
-	struct gotr_HashCode hc;
+	struct gotr_hash_code hc;
 	gcry_sexp_t expr;
 	int rc;
 
@@ -435,7 +435,7 @@ data_to_eddsa_value(const void *block, size_t size)
 
 // --- ECDHE ---
 
-static gcry_sexp_t decode_private_ecdhe_key(const struct gotr_ecdhe_private_key *priv);
+static gcry_sexp_t decode_private_ecdhe_key(const struct gotr_dhe_skey *priv);
 
 /**
  * Create a new private key.
@@ -443,7 +443,7 @@ static gcry_sexp_t decode_private_ecdhe_key(const struct gotr_ecdhe_private_key 
  * @param priv where to write the private key
  */
 	void
-gotr_ecdhe_key_create(struct gotr_ecdhe_private_key *priv)
+gotr_ecdhe_key_create(struct gotr_dhe_skey *priv)
 {
 	gcry_sexp_t priv_sexp;
 	gcry_sexp_t s_keyparam;
@@ -490,8 +490,8 @@ gotr_ecdhe_key_create(struct gotr_ecdhe_private_key *priv)
  * @param pub where to write the public key
  */
 	void
-gotr_ecdhe_key_get_public(const struct gotr_ecdhe_private_key *priv,
-		struct gotr_ecdhe_public_key *pub)
+gotr_ecdhe_key_get_public(const struct gotr_dhe_skey *priv,
+		struct gotr_dhe_pkey *pub)
 {
 	gcry_sexp_t sexp;
 	gcry_ctx_t ctx;
@@ -517,9 +517,9 @@ gotr_ecdhe_key_get_public(const struct gotr_ecdhe_private_key *priv,
  * @return #GNUNET_SYSERR on error, #GNUNET_OK on success
  */
 	int
-gotr_ecdhe(const struct gotr_ecdhe_private_key *priv,
-		const struct gotr_ecdhe_public_key *pub,
-		struct gotr_HashCode *key_material)
+gotr_ecdhe(const struct gotr_dhe_skey *priv,
+		const struct gotr_dhe_pkey *pub,
+		struct gotr_hash_code *key_material)
 {
 	gcry_mpi_point_t result;
 	gcry_mpi_point_t q;
@@ -586,9 +586,9 @@ gotr_ecdhe(const struct gotr_ecdhe_private_key *priv,
  * @param pk location of the key
  */
 	void
-gotr_ecdhe_key_clear(struct gotr_ecdhe_private_key *pk)
+gotr_ecdhe_key_clear(struct gotr_dhe_skey *pk)
 {
-	memset(pk, 0, sizeof(struct gotr_ecdhe_private_key));
+	memset(pk, 0, sizeof(struct gotr_dhe_skey));
 }
 
 /**
@@ -599,7 +599,7 @@ gotr_ecdhe_key_clear(struct gotr_ecdhe_private_key *pk)
  * @return NULL on error
  */
 	static gcry_sexp_t
-decode_private_ecdhe_key(const struct gotr_ecdhe_private_key *priv)
+decode_private_ecdhe_key(const struct gotr_dhe_skey *priv)
 {
 	gcry_sexp_t result;
 	int rc;
@@ -633,7 +633,7 @@ decode_private_ecdhe_key(const struct gotr_ecdhe_private_key *priv)
  * @param key session key to initialize
  */
 	void
-gotr_symmetric_create_session_key(struct gotr_SymmetricSessionKey *key)
+gotr_symmetric_create_session_key(struct gotr_sym_key *key)
 {
 	gcry_randomize(key->aes_key,
 			gotr_AES_KEY_LENGTH,
@@ -653,8 +653,8 @@ gotr_symmetric_create_session_key(struct gotr_SymmetricSessionKey *key)
  */
 	static int
 setup_cipher_aes(gcry_cipher_hd_t *handle,
-		const struct gotr_SymmetricSessionKey *sessionkey,
-		const struct gotr_SymmetricInitializationVector *iv)
+		const struct gotr_sym_key *sessionkey,
+		const struct gotr_sym_iv *iv)
 {
 	int rc;
 
@@ -690,8 +690,8 @@ setup_cipher_aes(gcry_cipher_hd_t *handle,
  */
 	static int
 setup_cipher_twofish(gcry_cipher_hd_t *handle,
-		const struct gotr_SymmetricSessionKey *sessionkey,
-		const struct gotr_SymmetricInitializationVector *iv)
+		const struct gotr_sym_key *sessionkey,
+		const struct gotr_sym_iv *iv)
 {
 	int rc;
 
@@ -730,8 +730,8 @@ setup_cipher_twofish(gcry_cipher_hd_t *handle,
 	ssize_t
 gotr_symmetric_encrypt(const void *block,
 		size_t size,
-		const struct gotr_SymmetricSessionKey *sessionkey,
-		const struct gotr_SymmetricInitializationVector *iv,
+		const struct gotr_sym_key *sessionkey,
+		const struct gotr_sym_iv *iv,
 		void *result)
 {
 	gcry_cipher_hd_t handle;
@@ -765,8 +765,8 @@ gotr_symmetric_encrypt(const void *block,
  */
 	ssize_t
 gotr_symmetric_decrypt(const void *block, size_t size,
-		const struct gotr_SymmetricSessionKey *sessionkey,
-		const struct gotr_SymmetricInitializationVector *iv,
+		const struct gotr_sym_key *sessionkey,
+		const struct gotr_sym_iv *iv,
 		void *result)
 {
 	gcry_cipher_hd_t handle;
@@ -795,8 +795,8 @@ gotr_symmetric_decrypt(const void *block, size_t size,
  * @param ... pairs of void * & size_t for context chunks, terminated by NULL
  */
 	void
-gotr_symmetric_derive_iv(struct gotr_SymmetricInitializationVector *iv,
-		const struct gotr_SymmetricSessionKey *skey,
+gotr_symmetric_derive_iv(struct gotr_sym_iv *iv,
+		const struct gotr_sym_key *skey,
 		const void *salt, size_t salt_len, ...)
 {
 	va_list argp;
@@ -817,8 +817,8 @@ gotr_symmetric_derive_iv(struct gotr_SymmetricInitializationVector *iv,
  * @param argp pairs of void * & size_t for context chunks, terminated by NULL
  */
 	void
-gotr_symmetric_derive_iv_v(struct gotr_SymmetricInitializationVector *iv,
-		const struct gotr_SymmetricSessionKey *skey,
+gotr_symmetric_derive_iv_v(struct gotr_sym_iv *iv,
+		const struct gotr_sym_key *skey,
 		const void *salt, size_t salt_len, va_list argp)
 {
 	char aes_salt[salt_len + 4];

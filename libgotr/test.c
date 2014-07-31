@@ -19,8 +19,8 @@ static char *test_init()
 
 static char *test_serialization()
 {
-	struct gotr_ecdhe_private_key priv;
-	struct gotr_ecdhe_public_key pub;
+	struct gotr_dhe_skey priv;
+	struct gotr_dhe_pkey pub;
 	gcry_mpi_t x1, x2, y1, y2;
 	gcry_mpi_point_t p1, p2;
 	unsigned char *ser;
