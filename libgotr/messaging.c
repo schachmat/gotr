@@ -115,12 +115,30 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *u
 int gotr_parse_pair_channel_est(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len)
 {
 	struct msg_pair_channel_est *msg = (struct msg_pair_channel_est*)packed_msg;
+	struct gotr_hash_code hmac;
 
-	if(!room || !user || !packed_msg || len != sizeof(*msg))
+	if (!room || !user || !packed_msg || len != sizeof(*msg))
 		return 0;
 
-	/// @todo check hmac, decrypt, copy eddsa pubkey, check sig
-	
+	gotr_hmac(&user->our_hmac_key, &msg->enc, sizeof(msg->enc), &hmac);
+	if (0 != memcmp(&hmac, &msg->hmac, sizeof(hmac))) {
+		gotr_eprintf("hmac mismatch");
+		return 0;
+	}
+
+	if (gotr_symmetric_decrypt(&msg->enc, sizeof(msg->enc), &user->our_sym_key,
+	                           &user->our_sym_iv, &msg->enc) != sizeof(msg->enc)) {
+		gotr_eprintf("decryption failed");
+		return 0;
+	}
+
+	memcpy(&user->his_dsa_pkey, &msg->enc.sender_dsa_pkey, sizeof(user->his_dsa_pkey));
+	if (!gotr_eddsa_verify(&user->his_dsa_pkey, &user->his_dhe_pkey, sizeof(user->his_dhe_pkey), &msg->enc.sig_sender_dhe_pkey)) {
+		gotr_eprintf("signature mismatch");
+		return 0;
+	}
+
+	user->expected_msgtype = GOTR_EXPECT_FLAKE_y;
 	return GOTR_OK;
 }
 
