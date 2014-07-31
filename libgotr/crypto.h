@@ -38,6 +38,15 @@ struct gotr_hash_code {
 	uint32_t bits[512 / 8 / sizeof (uint32_t)];   /* = 16 */
 };
 
+/**
+ * @brief type for (message) authentication keys
+ */
+struct gotr_auth_key
+{
+	unsigned char key[(512/8)];
+};
+
+
 void gotr_hash(const void *block, size_t size, struct gotr_hash_code *ret);
 
 
@@ -113,7 +122,8 @@ void gotr_symmetric_derive_iv_v (struct gotr_sym_iv *iv, const struct gotr_sym_k
 
 // --- KDF ---
 
-int gotr_kdf_v (void *result, size_t out_len, const void *xts, size_t xts_len, const void *skm, size_t skm_len, va_list argp);
-int gotr_hkdf_v (void *result, size_t out_len, int xtr_algo, int prf_algo, const void *xts, size_t xts_len, const void *skm, size_t skm_len, va_list argp);
+int gotr_kdf(void *result, size_t out_len, const void *xts, size_t xts_len, const void *skm, size_t skm_len, ...);
+int gotr_kdf_v(void *result, size_t out_len, const void *xts, size_t xts_len, const void *skm, size_t skm_len, va_list argp);
+int gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo, const void *xts, size_t xts_len, const void *skm, size_t skm_len, va_list argp);
 
 #endif

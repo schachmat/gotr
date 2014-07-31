@@ -27,6 +27,11 @@
 
 #define CURVE "Ed25519"
 
+// --- forward declarations ---
+
+static void gotr_hmac_derive_key_v(struct gotr_auth_key *key, const struct gotr_sym_key *rkey, const void *salt, size_t salt_len, va_list argp);
+
+
 // --- RANDOM ---
 
 void gotr_rand_poll()
@@ -50,6 +55,74 @@ void gotr_hash(const void *block, size_t size, struct gotr_hash_code *ret)
 {
 	gcry_md_hash_buffer(GCRY_MD_SHA512, ret, block, size);
 }
+
+/**
+ * @brief Derive an authentication key
+ * @param key authentication key
+ * @param rkey root key
+ * @param salt salt
+ * @param salt_len size of the @a salt
+ * @param argp pair of void * & size_t for context chunks, terminated by NULL
+ */
+void
+gotr_hmac_derive_key_v(struct gotr_auth_key *key, const struct gotr_sym_key *rkey,
+					   const void *salt, size_t salt_len, va_list argp)
+{
+	gotr_kdf_v(key->key, sizeof(key->key), salt, salt_len, rkey,
+			   sizeof(struct gotr_sym_key), argp);
+}
+
+/**
+ * @brief Derive an authentication key
+ * @param key authentication key
+ * @param rkey root key
+ * @param salt salt
+ * @param salt_len size of the @a salt
+ * @param ... pair of void * & size_t for context chunks, terminated by NULL
+ */
+void
+gotr_hmac_derive_key(struct gotr_auth_key *key, const struct gotr_sym_key *rkey,
+					 const void *salt, size_t salt_len, ...)
+{
+	va_list argp;
+
+	va_start(argp, salt_len);
+	gotr_hmac_derive_key_v(key, rkey, salt, salt_len, argp);
+	va_end(argp);
+}
+
+/**
+ * Calculate HMAC of a message (RFC 2104)
+ *
+ * @param key secret key
+ * @param plaintext input plaintext
+ * @param plaintext_len length of @a plaintext
+ * @param hmac where to store the hmac
+ */
+void
+gotr_hmac (const struct gotr_auth_key *key,
+		   const void *plaintext, size_t plaintext_len,
+		   struct gotr_hash_code *hmac)
+{
+	static int once = 0;
+	static gcry_md_hd_t md;
+	const unsigned char *mc;
+	gcry_error_t rc;
+
+	if (!once) {
+		once = 1;
+		rc = gcry_md_open(&md, GCRY_MD_SHA512, GCRY_MD_FLAG_HMAC);
+		gotr_assert_gpgerr(rc);
+	} else {
+		gcry_md_reset (md);
+	}
+	gcry_md_setkey(md, key->key, sizeof(key->key));
+	gcry_md_write(md, plaintext, plaintext_len);
+	mc = gcry_md_read(md, GCRY_MD_SHA512);
+	gotr_assert(NULL != mc);
+	memcpy(hmac->bits, mc, sizeof(hmac->bits));
+}
+
 
 // --- MPI ---
 
@@ -628,6 +701,31 @@ decode_private_ecdhe_key(const struct gotr_dhe_skey *priv)
 // --- Symmetric ---
 
 /**
+ * Convert a hashcode into a key.
+ *
+ * @param hc hash code that serves to generate the key
+ * @param skey set to a valid session key
+ * @param iv set to a valid initialization vector
+ */
+void
+gotr_hash_to_sym_key(const struct gotr_hash_code *hc, struct gotr_sym_key *skey,
+                     struct gotr_sym_iv *iv)
+{
+	int rc;
+	rc = gotr_kdf (skey, sizeof (struct gotr_sym_key),
+				   "Hash key derivation", strlen ("Hash key derivation"),
+				   hc, sizeof (struct gotr_hash_code),
+				   NULL, 0);
+	gotr_assert(rc);
+
+	rc = gotr_kdf (iv, sizeof (struct gotr_sym_iv),
+				   "Initialization vector derivation", strlen ("Initialization vector derivation"),
+				   hc, sizeof (struct gotr_hash_code),
+				   NULL, 0);
+	gotr_assert(rc);
+}
+
+/**
  * Create a new SessionKey (for symmetric encryption).
  *
  * @param key session key to initialize
@@ -875,6 +973,31 @@ gotr_kdf_v(void *result, size_t out_len, const void *xts,
 }
 
 /**
+ * @brief Derive key
+ * @param result buffer for the derived key, allocated by caller
+ * @param out_len desired length of the derived key
+ * @param xts salt
+ * @param xts_len length of @a xts
+ * @param skm source key material
+ * @param skm_len length of @a skm
+ * @param ... void * & size_t pairs for context chunks
+ * @return 1 on success
+ */
+int
+gotr_kdf (void *result, size_t out_len, const void *xts, size_t xts_len,
+          const void *skm, size_t skm_len, ...)
+{
+	va_list argp;
+	int ret;
+
+	va_start(argp, skm_len);
+	ret = gotr_kdf_v(result, out_len, xts, xts_len, skm, skm_len, argp);
+	va_end(argp);
+
+	return ret;
+}
+
+/**
  * @brief Compute the HMAC
  * @todo use chunked buffers
  * @param mac gcrypt MAC handle
@@ -983,9 +1106,6 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 	memset(result, 0, out_len);
 	if (getPRK(xtr, xts, xts_len, skm, skm_len, prk) != 1 /*GNUNET_YES*/)
 		goto hkdf_error;
-#if DEBUG_HKDF
-	dump("PRK", prk, xtr_len);
-#endif
 
 	t = out_len / k;
 	d = out_len % k;
@@ -1012,9 +1132,6 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 		if (t > 0)
 		{
 			memset(plain + k + ctx_len, 1, 1);
-#if DEBUG_HKDF
-			dump("K(1)", plain, plain_len);
-#endif
 			hc = doHMAC(prf, prk, xtr_len, &plain[k], ctx_len + 1);
 			if (hc == NULL)
 				goto hkdf_error;
@@ -1028,9 +1145,6 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 			memcpy(plain, ((char*)result) - k, k);
 			memset(plain + k + ctx_len, i + 1, 1);
 			gcry_md_reset(prf);
-#if DEBUG_HKDF
-			dump("K(i+1)", plain, plain_len);
-#endif
 			hc = doHMAC(prf, prk, xtr_len, plain, plain_len);
 			if (hc == NULL)
 				goto hkdf_error;
@@ -1048,9 +1162,6 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 			}
 			memset(plain + k + ctx_len, i, 1);
 			gcry_md_reset(prf);
-#if DEBUG_HKDF
-			dump("K(t):d", plain, plain_len);
-#endif
 			if (t > 0)
 				hc = doHMAC(prf, prk, xtr_len, plain, plain_len);
 			else
@@ -1059,9 +1170,6 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 				goto hkdf_error;
 			memcpy(result, hc, d);
 		}
-#if DEBUG_HKDF
-		dump("result", result - k, out_len);
-#endif
 
 		//ret = GNUNET_YES;
 		ret = 1;

@@ -73,6 +73,9 @@ typedef enum {
  * link to next user in the list
  */
 struct gotr_user {
+	struct gotr_auth_key our_hmac_key;
+	struct gotr_sym_key  our_sym_key;
+	struct gotr_sym_iv   our_sym_iv;
 	struct gotr_dhe_skey my_dhe_skey;
 	struct gotr_dhe_pkey his_dhe_pkey;
 	struct gotr_dsa_pkey his_dsa_pkey;
