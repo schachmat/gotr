@@ -11,10 +11,10 @@
 struct gotr_user;
 
 struct gotr_chatroom {
+	struct gotr_roomdata data;
 	gotr_cb_send_all send_all;       ///< callback to send a message to every participant in this room
 	gotr_cb_send_user send_user;       ///< callback to send a message to a specific user
 	gotr_cb_receive_user receive_user; ///< callback to notify the client about a decrypted message he has to print
-	struct gotr_roomdata data;
 };
 
 static struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_closure);
