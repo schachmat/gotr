@@ -10,7 +10,12 @@ CLIENT_SRC = client.c
 CLIENT_INC = gotr.h
 CLIENT_OBJ = ${CLIENT_SRC:.c=.o}
 
-all: options cscope ${LIB} ${CLIENT}
+TEST = test
+TEST_SRC = test.c
+TEST_INC = test.h
+TEST_OBJ = ${TEST_SRC:.c=.o}
+
+all: options cscope ${LIB} ${CLIENT} ${TEST}
 
 options:
 	@echo build options:
@@ -23,18 +28,25 @@ options:
 	@${CC} -c ${CFLAGS} $<
 
 ${OBJ}: ${INC} config.mk
-
 ${CLIENT_OBJ}: ${CLIENT_INC} config.mk
-
-${CLIENT}: ${CLIENT_OBJ} ${LIB}
-	@echo CC -o $@
-	@${CC} -o $@ ${CLIENT_OBJ} ${CLIENT_LDFLAGS}
+${TEST_OBJ}: ${TEST_INC} config.mk
 
 ${LIB}: ${OBJ}
 	@echo AR
 	@${AR} -rcs $@ ${OBJ}
 
-cscope: ${SRC} ${INC} ${CLIENT_SRC} ${CLIENT_INC}
+${CLIENT}: ${CLIENT_OBJ} ${LIB}
+	@echo CC -o $@
+	@${CC} -o $@ ${CLIENT_OBJ} ${CLIENT_LDFLAGS}
+
+${TEST}: ${TEST_OBJ} ${LIB}
+	@echo CC -o $@
+	@${CC} -o $@ ${TEST_OBJ} -lgcrypt
+
+check: ${TEST}
+	@./${TEST}
+
+cscope: ${SRC} ${INC} ${CLIENT_SRC} ${CLIENT_INC} ${TEST_SRC} ${TEST_INC}
 	@echo cScope
 	@${CSCOPE} -R -b
 
@@ -44,6 +56,6 @@ doc: Doxyfile
 
 clean:
 	@echo cleaning
-	@rm -f ${LIB} ${CLIENT} ${OBJ} ${CLIENT_OBJ}
+	@rm -f ${LIB} ${CLIENT} ${OBJ} ${CLIENT_OBJ} ${TEST} ${TEST_OBJ}
 
 .PHONY: all client libgotr.a options cscope doc clean

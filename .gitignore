@@ -1,6 +1,7 @@
 *~
 *.swp
 libgotr/client
+libgotr/test
 libgotr/libgotr.a
 libgotr/include
 libgotr/lib
