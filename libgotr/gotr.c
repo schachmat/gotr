@@ -17,7 +17,7 @@ struct gotr_chatroom {
 	gotr_cb_receive_user receive_user; ///< callback to notify the client about a decrypted message he has to print
 };
 
-static struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_closure);
+static struct gotr_user *gotr_init_user(struct gotr_chatroom *room, void *user_closure);
 static int (*handler_in[GOTR_MAX_EXPECTS])(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len) = {
 	[GOTR_EXPECT_PAIR_CHAN_INIT]      = gotr_parse_pair_channel_init,
 	[GOTR_EXPECT_PAIR_CHAN_ESTABLISH] = gotr_parse_pair_channel_est,
@@ -159,7 +159,7 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, void *user_closur
 		return NULL;
 	}
 
-	if(!(user = gotr_new_user(room, user_closure))) {
+	if(!(user = gotr_init_user(room, user_closure))) {
 		gotr_eprintf("could not create new user");
 		return NULL;
 	}
@@ -180,7 +180,7 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, void *user_closur
 	return user;
 }
 
-struct gotr_user *gotr_new_user(struct gotr_chatroom *room, void *user_closure)
+struct gotr_user *gotr_init_user(struct gotr_chatroom *room, void *user_closure)
 {
 	struct gotr_user *user;
 
