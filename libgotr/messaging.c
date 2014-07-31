@@ -12,33 +12,24 @@
 #include "gka.h"
 
 struct msg_pair_channel_init {
-	struct gotr_ecdhe_public_key   dh_pub;
+	struct gotr_ecdhe_public_key dh_pub;
 };
 
 struct msg_pair_channel_est {
-	struct gotr_eddsa_signature  sig;
-	struct gotr_ecdhe_public_key   dh_pub;
-	struct gotr_eddsa_public_key sender_pub;
+	struct gotr_HashCode             hmac;
+	struct {
+		struct gotr_eddsa_signature  sig_dh_pub;
+		struct gotr_eddsa_public_key sender_pub;
+	} enc;
 };
 
 struct msg_flake_z {
-	uint32_t                     op;
-	struct gotr_eddsa_signature  sig;
-	unsigned char                encrypted[];
-};
-
-struct four_mpis {
-	unsigned char a1[512];
-	unsigned char a2[512];
-	unsigned char a3[512];
-	unsigned char a4[512];
 };
 
 unsigned char *gotr_pack_pair_channel_init(const struct gotr_roomdata *room, struct gotr_user *user, size_t *len)
 {
 	struct msg_pair_channel_init *msg;
 
-	*len = 0;
 	if(!room || !user || !(msg = malloc(sizeof(struct msg_pair_channel_init))))
 		return NULL;
 
@@ -55,13 +46,17 @@ unsigned char *gotr_pack_pair_channel_init(const struct gotr_roomdata *room, str
 unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room, struct gotr_user *user, size_t *len)
 {
 	struct msg_pair_channel_est *msg;
+	struct gotr_HashCode key_material;
 
 	if(!room || !user || !(msg = malloc(sizeof(struct msg_pair_channel_est))))
 		return NULL;
 
 	memset(msg, 0, sizeof(struct msg_pair_channel_est));
 
+	gotr_ecdhe(&user->dhe_privkey, &user->dhe_pubkey, &key_material);
+
 	user->next_msgtype = GOTR_SEND_FLAKE_z;
+	*len = sizeof(struct msg_pair_channel_est);
 	return (unsigned char *)msg;
 }
 
@@ -93,8 +88,6 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *u
 		return 0;
 
 	memcpy(&user->dhe_pubkey, &msg->dh_pub, sizeof(struct gotr_ecdhe_public_key));
-/// @todo generate keys for enc and hmac:
-// gotr_ecc_ecdh(&user->dhe_privkey, &user->dhe_pubkey, &BLA);
 
 	user->expected_msgtype = GOTR_EXPECT_PAIR_CHAN_ESTABLISH;
 	return GOTR_OK;
