@@ -4,8 +4,8 @@
 #include "crypto.h"
 
 struct gotr_roomdata {
-	struct gotr_dsa_skey my_privkey;
-	struct gotr_dsa_pkey my_pubkey;
+	struct gotr_dsa_skey my_dsa_skey;
+	struct gotr_dsa_pkey my_dsa_pkey;
 	struct gotr_user *users;         ///< a list of all users in the room
 	const void *closure;
 };
@@ -42,11 +42,11 @@ typedef enum {
  * the next message from the other user should have this type.
  * @var gotr_user::next_msgtype
  * the next message, we send to the other user should have the given type.
- * @var gotr_user::user_pubkey
+ * @var gotr_user::his_dsa_pkey
  * other users long term public key for EDDSA.
- * @var gotr_user::dhe_privkey
+ * @var gotr_user::my_dhe_skey
  * own private key for the ECDHE
- * @var gotr_user::dhe_pubkey
+ * @var gotr_user::his_dhe_pkey
  * other users public key for the ECDHE
  * @var gotr_user::r
  * own (ephemeral) private key to this user.
@@ -73,9 +73,9 @@ typedef enum {
  * link to next user in the list
  */
 struct gotr_user {
-	struct gotr_dhe_skey dhe_privkey;
-	struct gotr_dhe_pkey dhe_pubkey;
-	struct gotr_dsa_pkey user_pubkey;
+	struct gotr_dhe_skey my_dhe_skey;
+	struct gotr_dhe_pkey his_dhe_pkey;
+	struct gotr_dsa_pkey his_dsa_pkey;
 	gcry_mpi_t r[2];
 	gcry_mpi_t z[2];
 	gcry_mpi_t y[2];
