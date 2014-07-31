@@ -33,16 +33,15 @@ unsigned char *gotr_pack_pair_channel_init(const struct gotr_roomdata *room, str
 {
 	struct msg_pair_channel_init *msg;
 
-	if(!room || !user || !(msg = malloc(sizeof(struct msg_pair_channel_init))))
+	if(!room || !user || !(msg = malloc(sizeof(*msg))))
 		return NULL;
 
-	memset(msg, 0, sizeof(struct msg_pair_channel_init));
+	memset(msg, 0, sizeof(*msg));
 
-	gotr_ecdhe_key_create(&user->my_dhe_skey);
 	gotr_ecdhe_key_get_public(&user->my_dhe_skey, &msg->sender_dhe_pkey);
 
 	user->next_msgtype = GOTR_SEND_PAIR_CHAN_ESTABLISH;
-	*len = sizeof(struct msg_pair_channel_init);
+	*len = sizeof(*msg);
 	return (unsigned char *)msg;
 }
 
@@ -50,30 +49,24 @@ unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room, stru
 {
 	struct msg_pair_channel_est *msg;
 	struct gotr_dhe_pkey own_pub;
-	struct gotr_hash_code key_material;
 
-	if(!room || !user || !(msg = malloc(sizeof(struct msg_pair_channel_est))))
+	if(!room || !user || !(msg = malloc(sizeof(*msg))))
 		return NULL;
 
-	memset(msg, 0, sizeof(struct msg_pair_channel_est));
-
-	if(!gotr_ecdhe(&user->my_dhe_skey, &user->his_dhe_pkey, &key_material)) {
-		gotr_eprintf("ecdhe failed.");
-		return NULL;
-	}
-	/// @todo derive key material for hmac and symmetric enc
+	memset(msg, 0, sizeof(*msg));
 
 	gotr_ecdhe_key_get_public(&user->my_dhe_skey, &own_pub);
-	if(!gotr_eddsa_sign(&room->my_dsa_skey, &own_pub, sizeof(struct gotr_dhe_pkey), &msg->enc.sig_sender_dhe_pkey)) {
+	if(!gotr_eddsa_sign(&room->my_dsa_skey, &own_pub, sizeof(own_pub), &msg->enc.sig_sender_dhe_pkey)) {
 		gotr_eprintf("could not sign pair channel establishment message.");
 		return NULL;
 	}
-	memcpy(&msg->enc.sender_dsa_pkey, &room->my_dsa_pkey, sizeof(struct gotr_dsa_pkey));
+	memcpy(&msg->enc.sender_dsa_pkey, &room->my_dsa_pkey, sizeof(room->my_dsa_pkey));
 
-	/// @todo encrypt msg->enc and then build hmac(msg->enc) into msg->hmac
+	gotr_symmetric_encrypt(&msg->enc, sizeof(msg->enc), &user->our_sym_key, &user->our_sym_iv, &msg->enc);
+	gotr_hmac(&user->our_hmac_key, &msg->enc, sizeof(msg->enc), &msg->hmac);
 
 	user->next_msgtype = GOTR_SEND_FLAKE_z;
-	*len = sizeof(struct msg_pair_channel_est);
+	*len = sizeof(*msg);
 	return (unsigned char *)msg;
 }
 
@@ -100,11 +93,20 @@ unsigned char *gotr_pack_msg(const struct gotr_roomdata *room, char *msg, size_t
 int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len)
 {
 	struct msg_pair_channel_init *msg = (struct msg_pair_channel_init*)packed_msg;
+	struct gotr_hash_code exchanged_key;
 
-	if(!room || !user || !packed_msg || len != sizeof(struct msg_pair_channel_init))
+	if(!room || !user || !packed_msg || len != sizeof(*msg))
 		return 0;
 
-	memcpy(&user->his_dhe_pkey, &msg->sender_dhe_pkey, sizeof(struct gotr_dhe_pkey));
+	memcpy(&user->his_dhe_pkey, &msg->sender_dhe_pkey, sizeof(msg->sender_dhe_pkey));
+
+	if(!gotr_ecdhe(&user->my_dhe_skey, &user->his_dhe_pkey, &exchanged_key)) {
+		gotr_eprintf("ecdhe failed.");
+		return 0;
+	}
+	gotr_sym_derive_key(&exchanged_key, &user->our_sym_key, &user->our_sym_iv);
+	gotr_hmac_derive_key(&user->our_hmac_key, &user->our_sym_key,
+	                     &exchanged_key, sizeof(exchanged_key), NULL);
 
 	user->expected_msgtype = GOTR_EXPECT_PAIR_CHAN_ESTABLISH;
 	return GOTR_OK;
@@ -114,7 +116,7 @@ int gotr_parse_pair_channel_est(struct gotr_roomdata *room, struct gotr_user *us
 {
 	struct msg_pair_channel_est *msg = (struct msg_pair_channel_est*)packed_msg;
 
-	if(!room || !user || !packed_msg || len != sizeof(struct msg_pair_channel_est))
+	if(!room || !user || !packed_msg || len != sizeof(*msg))
 		return 0;
 
 	/// @todo check hmac, decrypt, copy eddsa pubkey, check sig

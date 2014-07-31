@@ -32,6 +32,7 @@
 void gotr_rand_poll();
 
 
+
 // --- HASHING ---
 
 struct gotr_hash_code {
@@ -45,8 +46,8 @@ struct gotr_auth_key {
 	unsigned char key[(512/8)];
 };
 
-
 void gotr_hash(const void *block, size_t size, struct gotr_hash_code *ret);
+void gotr_hmac (const struct gotr_auth_key *key, const void *plaintext, size_t plaintext_len, struct gotr_hash_code *hmac);
 
 
 
@@ -124,5 +125,7 @@ void gotr_symmetric_derive_iv_v (struct gotr_sym_iv *iv, const struct gotr_sym_k
 int gotr_kdf(void *result, size_t out_len, const void *xts, size_t xts_len, const void *skm, size_t skm_len, ...);
 int gotr_kdf_v(void *result, size_t out_len, const void *xts, size_t xts_len, const void *skm, size_t skm_len, va_list argp);
 int gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo, const void *xts, size_t xts_len, const void *skm, size_t skm_len, va_list argp);
+void gotr_hmac_derive_key(struct gotr_auth_key *key, const struct gotr_sym_key *rkey, const void *salt, size_t salt_len, ...);
+void gotr_sym_derive_key(const struct gotr_hash_code *hc, struct gotr_sym_key *skey, struct gotr_sym_iv *iv);
 
 #endif

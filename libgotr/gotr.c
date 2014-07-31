@@ -187,6 +187,8 @@ struct gotr_user *gotr_init_user(struct gotr_chatroom *room, void *user_closure)
 	if (!room || !(user = malloc(sizeof(struct gotr_user))))
 		return NULL;
 
+	gotr_ecdhe_key_create(&user->my_dhe_skey);
+
 	user->closure = user_closure;
 	user->expected_msgtype = GOTR_EXPECT_PAIR_CHAN_INIT;
 	user->next_msgtype = GOTR_SEND_PAIR_CHAN_INIT;

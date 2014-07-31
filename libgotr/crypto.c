@@ -708,7 +708,7 @@ decode_private_ecdhe_key(const struct gotr_dhe_skey *priv)
  * @param iv set to a valid initialization vector
  */
 void
-gotr_hash_to_sym_key(const struct gotr_hash_code *hc, struct gotr_sym_key *skey,
+gotr_sym_derive_key(const struct gotr_hash_code *hc, struct gotr_sym_key *skey,
                      struct gotr_sym_iv *iv)
 {
 	int rc;
