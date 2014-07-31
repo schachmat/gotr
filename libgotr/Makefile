@@ -15,7 +15,7 @@ TEST_SRC = test.c
 TEST_INC = test.h
 TEST_OBJ = ${TEST_SRC:.c=.o}
 
-all: options cscope ${LIB} ${CLIENT} ${TEST}
+all: options cscope ${LIB} ${CLIENT}
 
 options:
 	@echo build options:
