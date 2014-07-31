@@ -517,7 +517,7 @@ gotr_ecdhe_key_get_public(const struct gotr_ecdhe_private_key *priv,
  * @return #GNUNET_SYSERR on error, #GNUNET_OK on success
  */
 	int
-gotr_ecc_ecdh(const struct gotr_ecdhe_private_key *priv,
+gotr_ecdhe(const struct gotr_ecdhe_private_key *priv,
 		const struct gotr_ecdhe_public_key *pub,
 		struct gotr_HashCode *key_material)
 {

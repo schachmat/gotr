@@ -84,7 +84,7 @@ struct gotr_ecdhe_public_key {
 
 void gotr_ecdhe_key_create(struct gotr_ecdhe_private_key *priv);
 void gotr_ecdhe_key_get_public(const struct gotr_ecdhe_private_key *priv, struct gotr_ecdhe_public_key *pub);
-int gotr_ecc_ecdh(const struct gotr_ecdhe_private_key *priv, const struct gotr_ecdhe_public_key *pub, struct gotr_HashCode *key_material);
+int gotr_ecdhe(const struct gotr_ecdhe_private_key *priv, const struct gotr_ecdhe_public_key *pub, struct gotr_HashCode *key_material);
 void gotr_ecdhe_key_clear(struct gotr_ecdhe_private_key *priv);
 
 
