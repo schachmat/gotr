@@ -25,7 +25,7 @@ static int (*handler_in[GOTR_MAX_EXPECTS])(struct gotr_roomdata *room, struct go
 	[GOTR_EXPECT_FLAKE_V]             = gotr_parse_flake_V,
 	[GOTR_EXPECT_FLAKE_VALIDATE]      = gotr_parse_flake_validation,
 };
-static unsigned char *(*handler_out[GOTR_MAX_SENDS])(const struct gotr_roomdata *room, struct gotr_user *user) = {
+static unsigned char *(*handler_out[GOTR_MAX_SENDS])(const struct gotr_roomdata *room, struct gotr_user *user, size_t *len) = {
 	[GOTR_SEND_PAIR_CHAN_INIT]      = gotr_pack_pair_channel_init,
 	[GOTR_SEND_PAIR_CHAN_ESTABLISH] = gotr_pack_pair_channel_est,
 	[GOTR_SEND_FLAKE_z]             = gotr_pack_flake_z,
@@ -115,6 +115,7 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 {
 	size_t len = 0;
 	char *packed_msg = NULL;
+	size_t len_p = 0;
 
 	if (!room || !b64_msg) {
 		gotr_eprintf("called gotr_receive_user with NULL argument");
@@ -136,7 +137,7 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 		gotr_eprintf("could not unpack message");
 
 	if (handler_out[user->next_msgtype])
-		/* bla = */handler_out[user->next_msgtype](&room->data, user);
+		/* bla = */handler_out[user->next_msgtype](&room->data, user, &len_p);
 
 	free(packed_msg);
 	return user;
@@ -149,6 +150,7 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, void *user_closure)
 {
 	unsigned char *packed_msg;
+	size_t len_p = 0;
 	char *b64_msg;
 	struct gotr_user *user;
 
@@ -162,12 +164,12 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, void *user_closur
 		return NULL;
 	}
 
-	if(!(packed_msg = gotr_pack_pair_channel_init(&room->data, user))) {
+	if(!(packed_msg = gotr_pack_pair_channel_init(&room->data, user, &len_p))) {
 		gotr_eprintf("could not pack msg_pair_channel_init message");
 		return NULL;
 	}
 
-	if((b64_msg = gotr_b64_enc(packed_msg, sizeof(struct msg_pair_channel_init)))) {
+	if((b64_msg = gotr_b64_enc(packed_msg, len_p))) {
 		room->send_user((void *)room->data.closure, user->closure, b64_msg);
 		free(b64_msg);
 	} else {
