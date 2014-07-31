@@ -41,8 +41,7 @@ struct gotr_hash_code {
 /**
  * @brief type for (message) authentication keys
  */
-struct gotr_auth_key
-{
+struct gotr_auth_key {
 	unsigned char key[(512/8)];
 };
 
