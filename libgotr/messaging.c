@@ -33,6 +33,8 @@ unsigned char *gotr_pack_pair_channel_init(const struct gotr_roomdata *room, str
 {
 	struct msg_pair_channel_init *msg;
 
+	gotr_eprintf("packing pair_channel_init for %s", user->closure);
+
 	if(!room || !user || !(msg = malloc(sizeof(*msg))))
 		return NULL;
 
@@ -49,6 +51,8 @@ unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room, stru
 {
 	struct msg_pair_channel_est *msg;
 	struct gotr_dhe_pkey own_pub;
+
+	gotr_eprintf("packing pair_channel_est for %s", user->closure);
 
 	if(!room || !user || !(msg = malloc(sizeof(*msg))))
 		return NULL;
@@ -72,6 +76,8 @@ unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room, stru
 
 unsigned char *gotr_pack_flake_z(const struct gotr_roomdata *room, struct gotr_user *user, size_t *len)
 {
+	gotr_eprintf("packing flake_z for %s", user->closure);
+
 	return NULL;
 }
 
@@ -90,15 +96,17 @@ unsigned char *gotr_pack_msg(const struct gotr_roomdata *room, char *msg, size_t
 	return NULL;
 }
 
-int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len)
+int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len)
 {
 	struct msg_pair_channel_init *msg = (struct msg_pair_channel_init*)packed_msg;
 	struct gotr_hash_code exchanged_key;
 
+	gotr_eprintf("parsing pair_channel_init from %s", user->closure);
+
 	if(!room || !user || !packed_msg || len != sizeof(*msg))
 		return 0;
 
-	memcpy(&user->his_dhe_pkey, &msg->sender_dhe_pkey, sizeof(msg->sender_dhe_pkey));
+	memcpy(&user->his_dhe_pkey, &msg->sender_dhe_pkey, sizeof(user->his_dhe_pkey));
 
 	if(!gotr_ecdhe(&user->my_dhe_skey, &user->his_dhe_pkey, &exchanged_key)) {
 		gotr_eprintf("ecdhe failed.");
@@ -112,10 +120,12 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *u
 	return GOTR_OK;
 }
 
-int gotr_parse_pair_channel_est(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len)
+int gotr_parse_pair_channel_est(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len)
 {
 	struct msg_pair_channel_est *msg = (struct msg_pair_channel_est*)packed_msg;
 	struct gotr_hash_code hmac;
+
+	gotr_eprintf("parsing pair_channel_est from %s", user->closure);
 
 	if (!room || !user || !packed_msg || len != sizeof(*msg))
 		return 0;
@@ -142,17 +152,19 @@ int gotr_parse_pair_channel_est(struct gotr_roomdata *room, struct gotr_user *us
 	return GOTR_OK;
 }
 
-int gotr_parse_flake_y(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len)
+int gotr_parse_flake_y(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len)
+{
+	gotr_eprintf("parsing flake_y from %s", user->closure);
+
+	return GOTR_OK;
+}
+
+int gotr_parse_flake_V(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len)
 {
 	return GOTR_OK;
 }
 
-int gotr_parse_flake_V(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len)
-{
-	return GOTR_OK;
-}
-
-int gotr_parse_flake_validation(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len)
+int gotr_parse_flake_validation(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len)
 {
 	return GOTR_OK;
 }

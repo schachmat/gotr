@@ -86,7 +86,7 @@ struct gotr_user {
 	gcry_mpi_t V[2];
 	gcry_mpi_t flake_key;
 	struct gotr_user *next;
-	void *closure;
+	const void *closure;
 	gotr_expect_next expected_msgtype;
 	gotr_send_next next_msgtype;
 };

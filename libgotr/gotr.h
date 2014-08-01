@@ -14,7 +14,7 @@ typedef void (*gotr_cb_receive_user)(void *room_closure, void *user_closure, con
 /// @todo romove
 int gotr_init();
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user send_user, gotr_cb_receive_user receive_user, const void *room_closure, const char *privkey_filename);
-struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, void *user_closure);
+struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_closure);
 void gotr_keyupdate(struct gotr_chatroom *room);
 int gotr_send(struct gotr_chatroom *room, char *plain_msg);
 int gotr_receive(struct gotr_chatroom *room, char *b64_msg);
@@ -35,7 +35,7 @@ int gotr_receive(struct gotr_chatroom *room, char *b64_msg);
  * @param[in] b64_msg The message, that has been received
  * @return @a user or the newly created gotr_user struct if @a user == NULL
  */
-struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user *user, void *user_closure, char *b64_msg);
+struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user *user, const void *user_closure, const char *b64_msg_in);
 void gotr_leave(struct gotr_chatroom *room); //room will be freed
 
 #endif

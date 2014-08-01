@@ -17,8 +17,8 @@ struct gotr_chatroom {
 	gotr_cb_receive_user receive_user; ///< callback to notify the client about a decrypted message he has to print
 };
 
-static struct gotr_user *gotr_init_user(struct gotr_chatroom *room, void *user_closure);
-static int (*handler_in[GOTR_MAX_EXPECTS])(struct gotr_roomdata *room, struct gotr_user *user, char *packed_msg, size_t len) = {
+static struct gotr_user *gotr_init_user(struct gotr_chatroom *room, const void *user_closure);
+static int (*handler_in[GOTR_MAX_EXPECTS])(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len) = {
 	[GOTR_EXPECT_PAIR_CHAN_INIT]      = gotr_parse_pair_channel_init,
 	[GOTR_EXPECT_PAIR_CHAN_ESTABLISH] = gotr_parse_pair_channel_est,
 	[GOTR_EXPECT_FLAKE_y]             = gotr_parse_flake_y,
@@ -111,43 +111,55 @@ int gotr_receive(struct gotr_chatroom *room, char *b64_msg)
 	return 1;
 }
 
-struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user *user, void *user_closure, char *b64_msg)
+struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user *user, const void *user_closure, const char *b64_msg_in)
 {
+	struct gotr_user *u;
 	size_t len = 0;
-	char *packed_msg = NULL;
+	unsigned char *packed_msg_in = NULL;
+	unsigned char *packed_msg_out = NULL;
+	char *b64_msg_out = NULL;
 	size_t len_p = 0;
 
-	if (!room || !b64_msg) {
+	if (!room || !b64_msg_in) {
 		gotr_eprintf("called gotr_receive_user with NULL argument");
 		return NULL;
 	}
 
-	if (!user && !(user = gotr_user_joined(room, user_closure)))
+	if (!(u = user) && !(u = gotr_init_user(room, user_closure)))
 		return NULL;
 
-	if ((gotr_b64_dec(b64_msg, (unsigned char **)&packed_msg, &len))) {
-		gotr_eprintf("could not decode message: %s", b64_msg);
+	if (0 != gotr_b64_dec(b64_msg_in, &packed_msg_in, &len)) {
+		gotr_eprintf("could not decode message: %s", b64_msg_in);
 		return NULL;
 	}
-	packed_msg[len-1] = '\0';
 
-	gotr_eprintf("got msg from %s: %s", user->closure, b64_msg);
-	if (handler_in[user->expected_msgtype] &&
-			!handler_in[user->expected_msgtype](&room->data, user, packed_msg, len))
+	if (!handler_in[u->expected_msgtype] ||
+			!handler_in[u->expected_msgtype](&room->data, u, packed_msg_in, len))
 		gotr_eprintf("could not unpack message");
+	free(packed_msg_in);
 
-	if (handler_out[user->next_msgtype])
-		/* bla = */handler_out[user->next_msgtype](&room->data, user, &len_p);
+	if (!handler_out[u->next_msgtype] ||
+	    !(packed_msg_out = handler_out[u->next_msgtype](&room->data, u, &len_p))) {
+		gotr_eprintf("could not pack message");
+		return u;
+	}
 
-	free(packed_msg);
-	return user;
+	if((b64_msg_out = gotr_b64_enc(packed_msg_out, len_p))) {
+		room->send_user((void *)room->data.closure, (void *)u->closure, b64_msg_out);
+		free(b64_msg_out);
+	} else {
+		gotr_eprintf("could not b64 encode message");
+	}
+	free(packed_msg_out);
+
+	return u;
 }
 
 /**
  * @brief BLABLA
  * @todo docu
  */
-struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, void *user_closure)
+struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_closure)
 {
 	unsigned char *packed_msg;
 	size_t len_p = 0;
@@ -170,7 +182,7 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, void *user_closur
 	}
 
 	if((b64_msg = gotr_b64_enc(packed_msg, len_p))) {
-		room->send_user((void *)room->data.closure, user->closure, b64_msg);
+		room->send_user((void *)room->data.closure, (void *)user->closure, b64_msg);
 		free(b64_msg);
 	} else {
 		gotr_eprintf("could not b64 encode msg_pair_channel_init message");
@@ -180,7 +192,7 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, void *user_closur
 	return user;
 }
 
-struct gotr_user *gotr_init_user(struct gotr_chatroom *room, void *user_closure)
+struct gotr_user *gotr_init_user(struct gotr_chatroom *room, const void *user_closure)
 {
 	struct gotr_user *user;
 
