@@ -40,6 +40,9 @@ int gotr_gka_init();
 
 void gotr_gka_exit();
 
+gcry_mpi_point_t deserialize_point(const unsigned char *data, const int len);
+unsigned char *serialize_point(gcry_mpi_point_t p);
+
 /**
  * generate a BD key pair.
  *

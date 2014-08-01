@@ -88,7 +88,7 @@ void gotr_gka_exit()
 	gcry_ctx_release(edctx);
 }
 
-static gcry_mpi_point_t deserialize_point(const unsigned char *data, const int len)
+gcry_mpi_point_t deserialize_point(const unsigned char *data, const int len)
 {
 	gcry_sexp_t s;
 	gcry_ctx_t ctx;
@@ -109,7 +109,7 @@ static gcry_mpi_point_t deserialize_point(const unsigned char *data, const int l
 	return ret;
 }
 
-static unsigned char *serialize_point(gcry_mpi_point_t p)
+unsigned char *serialize_point(gcry_mpi_point_t p)
 {
 	gcry_sexp_t s;
 	gcry_ctx_t ctx;
