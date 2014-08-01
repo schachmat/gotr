@@ -587,13 +587,14 @@ gotr_ecdhe_key_get_public(const struct gotr_dhe_skey *priv,
  * @param priv private key to use for the ECDH (x)
  * @param pub public key to use for the ECDH (yG)
  * @param key_material where to write the key material (xyG)
- * @return #GNUNET_SYSERR on error, #GNUNET_OK on success
+ * @return 0 on error, 1 on success
  */
-	int
-gotr_ecdhe(const struct gotr_dhe_skey *priv,
-		const struct gotr_dhe_pkey *pub,
-		struct gotr_hash_code *key_material)
+int
+gotr_ecdhe(const struct gotr_dhe_skey *priv, const struct gotr_dhe_pkey *pub,
+           struct gotr_hash_code *key_material)
 {
+	gcry_error_t rc;
+	int rc2;
 	gcry_mpi_point_t result;
 	gcry_mpi_point_t q;
 	gcry_mpi_t d;
@@ -607,11 +608,11 @@ gotr_ecdhe(const struct gotr_dhe_skey *priv,
 	if (0 != gcry_sexp_build(&pub_sexpr, NULL,
 				"(public-key(ecc(curve " CURVE ")(q %b)))",
 				(int)sizeof(pub->q_y), pub->q_y)) {
-		//return GNUNET_SYSERR;
-		return -1;
+		return 0;
 	}
 
-	/*GNUNET_assert (0 == */gcry_mpi_ec_new(&ctx, pub_sexpr, NULL);//);
+	rc = gcry_mpi_ec_new(&ctx, pub_sexpr, NULL);
+	gotr_assert_gpgerr(rc);
 	gcry_sexp_release(pub_sexpr);
 	q = gcry_mpi_ec_get_point("q", ctx, 0);
 
@@ -628,27 +629,25 @@ gotr_ecdhe(const struct gotr_dhe_skey *priv,
 	result_x = gcry_mpi_new(256);
 	if (gcry_mpi_ec_get_affine(result_x, NULL, result, ctx))
 	{
-		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "get_affine failed", 0);
+		gotr_eprintf("get_affine failed");
 		gcry_mpi_point_release(result);
 		gcry_ctx_release(ctx);
-		//return GNUNET_SYSERR;
-		return -1;
+		return 0;
 	}
 	gcry_mpi_point_release(result);
 	gcry_ctx_release(ctx);
 
 	rsize = sizeof(xbuf);
-	/*GNUNET_assert (! */gcry_mpi_get_flag(result_x, GCRYMPI_FLAG_OPAQUE);//);
-	/* result_x can be negative here, so we do not use 'GNUNET_CRYPTO_mpi_print_unsigned'
+	rc2 = gcry_mpi_get_flag(result_x, GCRYMPI_FLAG_OPAQUE);
+	gotr_assert(0 == rc2);
+	/* result_x can be negative here, so we do not use 'gotr_mpi_print_unsigned'
 	   as that does not include the sign bit; x should be a 255-bit
 	   value, so with the sign it should fit snugly into the 256-bit
 	   xbuf */
-	/*GNUNET_assert (0 ==*/
-	gcry_mpi_print(GCRYMPI_FMT_STD, xbuf, rsize, &rsize,
-			result_x);//);
+	rc = gcry_mpi_print(GCRYMPI_FMT_STD, xbuf, rsize, &rsize, result_x);
+	gotr_assert_gpgerr(rc);
 	gotr_hash(xbuf, rsize, key_material);
 	gcry_mpi_release(result_x);
-	//return GNUNET_OK;
 	return 1;
 }
 
