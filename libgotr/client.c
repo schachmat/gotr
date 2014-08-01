@@ -58,7 +58,8 @@ for_all(void (*fn)(char* name, void* data), void* data)
 	}
 
 	while ((dir = readdir(directory)) && fn)
-		fn(dir->d_name, (char *)data);
+		if (0 != strcmp(dir->d_name, nick))
+			fn(dir->d_name, (char *)data);
 
 	closedir(directory);
 	return 1;
@@ -69,12 +70,19 @@ join(char *name, void *unused)
 {
 	struct link *lnk;
 
+	if(!strcmp(name, ".") || !strcmp(name, ".."))
+		return;
+
 	lnk = malloc(sizeof(struct link));
 	lnk->name = malloc(strlen(name) + 1);
 	strncpy(lnk->name, name, strlen(name) + 1);
 	lnk->next = links;
-	if ((lnk->user = gotr_user_joined(room, name)))
+	if ((lnk->user = gotr_user_joined(room, lnk->name))) {
 		links = lnk;
+	} else {
+		free(lnk->name);
+		free(lnk);
+	}
 }
 
 static void
@@ -138,11 +146,9 @@ static struct gotr_user *
 derive_user(const char *name)
 {
 	struct link *cur = links;
-	while (cur) {
+	for (cur = links; cur; cur = cur->next)
 		if (!strcmp(cur->name, name))
 			return cur->user;
-		cur = cur->next;
-	}
 	return NULL;
 }
 
@@ -216,7 +222,7 @@ main(int argc, char *argv[])
 				recv_address_len = sizeof(struct sockaddr);
 				buf_len = recvfrom(sock_fd, buf, BUFLEN - 1, 0, (struct sockaddr *)&recv_address, &recv_address_len);
 				buf[buf_len] = '\0';
-				printf("got msg: %s\n", buf);
+//				printf("got msg: %s\n", buf);
 				if ('a' == buf[0]) {
 					gotr_receive(room, buf+1);
 				} else if ('u' == buf[0]) {
@@ -226,8 +232,12 @@ main(int argc, char *argv[])
 						lnk->name = malloc(strlen(recv_address.sun_path) + 1);
 						strncpy(lnk->name, recv_address.sun_path, strlen(recv_address.sun_path) + 1);
 						lnk->next = links;
-						if ((lnk->user = gotr_receive_user(room, new_user, recv_address.sun_path, buf+1)))
+						if ((lnk->user = gotr_receive_user(room, NULL, lnk->name, buf+1))) {
 							links = lnk;
+						} else {
+							free(lnk->name);
+							free(lnk);
+						}
 					} else {
 						gotr_receive_user(room, new_user, recv_address.sun_path, buf+1);
 					}
