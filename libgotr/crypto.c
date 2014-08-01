@@ -156,16 +156,15 @@ static void adjust(void *buf, size_t size, size_t target)
 void gotr_mpi_print_unsigned(void *buf, size_t size, gcry_mpi_t val)
 {
 	size_t rsize;
+	gcry_error_t rc;
 
 	if (gcry_mpi_get_flag(val, GCRYMPI_FLAG_OPAQUE)) {
 		/* Store opaque MPIs left aligned into the buffer.  */
 		unsigned int nbits;
 		const void *p;
 
-		if (!(p = gcry_mpi_get_opaque(val, &nbits))) {
-			gotr_eprintf("something in crypto failed");
-			abort();
-		}
+		p = gcry_mpi_get_opaque(val, &nbits);
+		gotr_assert(p);
 		rsize = (nbits+7)/8;
 		if (rsize > size)
 			rsize = size;
@@ -175,10 +174,8 @@ void gotr_mpi_print_unsigned(void *buf, size_t size, gcry_mpi_t val)
 	} else {
 		// Store regular MPIs as unsigned integers right aligned into the buffer.
 		rsize = size;
-		if(gcry_mpi_print(GCRYMPI_FMT_USG, buf, rsize, &rsize, val)) {
-			gotr_eprintf("something in crypto failed");
-			abort();
-		}
+		rc = gcry_mpi_print(GCRYMPI_FMT_USG, buf, rsize, &rsize, val);
+		gotr_assert_gpgerr(rc);
 		adjust(buf, rsize, size);
 	}
 }
