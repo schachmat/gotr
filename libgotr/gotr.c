@@ -192,6 +192,25 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_
 	return user;
 }
 
+void gotr_user_left(struct gotr_chatroom *room, struct gotr_user *user)
+{
+	struct gotr_user *cur = room->data.users;
+
+	if (cur == user) {
+		gotr_ecdhe_key_clear(&cur->my_dhe_skey);
+		room->data.users = cur->next;
+		free(cur);
+		return;
+	}
+
+	for (; cur; cur = cur->next)
+		if (cur->next == user) {
+			cur->next = user->next;
+			gotr_ecdhe_key_clear(&user->my_dhe_skey);
+			free(user);
+		}
+}
+
 struct gotr_user *gotr_init_user(struct gotr_chatroom *room, const void *user_closure)
 {
 	struct gotr_user *user;

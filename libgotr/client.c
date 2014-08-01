@@ -23,6 +23,7 @@ struct link {
 	char *name;
 	struct gotr_user *user;
 	struct link *next;
+	char online;
 };
 
 /* variables */
@@ -58,7 +59,9 @@ for_all(void (*fn)(char* name, void* data), void* data)
 	}
 
 	while ((dir = readdir(directory)) && fn)
-		if (0 != strcmp(dir->d_name, nick))
+		if (strcmp(dir->d_name, nick) &&
+			strcmp(dir->d_name, "..") &&
+			strcmp(dir->d_name, "."))
 			fn(dir->d_name, (char *)data);
 
 	closedir(directory);
@@ -66,12 +69,52 @@ for_all(void (*fn)(char* name, void* data), void* data)
 }
 
 static void
+clean(char *name, void *unused)
+{
+	struct link *cur;
+
+	for (cur = links; cur; cur = cur->next)
+		if (!strcmp(cur->name, name)) {
+			cur->online = 1;
+			return;
+		}
+}
+
+static void
+clean_all()
+{
+	struct link *lnk;
+	struct link *tmp;
+
+	for (lnk = links; lnk; lnk = lnk->next)
+		lnk->online = 0;
+
+	for_all(&clean, NULL);
+
+	lnk = links;
+	while (links && !links->online) {
+		fprintf(stderr, "%s left\n", lnk->name);
+		gotr_user_left(room, lnk->user);
+		links = lnk->next;
+		free(lnk->name);
+		free(lnk);
+	}
+
+	for (lnk = links; lnk && lnk->next; lnk = lnk->next)
+		if (!lnk->next->online) {
+			tmp = lnk->next;
+			fprintf(stderr, "%s left\n", tmp->name);
+			gotr_user_left(room, tmp->user);
+			free(tmp->name);
+			lnk->next = tmp->next;
+			free(tmp);
+		}
+}
+
+static void
 join(char *name, void *unused)
 {
 	struct link *lnk;
-
-	if(!strcmp(name, ".") || !strcmp(name, ".."))
-		return;
 
 	lnk = malloc(sizeof(struct link));
 	lnk->name = malloc(strlen(name) + 1);
@@ -210,6 +253,8 @@ main(int argc, char *argv[])
 	for_all(&join, NULL);
 
 	while (1) {
+		clean_all();
+
 		FD_ZERO(&reads);
 		FD_SET(STDIN_FILENO, &reads);
 		FD_SET(sock_fd, &reads);
