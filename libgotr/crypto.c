@@ -821,7 +821,7 @@ setup_cipher_twofish(gcry_cipher_hd_t *handle,
  *          Due to the use of CFB and therefore an effective stream cipher,
  *          this size should be the same as @c len.
  */
-	ssize_t
+ssize_t
 gotr_symmetric_encrypt(const void *block,
 		size_t size,
 		const struct gotr_sym_key *sessionkey,
@@ -829,15 +829,18 @@ gotr_symmetric_encrypt(const void *block,
 		void *result)
 {
 	gcry_cipher_hd_t handle;
+	gcry_error_t rc;
 	char tmp[size];
 
-	if (/*GNUNET_OK*/ 1 != setup_cipher_aes(&handle, sessionkey, iv))
-		return -1;
-	/*GNUNET_assert (0 == */gcry_cipher_encrypt(handle, tmp, size, block, size);//);
+	if (1 != setup_cipher_aes(&handle, sessionkey, iv))
+		return 0;
+	rc = gcry_cipher_encrypt(handle, tmp, size, block, size);
+	gotr_assert_gpgerr(rc);
 	gcry_cipher_close(handle);
-	if (/*GNUNET_OK*/ 1 != setup_cipher_twofish(&handle, sessionkey, iv))
-		return -1;
-	/*GNUNET_assert (0 == */gcry_cipher_encrypt(handle, result, size, tmp, size);//);
+	if (1 != setup_cipher_twofish(&handle, sessionkey, iv))
+		return 0;
+	rc = gcry_cipher_encrypt(handle, result, size, tmp, size);
+	gotr_assert_gpgerr(rc);
 	gcry_cipher_close(handle);
 	memset(tmp, 0, sizeof(tmp));
 	return size;
@@ -864,15 +867,18 @@ gotr_symmetric_decrypt(const void *block, size_t size,
 		void *result)
 {
 	gcry_cipher_hd_t handle;
+	gcry_error_t rc;
 	char tmp[size];
 
-	if (/*GNUNET_OK*/ 1 != setup_cipher_twofish(&handle, sessionkey, iv))
-		return -1;
-	/*GNUNET_assert (0 == */gcry_cipher_decrypt(handle, tmp, size, block, size);//);
+	if (1 != setup_cipher_twofish(&handle, sessionkey, iv))
+		return 0;
+	rc = gcry_cipher_decrypt(handle, tmp, size, block, size);
+	gotr_assert_gpgerr(rc);
 	gcry_cipher_close(handle);
-	if (/*GNUNET_OK*/ 1 != setup_cipher_aes(&handle, sessionkey, iv))
-		return -1;
-	/*GNUNET_assert (0 == */gcry_cipher_decrypt(handle, result, size, tmp, size);//);
+	if (1 != setup_cipher_aes(&handle, sessionkey, iv))
+		return 0;
+	rc = gcry_cipher_decrypt(handle, result, size, tmp, size);
+	gotr_assert_gpgerr(rc);
 	gcry_cipher_close(handle);
 	memset(tmp, 0, sizeof(tmp));
 	return size;
