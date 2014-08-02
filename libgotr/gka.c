@@ -31,7 +31,6 @@
 #include "util.h"
 
 #define CURVE "Ed25519"
-#define SERIALIZED_POINT_LEN (256/8)
 #define GOTR_SKEYSIZE (4096)
 #define GOTR_PKEYSIZE (GOTR_SKEYSIZE+1)
 
@@ -109,13 +108,14 @@ gcry_mpi_point_t deserialize_point(const unsigned char *data, const int len)
 	return ret;
 }
 
-unsigned char *serialize_point(gcry_mpi_point_t p)
+void serialize_point(unsigned char *buf, const size_t len, const gcry_mpi_point_t p)
 {
 	gcry_sexp_t s;
 	gcry_ctx_t ctx;
 	gcry_error_t rc;
 	gcry_mpi_t q;
-	unsigned char *ret = malloc(SERIALIZED_POINT_LEN);
+
+	gotr_assert(buf && len >= SERIALIZED_POINT_LEN);
 
 	rc = gcry_sexp_build(&s, NULL, "(public-key(ecc(curve " CURVE ")))");
 	gotr_assert_gpgerr(rc);
@@ -132,9 +132,8 @@ unsigned char *serialize_point(gcry_mpi_point_t p)
 	gotr_assert(NULL != q);
 	gcry_ctx_release(ctx);
 
-	gotr_mpi_print_unsigned(ret, SERIALIZED_POINT_LEN, q);
+	gotr_mpi_print_unsigned(buf, len, q);
 	gcry_mpi_release(q);
-	return ret;
 }
 
 void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey)
@@ -247,7 +246,7 @@ int gotr_gen_BD_circle_key_part(gcry_mpi_t cur, gcry_mpi_t factors[4], unsigned 
  */
 int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users)
 {
-	const struct gotr_user *first = users;
+/*	const struct gotr_user *first = users;
 	const struct gotr_user *pre;
 	const struct gotr_user *cur;
 	gcry_mpi_t factors[4];
@@ -258,13 +257,13 @@ int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users)
 
 	if (!users || !first)
 		goto fail;
-
+*/
 //	/* if there is only one other user, circle key is equal to flake key */
 //	if (!users->next) {
 //		*key = gcry_mpi_copy(users->flake_key);
 //		return 1;
 //	}
-
+/*
 	pre = first;
 	gcry_mpi_release(key);
 	key = gcry_mpi_copy(GCRYMPI_CONST_ONE);
@@ -290,7 +289,7 @@ int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users)
 	return 1;
 fail:
 	gcry_mpi_release(key);
-	return 0;
+*/	return 0;
 }
 
 /**
