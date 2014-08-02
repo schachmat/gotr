@@ -79,12 +79,12 @@ struct gotr_user {
 	struct gotr_dhe_skey my_dhe_skey;
 	struct gotr_dhe_pkey his_dhe_pkey;
 	struct gotr_dsa_pkey his_dsa_pkey;
-	gcry_mpi_t r[2];
-	gcry_mpi_t z[2];
-	gcry_mpi_t y[2];
-	gcry_mpi_t R[2];
-	gcry_mpi_t V[2];
-	gcry_mpi_t flake_key;
+	gcry_mpi_t my_r[2];
+	gcry_mpi_point_t my_z[2];
+	gcry_mpi_point_t his_z[2];
+	gcry_mpi_point_t my_X[2];
+	gcry_mpi_point_t his_X[2];
+	gcry_mpi_point_t our_flake_key;
 	struct gotr_user *next;
 	const void *closure;
 	gotr_expect_next expected_msgtype;
