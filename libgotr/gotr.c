@@ -125,8 +125,10 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 		return NULL;
 	}
 
-	if (!(u = user) && !(u = gotr_init_user(room, user_closure)))
+	if (!(u = user) && !(u = gotr_init_user(room, user_closure))) {
+		gotr_eprintf("could neither derive nor create user");
 		return NULL;
+	}
 
 	if (0 != gotr_b64_dec(b64_msg_in, &packed_msg_in, &len)) {
 		gotr_eprintf("could not decode message: %s", b64_msg_in);
@@ -134,7 +136,7 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 	}
 
 	if (!handler_in[u->expected_msgtype] ||
-			!handler_in[u->expected_msgtype](&room->data, u, packed_msg_in, len))
+	    !handler_in[u->expected_msgtype](&room->data, u, packed_msg_in, len))
 		gotr_eprintf("could not unpack message");
 	free(packed_msg_in);
 
@@ -144,7 +146,7 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 		return u;
 	}
 
-	if((b64_msg_out = gotr_b64_enc(packed_msg_out, len_p))) {
+	if ((b64_msg_out = gotr_b64_enc(packed_msg_out, len_p))) {
 		room->send_user((void *)room->data.closure, (void *)u->closure, b64_msg_out);
 		free(b64_msg_out);
 	} else {
