@@ -59,6 +59,7 @@ void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey);
 
 void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey);
 
+void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv);
 /**
  * generate a BD X value.
  * @f$ret = (\frac{num}{denom})^{pow} \pmod{prime}@f$

@@ -126,7 +126,6 @@ unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room,
 	if (!check_params_create_msg(room, user, (void*)&msg, sizeof(*msg), "pair_channel_est"))
 		return NULL;
 
-
 	gotr_ecdhe_key_get_public(&user->my_dhe_skey, &own_pub);
 	if(!gotr_eddsa_sign(&room->my_dsa_skey, &own_pub, sizeof(own_pub), &msg->enc.sig_sender_dhe_pkey)) {
 		gotr_eprintf("could not sign pair channel establishment message.");
@@ -182,7 +181,7 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room,
 
 	gotr_eprintf("parsing pair_channel_init from %s", user->closure);
 
-	if(!room || !user || !packed_msg || len != sizeof(*msg))
+	if(!room || !packed_msg || len != sizeof(*msg))
 		return 0;
 
 	memcpy(&user->his_dhe_pkey, &msg->sender_dhe_pkey, sizeof(user->his_dhe_pkey));
@@ -208,16 +207,15 @@ int gotr_parse_pair_channel_est(struct gotr_roomdata *room,
 	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "pair_channel_est"))
 		return 0;
 
-
 	memcpy(&user->his_dsa_pkey, &msg->enc.sender_dsa_pkey, sizeof(user->his_dsa_pkey));
 	if (!gotr_eddsa_verify(&user->his_dsa_pkey, &user->his_dhe_pkey, sizeof(user->his_dhe_pkey), &msg->enc.sig_sender_dhe_pkey)) {
 		gotr_eprintf("signature mismatch");
 		return 0;
 	}
+	/// @todo: check pubkey trust level
 
 	gotr_ecbd_gen_keypair(&user->my_r[0], &user->my_z[0]);
 	gotr_ecbd_gen_keypair(&user->my_r[1], &user->my_z[1]);
-
 
 	user->expected_msgtype = GOTR_EXPECT_FLAKE_y;
 	return GOTR_OK;
@@ -232,6 +230,11 @@ int gotr_parse_flake_y(struct gotr_roomdata *room,
 	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "flake_z"))
 		return 0;
 
+	user->his_z[0] = deserialize_point((unsigned char*)&msg->enc.sender_z[0], sizeof(msg->enc.sender_z[0]));
+	user->his_z[1] = deserialize_point((unsigned char*)&msg->enc.sender_z[1], sizeof(msg->enc.sender_z[1]));
+
+	gotr_ecbd_gen_X_value(&user->my_X[0], user->his_z[1], user->my_z[1], user->my_r[0]);
+	gotr_ecbd_gen_X_value(&user->my_X[1], user->his_z[0], user->my_z[0], user->my_r[1]);
 
 	user->expected_msgtype = GOTR_EXPECT_FLAKE_V;
 	return GOTR_OK;
