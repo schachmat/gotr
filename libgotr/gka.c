@@ -210,6 +210,30 @@ int gotr_gen_BD_flake_key(gcry_mpi_t *ret,
 	return 1;
 }
 
+void gotr_ecbd_gen_circle_key_part(gcry_mpi_point_t cur, gcry_mpi_point_t x[4], unsigned int fac)
+{
+	gcry_mpi_point_t tmp = gcry_mpi_point_new(0);
+	gcry_mpi_t n = gcry_mpi_set_ui(NULL, fac);
+
+	gcry_mpi_ec_mul(tmp, n, x[0], edctx);
+	gcry_mpi_ec_add(cur, cur, tmp, edctx);
+
+	gcry_mpi_set_ui(n, --fac);
+	gcry_mpi_ec_mul(tmp, n, x[1], edctx);
+	gcry_mpi_ec_add(cur, cur, tmp, edctx);
+
+	gcry_mpi_set_ui(n, --fac);
+	gcry_mpi_ec_mul(tmp, n, x[2], edctx);
+	gcry_mpi_ec_add(cur, cur, tmp, edctx);
+
+	gcry_mpi_set_ui(n, --fac);
+	gcry_mpi_ec_mul(tmp, n, x[3], edctx);
+	gcry_mpi_ec_add(cur, cur, tmp, edctx);
+
+	gcry_mpi_point_release(tmp);
+	gcry_mpi_release(n);
+}
+
 /**
  * @todo docu
  */
