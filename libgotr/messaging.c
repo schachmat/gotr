@@ -32,6 +32,13 @@ struct msg_flake_z {
 	} enc;
 };
 
+struct msg_flake_R {
+	struct gotr_hash_code    hmac;
+	struct {
+		struct gotr_point    sender_R[2];
+	} enc;
+};
+
 static inline int check_params_create_msg(const struct gotr_roomdata *room,
 										  struct gotr_user *user,
 										  void **msg,
@@ -154,14 +161,14 @@ unsigned char *gotr_pack_flake_R(const struct gotr_roomdata *room,
 								 struct gotr_user *user,
 								 size_t *len)
 {
-	return NULL;
-}
+	struct msg_flake_R *msg;
+	if (!check_params_create_msg(room, user, (void*)&msg, sizeof(*msg), "flake_R"))
+		return NULL;
 
-unsigned char *gotr_pack_flake_validation(const struct gotr_roomdata *room,
-										  struct gotr_user *user,
-										  size_t *len)
-{
-	return NULL;
+	serialize_point(msg->enc.sender_R[0].data, sizeof(msg->enc.sender_R[0].data), user->my_X[0]);
+	serialize_point(msg->enc.sender_R[1].data, sizeof(msg->enc.sender_R[1].data), user->my_X[1]);
+
+	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_MSG);
 }
 
 unsigned char *gotr_pack_msg(const struct gotr_roomdata *room,
@@ -245,14 +252,16 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 					   unsigned char *packed_msg,
 					   size_t len)
 {
-	return GOTR_OK;
-}
+	struct msg_flake_R *msg = (struct msg_flake_R*)packed_msg;
+	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "flake_R"))
+		return 0;
 
-int gotr_parse_flake_validation(struct gotr_roomdata *room,
-								struct gotr_user *user,
-								unsigned char *packed_msg,
-								size_t len)
-{
+	user->his_X[0] = deserialize_point((unsigned char*)&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]));
+	user->his_X[1] = deserialize_point((unsigned char*)&msg->enc.sender_R[1], sizeof(msg->enc.sender_R[1]));
+
+	///@todo flake key
+
+	user->next_expected_msgtype = GOTR_MSG;
 	return GOTR_OK;
 }
 
