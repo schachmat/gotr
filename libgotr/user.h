@@ -11,24 +11,13 @@ struct gotr_roomdata {
 };
 
 typedef enum {
-	GOTR_EXPECT_PAIR_CHAN_INIT,
-	GOTR_EXPECT_PAIR_CHAN_ESTABLISH,
-	GOTR_EXPECT_FLAKE_y,
-	GOTR_EXPECT_FLAKE_V,
-	GOTR_EXPECT_FLAKE_VALIDATE,
-	GOTR_EXPECT_MSG,
-	GOTR_MAX_EXPECTS
-} gotr_expect_next;
-
-typedef enum {
-	GOTR_SEND_PAIR_CHAN_INIT,
-	GOTR_SEND_PAIR_CHAN_ESTABLISH,
-	GOTR_SEND_FLAKE_z,
-	GOTR_SEND_FLAKE_R,
-	GOTR_SEND_FLAKE_VALIDATE,
-	GOTR_SEND_MSG,
-	GOTR_MAX_SENDS
-} gotr_send_next;
+	GOTR_PAIR_CHAN_INIT,
+	GOTR_PAIR_CHAN_ESTABLISH,
+	GOTR_FLAKE_z,
+	GOTR_FLAKE_R,
+	GOTR_MSG,
+	GOTR_MAX_MSGTYPES
+} gotr_msgtype;
 
 /**
  * @struct gotr_user user.h user.h
@@ -38,9 +27,9 @@ typedef enum {
  *
  * @var gotr_user::closure
  * a pointer that is given to the callbacks when referring to this user.
- * @var gotr_user::expected_msgtype
+ * @var gotr_user::next_expected_msgtype
  * the next message from the other user should have this type.
- * @var gotr_user::next_msgtype
+ * @var gotr_user::next_sending_msgtype
  * the next message, we send to the other user should have the given type.
  * @var gotr_user::his_dsa_pkey
  * other users long term public key for EDDSA.
@@ -87,8 +76,8 @@ struct gotr_user {
 	gcry_mpi_point_t our_flake_key;
 	struct gotr_user *next;
 	const void *closure;
-	gotr_expect_next expected_msgtype;
-	gotr_send_next next_msgtype;
+	gotr_msgtype next_expected_msgtype;
+	gotr_msgtype next_sending_msgtype;
 };
 
 #endif

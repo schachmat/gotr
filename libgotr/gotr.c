@@ -18,19 +18,17 @@ struct gotr_chatroom {
 };
 
 static struct gotr_user *gotr_init_user(struct gotr_chatroom *room, const void *user_closure);
-static int (*handler_in[GOTR_MAX_EXPECTS])(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len) = {
-	[GOTR_EXPECT_PAIR_CHAN_INIT]      = gotr_parse_pair_channel_init,
-	[GOTR_EXPECT_PAIR_CHAN_ESTABLISH] = gotr_parse_pair_channel_est,
-	[GOTR_EXPECT_FLAKE_y]             = gotr_parse_flake_y,
-	[GOTR_EXPECT_FLAKE_V]             = gotr_parse_flake_V,
-	[GOTR_EXPECT_FLAKE_VALIDATE]      = gotr_parse_flake_validation,
+static int (*handler_in[GOTR_MAX_MSGTYPES])(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len) = {
+	[GOTR_PAIR_CHAN_INIT]      = gotr_parse_pair_channel_init,
+	[GOTR_PAIR_CHAN_ESTABLISH] = gotr_parse_pair_channel_est,
+	[GOTR_FLAKE_z]             = gotr_parse_flake_z,
+	[GOTR_FLAKE_R]             = gotr_parse_flake_R,
 };
-static unsigned char *(*handler_out[GOTR_MAX_SENDS])(const struct gotr_roomdata *room, struct gotr_user *user, size_t *len) = {
-	[GOTR_SEND_PAIR_CHAN_INIT]      = gotr_pack_pair_channel_init,
-	[GOTR_SEND_PAIR_CHAN_ESTABLISH] = gotr_pack_pair_channel_est,
-	[GOTR_SEND_FLAKE_z]             = gotr_pack_flake_z,
-	[GOTR_SEND_FLAKE_R]             = gotr_pack_flake_R,
-	[GOTR_SEND_FLAKE_VALIDATE]      = gotr_pack_flake_validation,
+static unsigned char *(*handler_out[GOTR_MAX_MSGTYPES])(const struct gotr_roomdata *room, struct gotr_user *user, size_t *len) = {
+	[GOTR_PAIR_CHAN_INIT]      = gotr_pack_pair_channel_init,
+	[GOTR_PAIR_CHAN_ESTABLISH] = gotr_pack_pair_channel_est,
+	[GOTR_FLAKE_z]             = gotr_pack_flake_z,
+	[GOTR_FLAKE_R]             = gotr_pack_flake_R,
 };
 
 int gotr_init()
@@ -135,13 +133,13 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 		return NULL;
 	}
 
-	if (!handler_in[u->expected_msgtype] ||
-	    !handler_in[u->expected_msgtype](&room->data, u, packed_msg_in, len))
+	if (!handler_in[u->next_expected_msgtype] ||
+	    !handler_in[u->next_expected_msgtype](&room->data, u, packed_msg_in, len))
 		gotr_eprintf("could not unpack message");
 	free(packed_msg_in);
 
-	if (!handler_out[u->next_msgtype] ||
-	    !(packed_msg_out = handler_out[u->next_msgtype](&room->data, u, &len_p))) {
+	if (!handler_out[u->next_sending_msgtype] ||
+	    !(packed_msg_out = handler_out[u->next_sending_msgtype](&room->data, u, &len_p))) {
 		gotr_eprintf("could not pack message");
 		return u;
 	}
@@ -223,8 +221,8 @@ struct gotr_user *gotr_init_user(struct gotr_chatroom *room, const void *user_cl
 	gotr_ecdhe_key_create(&user->my_dhe_skey);
 
 	user->closure = user_closure;
-	user->expected_msgtype = GOTR_EXPECT_PAIR_CHAN_INIT;
-	user->next_msgtype = GOTR_SEND_PAIR_CHAN_INIT;
+	user->next_expected_msgtype = GOTR_PAIR_CHAN_INIT;
+	user->next_sending_msgtype = GOTR_PAIR_CHAN_INIT;
 	user->next = room->data.users;
 	return room->data.users = user;
 }

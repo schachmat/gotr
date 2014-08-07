@@ -52,7 +52,7 @@ static inline unsigned char *encrypt_and_hmac(struct gotr_user *user,
 											  unsigned char *msg,
 											  size_t msglen,
 											  size_t *len,
-											  gotr_send_next next_type)
+											  gotr_msgtype next_type)
 {
 	void *enc = msg + sizeof(struct gotr_hash_code);
 	const size_t enclen = msglen - sizeof(struct gotr_hash_code);
@@ -64,7 +64,7 @@ static inline unsigned char *encrypt_and_hmac(struct gotr_user *user,
 	}
 	gotr_hmac(&user->our_hmac_key, enc, enclen, (struct gotr_hash_code *)msg);
 
-	user->next_msgtype = next_type;
+	user->next_sending_msgtype = next_type;
 	*len = msglen;
 	return msg;
 }
@@ -111,7 +111,7 @@ unsigned char *gotr_pack_pair_channel_init(const struct gotr_roomdata *room,
 
 	gotr_ecdhe_key_get_public(&user->my_dhe_skey, &msg->sender_dhe_pkey);
 
-	user->next_msgtype = GOTR_SEND_PAIR_CHAN_ESTABLISH;
+	user->next_sending_msgtype = GOTR_PAIR_CHAN_ESTABLISH;
 	*len = sizeof(*msg);
 	return (unsigned char *)msg;
 }
@@ -133,7 +133,7 @@ unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room,
 	}
 	memcpy(&msg->enc.sender_dsa_pkey, &room->my_dsa_pkey, sizeof(room->my_dsa_pkey));
 
-	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_SEND_FLAKE_z);
+	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_FLAKE_z);
 }
 
 unsigned char *gotr_pack_flake_z(const struct gotr_roomdata *room,
@@ -147,7 +147,7 @@ unsigned char *gotr_pack_flake_z(const struct gotr_roomdata *room,
 	serialize_point(msg->enc.sender_z[0].data, sizeof(msg->enc.sender_z[0].data), user->my_z[0]);
 	serialize_point(msg->enc.sender_z[1].data, sizeof(msg->enc.sender_z[1].data), user->my_z[1]);
 
-	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_SEND_FLAKE_R);
+	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_FLAKE_R);
 }
 
 unsigned char *gotr_pack_flake_R(const struct gotr_roomdata *room,
@@ -194,7 +194,7 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room,
 	gotr_hmac_derive_key(&user->our_hmac_key, &user->our_sym_key,
 	                     &exchanged_key, sizeof(exchanged_key), NULL);
 
-	user->expected_msgtype = GOTR_EXPECT_PAIR_CHAN_ESTABLISH;
+	user->next_expected_msgtype = GOTR_PAIR_CHAN_ESTABLISH;
 	return GOTR_OK;
 }
 
@@ -217,11 +217,11 @@ int gotr_parse_pair_channel_est(struct gotr_roomdata *room,
 	gotr_ecbd_gen_keypair(&user->my_r[0], &user->my_z[0]);
 	gotr_ecbd_gen_keypair(&user->my_r[1], &user->my_z[1]);
 
-	user->expected_msgtype = GOTR_EXPECT_FLAKE_y;
+	user->next_expected_msgtype = GOTR_FLAKE_z;
 	return GOTR_OK;
 }
 
-int gotr_parse_flake_y(struct gotr_roomdata *room,
+int gotr_parse_flake_z(struct gotr_roomdata *room,
 					   struct gotr_user *user,
 					   unsigned char *packed_msg,
 					   size_t len)
@@ -236,11 +236,11 @@ int gotr_parse_flake_y(struct gotr_roomdata *room,
 	gotr_ecbd_gen_X_value(&user->my_X[0], user->his_z[1], user->my_z[1], user->my_r[0]);
 	gotr_ecbd_gen_X_value(&user->my_X[1], user->his_z[0], user->my_z[0], user->my_r[1]);
 
-	user->expected_msgtype = GOTR_EXPECT_FLAKE_V;
+	user->next_expected_msgtype = GOTR_FLAKE_R;
 	return GOTR_OK;
 }
 
-int gotr_parse_flake_V(struct gotr_roomdata *room,
+int gotr_parse_flake_R(struct gotr_roomdata *room,
 					   struct gotr_user *user,
 					   unsigned char *packed_msg,
 					   size_t len)
