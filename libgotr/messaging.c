@@ -241,7 +241,7 @@ int gotr_parse_flake_z(struct gotr_roomdata *room,
 	user->his_z[1] = deserialize_point((unsigned char*)&msg->enc.sender_z[1], sizeof(msg->enc.sender_z[1]));
 
 	gotr_ecbd_gen_X_value(&user->my_X[0], user->his_z[1], user->my_z[1], user->my_r[0]);
-	gotr_ecbd_gen_X_value(&user->my_X[1], user->his_z[0], user->my_z[0], user->my_r[1]);
+	gotr_ecbd_gen_X_value(&user->my_X[1], user->my_z[0], user->his_z[0], user->my_r[1]);
 
 	user->next_expected_msgtype = GOTR_FLAKE_R;
 	return GOTR_OK;
@@ -259,7 +259,7 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 	user->his_X[0] = deserialize_point((unsigned char*)&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]));
 	user->his_X[1] = deserialize_point((unsigned char*)&msg->enc.sender_R[1], sizeof(msg->enc.sender_R[1]));
 
-	///@todo flake key
+	gotr_ecbd_gen_flake_key(&user->our_flake_key, user->his_z[0], user->my_r[1], user->my_X[1], user->my_X[0], user->his_X[1]);
 
 	user->next_expected_msgtype = GOTR_MSG;
 	return GOTR_OK;

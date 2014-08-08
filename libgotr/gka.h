@@ -35,10 +35,8 @@
 
 /**
  * initializes cryptographic constants.
- *
- * @return 1 on success, 0 on failure
  */
-int gotr_gka_init();
+void gotr_gka_init();
 
 void gotr_gka_exit();
 
@@ -46,45 +44,47 @@ struct gotr_point {
 	unsigned char data[SERIALIZED_POINT_LEN];
 };
 
+void gotr_dbgpnt(const char* name, gcry_mpi_point_t p);
 gcry_mpi_point_t deserialize_point(const unsigned char *data, const int len);
 void serialize_point(unsigned char *buf, const size_t len, const gcry_mpi_point_t p);
 
 /**
- * generate a BD key pair.
+ * generate a ECBD key pair.
  *
  * @param[out] privkey The generated private BD key
  * @param[out] pubkey The generated public BD key
  */
-void gotr_gen_BD_keypair(gcry_mpi_t* privkey, gcry_mpi_t* pubkey);
-
 void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey);
-
-void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv);
-/**
- * generate a BD X value.
- * @f$ret = (\frac{num}{denom})^{pow} \pmod{prime}@f$
- *
- * @param[out] ret The calculated X value
- * @param[in] num The numerator
- * @param[in] denom The denominator
- * @param[in] pow The power
- * @return 1 on success, 0 on failure (if @p denom has no inverse)
- */
-int gotr_gen_BD_X_value(gcry_mpi_t* ret, const gcry_mpi_t num, const gcry_mpi_t denom, const gcry_mpi_t pow);
 
 /**
  * calculate a flake key.
- * @f$ret = y0^{4r1} * R1^3 * R0^2 * V1 \pmod{prime}@f$
+ * @f$ret = 4*y0*r1 + 3*R1 + 2*R0 + V1@f$
  *
  * @param[out] ret The calculated flake key
  * @param[in] y0
  * @param[in] r1
- * @param[in] R0
  * @param[in] R1
+ * @param[in] R0
  * @param[in] V1
- * @return 1 on success, 0 on failure (unset parameter)
  */
-int gotr_gen_BD_flake_key(gcry_mpi_t *ret, gcry_mpi_t y0, gcry_mpi_t r1, gcry_mpi_t R0, gcry_mpi_t R1, gcry_mpi_t V1);
+void gotr_ecbd_gen_flake_key(gcry_mpi_point_t *ret,
+						gcry_mpi_point_t y0,
+						gcry_mpi_t r1,
+						gcry_mpi_point_t R1,
+						gcry_mpi_point_t R0,
+						gcry_mpi_point_t V1);
+
+/**
+ * generate an ECBD X value.
+ * @f$ret = priv(succ-pred)@f$
+ *
+ * @param[out] ret The calculated X value
+ * @param[in] succ The ECBD public key of the successing node
+ * @param[in] pred The ECBD public key of the predecessing node
+ * @param[in] priv The ECBD private key
+ */
+void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv);
+
 
 int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users);
 #endif

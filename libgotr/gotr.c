@@ -49,10 +49,9 @@ int gotr_init()
 				gcry_strerror(err));
 
 	gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
-
 	gotr_rand_poll();
-
-	return gotr_gka_init();
+	gotr_gka_init();
+	return 1;
 }
 
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user send_user, gotr_cb_receive_user receive_user, const void *room_closure, const char *privkey_filename)
