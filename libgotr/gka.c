@@ -51,7 +51,7 @@ void gotr_dbgpnt(const char* name, gcry_mpi_point_t p)
 	gcry_log_debugpnt(name, p, edctx);
 }
 
-gcry_mpi_point_t deserialize_point(const unsigned char *data, const int len)
+gcry_mpi_point_t deserialize_point(const struct gotr_point* data, const int len)
 {
 	gcry_sexp_t s;
 	gcry_ctx_t ctx;
@@ -100,6 +100,18 @@ void serialize_point(struct gotr_point *buf, const size_t len, const gcry_mpi_po
 	gcry_mpi_release(q);
 }
 
+int gotr_point_cmp(const gcry_mpi_point_t a, const gcry_mpi_point_t b)
+{
+	gcry_mpi_t ax = gcry_mpi_new(0);
+	gcry_mpi_t ay = gcry_mpi_new(0);
+	gcry_mpi_t bx = gcry_mpi_new(0);
+	gcry_mpi_t by = gcry_mpi_new(0);
+	if (gcry_mpi_ec_get_affine(ax, ay, a, edctx) ||
+		gcry_mpi_ec_get_affine(bx, by, b, edctx))
+		return 1;
+	return gcry_mpi_cmp(ax, bx) || gcry_mpi_cmp(ay, by);
+}
+
 void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey)
 {
 	struct gotr_dhe_skey priv;
@@ -110,7 +122,7 @@ void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey)
 	gotr_mpi_scan_unsigned(privkey, priv.d, sizeof(priv.d));
 
 	gotr_ecdhe_key_get_public(&priv, &pub);
-	*pubkey = deserialize_point(pub.q_y, (int)sizeof(pub.q_y));
+	*pubkey = deserialize_point(pub.q_y, sizeof(pub.q_y));
 }
 
 void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv)
@@ -122,6 +134,7 @@ void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, c
 
 	gotr_assert(succ && pred && priv);
 
+	///@todo use gcry_mpi_ec_sub after it is released
 	*ret = gcry_mpi_point_new(0);
 	gcry_mpi_point_get(x, y, z, pred);
 	gcry_mpi_neg(x, x);

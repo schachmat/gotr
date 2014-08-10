@@ -47,8 +47,17 @@ struct gotr_point {
 };
 
 void gotr_dbgpnt(const char* name, gcry_mpi_point_t p);
-gcry_mpi_point_t deserialize_point(const unsigned char *data, const int len);
+gcry_mpi_point_t deserialize_point(const struct gotr_point* data, const int len);
 void serialize_point(struct gotr_point *buf, const size_t len, const gcry_mpi_point_t p);
+
+/**
+ * compares two points.
+ * @todo use gcry_mpi_ec_sub after it is released
+ * @param[in] a The first point
+ * @param[in] b The second point
+ * @return 0 if a == b, 1 otherwise
+ */
+int gotr_point_cmp(const gcry_mpi_point_t a, const gcry_mpi_point_t b);
 
 /**
  * generate a ECBD key pair.
