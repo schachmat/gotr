@@ -122,6 +122,7 @@ void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, c
 
 	gotr_assert(succ && pred && priv);
 
+	gcry_mpi_point_release(*ret);
 	*ret = gcry_mpi_point_new(0);
 	gcry_mpi_point_get(x, y, z, pred);
 	gcry_mpi_neg(x, x);
@@ -135,46 +136,33 @@ void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, c
 	gcry_mpi_release(z);
 }
 
-void gotr_ecbd_gen_circle_key_part(gcry_mpi_point_t cur, gcry_mpi_point_t x[4], unsigned int fac)
+void gotr_ecbd_gen_flake_key(gcry_mpi_point_t *ret,
+							 gcry_mpi_point_t y0,
+							 gcry_mpi_t r1,
+							 gcry_mpi_point_t R1,
+							 gcry_mpi_point_t R0,
+							 gcry_mpi_point_t V1)
 {
 	gcry_mpi_point_t tmp = gcry_mpi_point_new(0);
-	gcry_mpi_t n = gcry_mpi_set_ui(NULL, fac);
+	gcry_mpi_t n = gcry_mpi_new(0);
 
-	gcry_mpi_ec_mul(tmp, n, x[0], edctx);
-	gcry_mpi_ec_add(cur, cur, tmp, edctx);
+	gcry_mpi_point_release(*ret);
+	*ret = gcry_mpi_point_new(0);
 
-	gcry_mpi_set_ui(n, --fac);
-	gcry_mpi_ec_mul(tmp, n, x[1], edctx);
-	gcry_mpi_ec_add(cur, cur, tmp, edctx);
+	gcry_mpi_mul_ui(n, r1, 4);
+	gcry_mpi_ec_mul(*ret, n, y0, edctx);
 
-	gcry_mpi_set_ui(n, --fac);
-	gcry_mpi_ec_mul(tmp, n, x[2], edctx);
-	gcry_mpi_ec_add(cur, cur, tmp, edctx);
+	gcry_mpi_set_ui(n, 3);
+	gcry_mpi_ec_mul(tmp, n, R1, edctx);
+	gcry_mpi_ec_add(*ret, *ret, tmp, edctx);
 
-	gcry_mpi_set_ui(n, --fac);
-	gcry_mpi_ec_mul(tmp, n, x[3], edctx);
-	gcry_mpi_ec_add(cur, cur, tmp, edctx);
+	gcry_mpi_ec_dup(tmp, R0, edctx);
+	gcry_mpi_ec_add(*ret, *ret, tmp, edctx);
+
+	gcry_mpi_ec_add(*ret, *ret, V1, edctx);
 
 	gcry_mpi_point_release(tmp);
 	gcry_mpi_release(n);
-}
-
-void gotr_ecbd_gen_flake_key(gcry_mpi_point_t *ret,
-						gcry_mpi_point_t y0,
-						gcry_mpi_t r1,
-						gcry_mpi_point_t R1,
-						gcry_mpi_point_t R0,
-						gcry_mpi_point_t V1)
-{
-	gcry_mpi_point_t X[4];
-
-	*ret = gcry_mpi_point_set(NULL, NULL, GCRYMPI_CONST_ONE, GCRYMPI_CONST_ONE);
-	X[0] = gcry_mpi_point_new(0);
-	gcry_mpi_ec_mul(X[0], r1, y0, edctx);
-	X[1] = R1;
-	X[2] = R0;
-	X[3] = V1;
-	gotr_ecbd_gen_circle_key_part(*ret, X, 4);
 	gcry_log_debugpnt("flake", *ret, edctx);
 }
 
