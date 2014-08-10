@@ -111,7 +111,7 @@ static inline int check_hmac_decrypt(struct gotr_roomdata *room,
 	return 1;
 }
 
-unsigned char *gotr_pack_pair_channel_init(const struct gotr_roomdata *room,
+unsigned char *gotr_pack_pair_channel_init(struct gotr_roomdata *room,
 										   struct gotr_user *user,
 										   size_t *len)
 {
@@ -123,12 +123,14 @@ unsigned char *gotr_pack_pair_channel_init(const struct gotr_roomdata *room,
 
 	gotr_ecdhe_key_get_public(&user->my_dhe_skey, &msg->sender_dhe_pkey);
 
+	if (user->next_sending_msgtype == GOTR_MSG)
+		room->circle_valid = 0;
 	user->next_sending_msgtype = GOTR_PAIR_CHAN_ESTABLISH;
 	*len = sizeof(*msg);
 	return (unsigned char *)msg;
 }
 
-unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room,
+unsigned char *gotr_pack_pair_channel_est(struct gotr_roomdata *room,
 										  struct gotr_user *user,
 										  size_t *len)
 {
@@ -148,7 +150,7 @@ unsigned char *gotr_pack_pair_channel_est(const struct gotr_roomdata *room,
 	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_FLAKE_z);
 }
 
-unsigned char *gotr_pack_flake_z(const struct gotr_roomdata *room,
+unsigned char *gotr_pack_flake_z(struct gotr_roomdata *room,
 								 struct gotr_user *user,
 								 size_t *len)
 {
@@ -162,7 +164,7 @@ unsigned char *gotr_pack_flake_z(const struct gotr_roomdata *room,
 	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_FLAKE_R);
 }
 
-unsigned char *gotr_pack_flake_R(const struct gotr_roomdata *room,
+unsigned char *gotr_pack_flake_R(struct gotr_roomdata *room,
 								 struct gotr_user *user,
 								 size_t *len)
 {
@@ -325,7 +327,7 @@ unsigned char *gotr_pack_msg(struct gotr_roomdata *room,
 	free(keys);
 
 	head = (struct msg_text_header*)msg;
-	head->clen = count_keys;
+	head->clen = htonl(count_keys);
 	text = msg + sizeof(struct msg_text_header) + len_keys;
 
 	if (gotr_symmetric_encrypt(plain_msg, len_text, &room->my_circle_key,
@@ -361,6 +363,8 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room,
 	gotr_hmac_derive_key(&user->our_hmac_key, &user->our_sym_key,
 	                     &exchanged_key, sizeof(exchanged_key), NULL);
 
+	if (user->next_expected_msgtype == GOTR_MSG)
+		room->circle_valid = 0;
 	user->next_expected_msgtype = GOTR_PAIR_CHAN_ESTABLISH;
 	return GOTR_OK;
 }
@@ -422,11 +426,11 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 	gotr_ecbd_gen_flake_key(&user->our_flake_key, user->his_z[0], user->my_r[1], user->my_X[1], user->my_X[0], user->his_X[1]);
 
 	user->next_expected_msgtype = GOTR_MSG;
+	room->circle_valid = 0;
 	return GOTR_OK;
 }
 
 int gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len)
 {
-	gotr_eprintf("got \"anonymous\" massage: %s", ++packed_msg);
 	return GOTR_OK;
 }

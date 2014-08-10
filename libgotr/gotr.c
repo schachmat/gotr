@@ -24,7 +24,7 @@ static int (*handler_in[GOTR_MAX_MSGTYPES])(struct gotr_roomdata *room, struct g
 	[GOTR_FLAKE_z]             = gotr_parse_flake_z,
 	[GOTR_FLAKE_R]             = gotr_parse_flake_R,
 };
-static unsigned char *(*handler_out[GOTR_MAX_MSGTYPES])(const struct gotr_roomdata *room, struct gotr_user *user, size_t *len) = {
+static unsigned char *(*handler_out[GOTR_MAX_MSGTYPES])(struct gotr_roomdata *room, struct gotr_user *user, size_t *len) = {
 	[GOTR_PAIR_CHAN_INIT]      = gotr_pack_pair_channel_init,
 	[GOTR_PAIR_CHAN_ESTABLISH] = gotr_pack_pair_channel_est,
 	[GOTR_FLAKE_z]             = gotr_pack_flake_z,
@@ -102,6 +102,8 @@ int gotr_receive(struct gotr_chatroom *room, char *b64_msg)
 		gotr_eprintf("called gotr_receive with NULL argument");
 		return 0;
 	}
+
+	gotr_eprintf("got \"anonymous\" massage: %s", b64_msg);
 
 	if ((gotr_b64_dec(b64_msg, (unsigned char **)&packed_msg, &len))) {
 		gotr_eprintf("could not decode message: %s", b64_msg);
@@ -201,6 +203,8 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_
 void gotr_user_left(struct gotr_chatroom *room, struct gotr_user *user)
 {
 	struct gotr_user *cur = room->data.users;
+
+	room->data.circle_valid = 0;
 
 	if (cur == user) {
 		gotr_ecdhe_key_clear(&cur->my_dhe_skey);
