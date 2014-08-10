@@ -109,7 +109,6 @@ int gotr_receive(struct gotr_chatroom *room, char *b64_msg)
 		gotr_eprintf("could not decode message: %s", b64_msg);
 		return 0;
 	}
-	packed_msg[len-1] = '\0';
 
 	gotr_parse_msg(&room->data, packed_msg, len);
 
