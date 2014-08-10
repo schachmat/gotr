@@ -216,31 +216,28 @@ static void derive_key_material(const gcry_mpi_point_t keypoint,
  */
 static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32_t *n)
 {
-	struct gotr_user* cur = room->users;
+	struct gotr_user* first = room->users;
+	struct gotr_user* cur;
 	struct gotr_user* pre;
 	struct gotr_point* ret = NULL;
 	struct gotr_point* rt = NULL;
 	gcry_mpi_point_t* X;
 	gcry_mpi_point_t* Xt;
-	gcry_mpi_point_t Z;
-	gcry_mpi_point_t first_X;
 	gcry_mpi_point_t keypoint;
+	gcry_mpi_point_t W[2];
 	size_t len_X = 4 * sizeof(gcry_mpi_point_t*);
 
 	*n = 0;
 	*len_ret = 4 * sizeof(struct gotr_point);
-	while (cur && cur->next_sending_msgtype != GOTR_MSG)
-		cur = cur->next;
+	while (first && first->next_sending_msgtype != GOTR_MSG)
+		first = first->next;
+	pre = cur = first;
 
 	if (!cur || !(ret = malloc(*len_ret)) || !(X = malloc(len_X))) {
 		gotr_eprintf("calc_circle_key: could not malloc:");
 		free(ret);
 		return NULL;
 	}
-
-	pre = cur;
-	Z = cur->my_z[1];
-	first_X = cur->my_X[1];
 
 	while ((cur = cur->next)) {
 		if (cur->next_sending_msgtype != GOTR_MSG)
@@ -257,32 +254,38 @@ static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32
 		ret = rt;
 		X = Xt;
 
+		gotr_ecbd_gen_X_value(&W[0], pre->his_z[1], cur->my_z[1], pre->my_r[0]);
+		gotr_ecbd_gen_X_value(&W[1], pre->my_z[0], cur->his_z[0], cur->my_r[1]);
+
 		serialize_point(&ret[*n], sizeof(struct gotr_point), pre->his_X[0]);
 		serialize_point(&ret[*n+1], sizeof(struct gotr_point), pre->his_X[1]);
-		serialize_point(&ret[*n+2], sizeof(struct gotr_point), pre->my_X[0]);
-		serialize_point(&ret[*n+3], sizeof(struct gotr_point), cur->my_X[1]);
+		serialize_point(&ret[*n+2], sizeof(struct gotr_point), W[0]);
+		serialize_point(&ret[*n+3], sizeof(struct gotr_point), W[1]);
 
 		X[*n] = pre->his_X[0];
 		X[*n+1] = pre->his_X[1];
-		X[*n+2] = pre->my_X[0];
-		X[*n+3] = cur->my_X[1];
+		X[*n+2] = W[0];
+		X[*n+3] = W[1];
 
 		*n += 4;
 		pre = cur;
 	}
 
+	gotr_ecbd_gen_X_value(&W[0], pre->his_z[1], first->my_z[1], pre->my_r[0]);
+	gotr_ecbd_gen_X_value(&W[1], pre->my_z[0], first->his_z[0], first->my_r[1]);
+
 	serialize_point(&ret[*n], sizeof(struct gotr_point), pre->his_X[0]);
 	serialize_point(&ret[*n+1], sizeof(struct gotr_point), pre->his_X[1]);
-	serialize_point(&ret[*n+2], sizeof(struct gotr_point), pre->my_X[0]);
-	serialize_point(&ret[*n+3], sizeof(struct gotr_point), first_X);
+	serialize_point(&ret[*n+2], sizeof(struct gotr_point), W[0]);
+	serialize_point(&ret[*n+3], sizeof(struct gotr_point), W[1]);
 
 	X[*n] = pre->his_X[0];
 	X[*n+1] = pre->his_X[1];
-	X[*n+2] = pre->my_X[0];
+	X[*n+2] = W[0];
 	X[*n+3] = NULL;
 
 	*n += 4;
-	gotr_ecbd_gen_circle_key(&keypoint, X, Z, pre->my_r[0]);
+	gotr_ecbd_gen_circle_key(&keypoint, X, first->my_z[1], pre->my_r[0]);
 	free(X);
 
 	gotr_dbgpnt("circle", keypoint);
@@ -293,7 +296,7 @@ static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32
 	return ret;
 }
 
-static int derive_circle_key(const void *X, size_t len)
+static int derive_circle_key(const void *X, size_t len, struct gotr_user* sender)
 {
 
 	return 1;
