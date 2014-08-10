@@ -12,7 +12,7 @@ unsigned char *gotr_pack_pair_channel_init(const struct gotr_roomdata *room, str
 unsigned char *gotr_pack_pair_channel_est (const struct gotr_roomdata *room, struct gotr_user *user, size_t *len);
 unsigned char *gotr_pack_flake_z          (const struct gotr_roomdata *room, struct gotr_user *user, size_t *len);
 unsigned char *gotr_pack_flake_R          (const struct gotr_roomdata *room, struct gotr_user *user, size_t *len);
-unsigned char *gotr_pack_msg              (const struct gotr_roomdata *room, char *msg, size_t *len);
+unsigned char *gotr_pack_msg              (struct gotr_roomdata *room, char *plain_msg, size_t *len);
 int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len);
 int gotr_parse_pair_channel_est (struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len);
 int gotr_parse_flake_z          (struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len);

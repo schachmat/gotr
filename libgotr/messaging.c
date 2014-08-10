@@ -39,6 +39,11 @@ struct msg_flake_R {
 	} enc;
 };
 
+struct msg_text_header {
+	struct gotr_hash_code    hmac;
+	uint32_t                 clen;
+};
+
 static inline int check_params_create_msg(const struct gotr_roomdata *room,
 										  struct gotr_user *user,
 										  void **msg,
@@ -151,8 +156,8 @@ unsigned char *gotr_pack_flake_z(const struct gotr_roomdata *room,
 	if (!check_params_create_msg(room, user, (void*)&msg, sizeof(*msg), "flake_z"))
 		return NULL;
 
-	serialize_point(msg->enc.sender_z[0].data, sizeof(msg->enc.sender_z[0].data), user->my_z[0]);
-	serialize_point(msg->enc.sender_z[1].data, sizeof(msg->enc.sender_z[1].data), user->my_z[1]);
+	serialize_point(&msg->enc.sender_z[0], sizeof(msg->enc.sender_z[0]), user->my_z[0]);
+	serialize_point(&msg->enc.sender_z[1], sizeof(msg->enc.sender_z[1]), user->my_z[1]);
 
 	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_FLAKE_R);
 }
@@ -165,17 +170,172 @@ unsigned char *gotr_pack_flake_R(const struct gotr_roomdata *room,
 	if (!check_params_create_msg(room, user, (void*)&msg, sizeof(*msg), "flake_R"))
 		return NULL;
 
-	serialize_point(msg->enc.sender_R[0].data, sizeof(msg->enc.sender_R[0].data), user->my_X[0]);
-	serialize_point(msg->enc.sender_R[1].data, sizeof(msg->enc.sender_R[1].data), user->my_X[1]);
+	serialize_point(&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]), user->my_X[0]);
+	serialize_point(&msg->enc.sender_R[1], sizeof(msg->enc.sender_R[1]), user->my_X[1]);
 
 	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_MSG);
 }
 
-unsigned char *gotr_pack_msg(const struct gotr_roomdata *room,
-							 char *msg,
+/**
+ * Derives usable key material from the given point. This point usually is the
+ * circle key.
+ *
+ * @param[in] keypoint The point from which the key material is to be derived
+ * @param[out] hmac Where to save the auth key for HMAC usage
+ * @param[out] key Where to save the symmetric key
+ * @param[out] iv Where to save the symmetric iv
+ */
+static void derive_key_material(const gcry_mpi_point_t keypoint,
+								struct gotr_auth_key* hmac,
+								struct gotr_sym_key* key,
+								struct gotr_sym_iv* iv)
+{
+	struct gotr_point keydata;
+	struct gotr_hash_code keyhash;
+
+	serialize_point(&keydata, sizeof(struct gotr_point), keypoint);
+	gotr_hash(&keydata, sizeof(struct gotr_point), &keyhash);
+	gotr_sym_derive_key(&keyhash, key, iv);
+	gotr_hmac_derive_key(hmac, key, &keydata, sizeof(struct gotr_point), NULL);
+}
+
+/**
+ * Calculates the circle key for every user with a finished flake key exchange
+ * state. The generated key will be used to derive a hmac and a symetric
+ * encryption key, both of which are saved in the apropriate fields within the
+ * supplied gotr_roomdata struct @a room.
+ *
+ * @param[in] users The list of users to search through. We only take users into
+ * account with which we exchanged a flake key previously.
+ * @param[out] len_ret The size of the returned pointer in bytes.
+ * @param[out] n The amount of X values returned.
+ * @return An array of the serialized X values used in the flake key generation
+ * or NULL on error.
+ */
+static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32_t *n)
+{
+	struct gotr_user* cur = room->users;
+	struct gotr_user* pre;
+	struct gotr_point* ret = NULL;
+	struct gotr_point* rt = NULL;
+	gcry_mpi_point_t* X;
+	gcry_mpi_point_t* Xt;
+	gcry_mpi_point_t Z;
+	gcry_mpi_point_t first_X;
+	gcry_mpi_point_t keypoint;
+	size_t len_X = 4 * sizeof(gcry_mpi_point_t*);
+
+	*n = 0;
+	*len_ret = 4 * sizeof(struct gotr_point);
+	while (cur && cur->next_sending_msgtype != GOTR_MSG)
+		cur = cur->next;
+
+	if (!cur || !(ret = malloc(*len_ret)) || !(X = malloc(len_X))) {
+		gotr_eprintf("calc_circle_key: could not malloc:");
+		free(ret);
+		return NULL;
+	}
+
+	pre = cur;
+	Z = cur->my_z[1];
+	first_X = cur->my_X[1];
+
+	while ((cur = cur->next)) {
+		if (cur->next_sending_msgtype != GOTR_MSG)
+			continue;
+
+		*len_ret += 4 * sizeof(struct gotr_point);
+		len_X += 4 * sizeof(gcry_mpi_point_t*);
+		if (!(rt = realloc(ret, *len_ret)) || !(Xt = realloc(X, len_X))) {
+			gotr_eprintf("calc_circle_key: could not realloc:");
+			free(ret);
+			free(X);
+			return NULL;
+		}
+		ret = rt;
+		X = Xt;
+
+		serialize_point(&ret[*n], sizeof(struct gotr_point), pre->his_X[0]);
+		serialize_point(&ret[*n+1], sizeof(struct gotr_point), pre->his_X[1]);
+		serialize_point(&ret[*n+2], sizeof(struct gotr_point), pre->my_X[0]);
+		serialize_point(&ret[*n+3], sizeof(struct gotr_point), cur->my_X[1]);
+
+		X[*n] = pre->his_X[0];
+		X[*n+1] = pre->his_X[1];
+		X[*n+2] = pre->my_X[0];
+		X[*n+3] = cur->my_X[1];
+
+		*n += 4;
+		pre = cur;
+	}
+
+	serialize_point(&ret[*n], sizeof(struct gotr_point), pre->his_X[0]);
+	serialize_point(&ret[*n+1], sizeof(struct gotr_point), pre->his_X[1]);
+	serialize_point(&ret[*n+2], sizeof(struct gotr_point), pre->my_X[0]);
+	serialize_point(&ret[*n+3], sizeof(struct gotr_point), first_X);
+
+	X[*n] = pre->his_X[0];
+	X[*n+1] = pre->his_X[1];
+	X[*n+2] = pre->my_X[0];
+	X[*n+3] = NULL;
+
+	*n += 4;
+	gotr_ecbd_gen_circle_key(&keypoint, X, Z, pre->my_r[0]);
+	free(X);
+
+	gotr_dbgpnt("circle", keypoint);
+
+	derive_key_material(keypoint, &room->my_circle_auth, &room->my_circle_key,
+						&room->my_circle_iv);
+	room->circle_valid = 1;
+	return ret;
+}
+
+static int derive_circle_key(const void *X, size_t len)
+{
+
+	return 1;
+}
+
+unsigned char *gotr_pack_msg(struct gotr_roomdata *room,
+							 char *plain_msg,
 							 size_t *len)
 {
-	return NULL;
+	unsigned char* msg;
+	unsigned char* text;
+	struct msg_text_header* head;
+	size_t len_text;
+	size_t len_keys = 0;
+	uint32_t count_keys = 0;
+	void* keys = NULL;
+
+	if (!room || !plain_msg || !len) {
+		gotr_eprintf("gotr_pack_msg: invalid parameters given");
+		return NULL;
+	}
+
+	len_text = strlen(plain_msg);
+	*len = sizeof(struct msg_text_header) + len_text;
+
+	if (!room->circle_valid && !(keys = calc_circle_key(room, &len_keys, &count_keys)))
+		return NULL;
+	msg = malloc(*len += len_keys);
+	memcpy(msg + sizeof(struct msg_text_header), keys, len_keys);
+	memset(keys, 0, len_keys);
+	free(keys);
+
+	head = (struct msg_text_header*)msg;
+	head->clen = count_keys;
+	text = msg + sizeof(struct msg_text_header) + len_keys;
+
+	if (gotr_symmetric_encrypt(plain_msg, len_text, &room->my_circle_key,
+							   &room->my_circle_iv, text) != len_text) {
+		gotr_eprintf("gotr_pack_msg: could not encrypt plain text message.");
+		return NULL;
+	}
+	gotr_hmac(&room->my_circle_auth, text, len_text, &head->hmac);
+
+	return msg;
 }
 
 int gotr_parse_pair_channel_init(struct gotr_roomdata *room,

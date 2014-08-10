@@ -71,18 +71,25 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user sen
 
 int gotr_send(struct gotr_chatroom *room, char *plain_msg)
 {
-	char *b64_msg;
+	unsigned char *packed_msg_out = NULL;
+	char *b64_msg_out = NULL;
+	size_t len_packed = 0;
 	int ret = 0;
 
-	if(!(b64_msg = gotr_b64_enc((unsigned char *)plain_msg, strlen(plain_msg)))) {
-		gotr_eprintf("unable to base64 encode message");
+	if (!(packed_msg_out = gotr_pack_msg(&room->data, plain_msg, &len_packed))) {
+		gotr_eprintf("could not pack text message");
 		return 0;
 	}
 
-	if(!(ret = room->send_all((void *)room->data.closure, b64_msg)))
-		gotr_eprintf("unable to broadcast message");
+	if ((b64_msg_out = gotr_b64_enc(packed_msg_out, len_packed))) {
+		if (!(ret = room->send_all((void *)room->data.closure, b64_msg_out)))
+			gotr_eprintf("unable to broadcast message");
+		free(b64_msg_out);
+	} else {
+		gotr_eprintf("could not b64 encode message");
+	}
+	free(packed_msg_out);
 
-	free(b64_msg);
 	return ret;
 }
 

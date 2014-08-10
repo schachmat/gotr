@@ -4,10 +4,14 @@
 #include "crypto.h"
 
 struct gotr_roomdata {
+	struct gotr_auth_key my_circle_auth;
+	struct gotr_sym_key my_circle_key;
+	struct gotr_sym_iv my_circle_iv;
 	struct gotr_dsa_skey my_dsa_skey;
 	struct gotr_dsa_pkey my_dsa_pkey;
 	struct gotr_user *users;         ///< a list of all users in the room
 	const void *closure;
+	char circle_valid;
 };
 
 typedef enum {
