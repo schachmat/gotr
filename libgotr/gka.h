@@ -48,7 +48,7 @@ struct gotr_point {
 
 void gotr_dbgpnt(const char* name, gcry_mpi_point_t p);
 gcry_mpi_point_t deserialize_point(const unsigned char *data, const int len);
-void serialize_point(unsigned char *buf, const size_t len, const gcry_mpi_point_t p);
+void serialize_point(struct gotr_point *buf, const size_t len, const gcry_mpi_point_t p);
 
 /**
  * generate a ECBD key pair.
