@@ -122,7 +122,6 @@ void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, c
 
 	gotr_assert(succ && pred && priv);
 
-	gcry_mpi_point_release(*ret);
 	*ret = gcry_mpi_point_new(0);
 	gcry_mpi_point_get(x, y, z, pred);
 	gcry_mpi_neg(x, x);
@@ -146,7 +145,6 @@ void gotr_ecbd_gen_flake_key(gcry_mpi_point_t *ret,
 	gcry_mpi_point_t tmp = gcry_mpi_point_new(0);
 	gcry_mpi_t n = gcry_mpi_new(0);
 
-	gcry_mpi_point_release(*ret);
 	*ret = gcry_mpi_point_new(0);
 
 	gcry_mpi_mul_ui(n, r1, 4);
