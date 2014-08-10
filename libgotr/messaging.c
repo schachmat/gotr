@@ -296,10 +296,36 @@ static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32
 	return ret;
 }
 
-static int derive_circle_key(const void *X, size_t len, struct gotr_user* sender)
+static int derive_circle_key(struct gotr_roomdata* room, const struct gotr_point* Xdata,
+							 size_t len_Xdata, struct gotr_user** sender)
 {
+	struct gotr_user* cur;
+//	struct gotr_user* pre;
+//	struct gotr_point* ret = NULL;
+//	struct gotr_point* rt = NULL;
+//	gcry_mpi_point_t keypoint;
+	gcry_mpi_point_t* X = malloc(len_Xdata * sizeof(gcry_mpi_point_t*));
+	size_t i;
 
-	return 1;
+	if (!X) {
+		gotr_eprintf("derive_circle_key: could not malloc:");
+		return 0;
+	}
+
+	X[0] = deserialize_point(&Xdata[0], sizeof(struct gotr_point));
+
+	for (i = 1; i < len_Xdata; i++) {
+		X[i] = deserialize_point(&Xdata[i], sizeof(struct gotr_point));
+		for (cur = room->users; cur; cur = cur->next) {
+			if (!gotr_point_cmp(X[i-1], cur->my_X[0]) &&
+				!gotr_point_cmp(X[i], cur->my_X[1])) {
+				*sender = cur;
+				return 1;
+			}
+		}
+	}
+
+	return 0;
 }
 
 unsigned char *gotr_pack_msg(struct gotr_roomdata *room,
@@ -404,8 +430,8 @@ int gotr_parse_flake_z(struct gotr_roomdata *room,
 	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "flake_z"))
 		return 0;
 
-	user->his_z[0] = deserialize_point((unsigned char*)&msg->enc.sender_z[0], sizeof(msg->enc.sender_z[0]));
-	user->his_z[1] = deserialize_point((unsigned char*)&msg->enc.sender_z[1], sizeof(msg->enc.sender_z[1]));
+	user->his_z[0] = deserialize_point(&msg->enc.sender_z[0], sizeof(msg->enc.sender_z[0]));
+	user->his_z[1] = deserialize_point(&msg->enc.sender_z[1], sizeof(msg->enc.sender_z[1]));
 
 	gotr_ecbd_gen_X_value(&user->my_X[0], user->his_z[1], user->my_z[1], user->my_r[0]);
 	gotr_ecbd_gen_X_value(&user->my_X[1], user->my_z[0], user->his_z[0], user->my_r[1]);
@@ -423,8 +449,8 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "flake_R"))
 		return 0;
 
-	user->his_X[0] = deserialize_point((unsigned char*)&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]));
-	user->his_X[1] = deserialize_point((unsigned char*)&msg->enc.sender_R[1], sizeof(msg->enc.sender_R[1]));
+	user->his_X[0] = deserialize_point(&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]));
+	user->his_X[1] = deserialize_point(&msg->enc.sender_R[1], sizeof(msg->enc.sender_R[1]));
 
 	gotr_ecbd_gen_flake_key(&user->our_flake_key, user->his_z[0], user->my_r[1], user->my_X[1], user->my_X[0], user->his_X[1]);
 
@@ -435,5 +461,42 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 
 int gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len)
 {
-	return GOTR_OK;
+	struct msg_text_header *msg = (struct msg_text_header*)packed_msg;
+	struct gotr_user* cur;
+	struct gotr_user* sender;
+	struct gotr_hash_code hmac;
+	uint32_t clen = ntohl(msg->clen);
+	const void* Xdata = packed_msg + sizeof(struct msg_text_header);
+	const void *hmac_data = packed_msg + sizeof(hmac);
+	const size_t hmac_len = len - sizeof(hmac);
+
+	if (!room || !packed_msg || len < sizeof(struct msg_text_header) ||
+		len < sizeof(struct msg_text_header) + clen * sizeof(struct gotr_point))
+		return 0;
+
+	gotr_eprintf("parsing text message");
+
+	if (0 == clen ||
+		!derive_circle_key(room, Xdata, clen, &sender)) {
+		sender = NULL;
+		for (cur = room->users; cur; cur = cur->next) {
+			gotr_hmac(&cur->his_circle_auth, hmac_data, hmac_len, &hmac);
+			if (!memcmp(&hmac, packed_msg, sizeof(hmac))) {
+				sender = cur;
+				break;
+			}
+		}
+	}
+
+	if (!sender)
+		gotr_eprintf("could not derive sender");
+	else
+		gotr_eprintf("got msg from %s", sender->closure);
+
+/*	if (gotr_symmetric_decrypt(enc, enclen, &user->our_sym_key,
+	                           &user->our_sym_iv, enc) != enclen) {
+		gotr_eprintf("could not decrypt msg");
+		return 0;
+	}*/
+	return 1;
 }
