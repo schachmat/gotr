@@ -19,7 +19,9 @@
 
 /**
  * @file gka.h
- * @brief Bourmester-Desmeth based hotplug capable Group Key Agreement
+ * @brief Bourmester-Desmeth based hotplug capable Group Key Agreement modified
+ * to use elliptic curves. See „Contributory Group Key Agreement Protocols,
+ * Revisited for Mobile Ad-Hoc Groups“ by Mark Manulis
  */
 
 #ifndef _GOTR_GKA_H
@@ -57,6 +59,17 @@ void serialize_point(unsigned char *buf, const size_t len, const gcry_mpi_point_
 void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey);
 
 /**
+ * generate an ECBD X value.
+ * @f$ret = priv(succ-pred)@f$
+ *
+ * @param[out] ret The calculated X value
+ * @param[in] succ The ECBD public key of the successing node
+ * @param[in] pred The ECBD public key of the predecessing node
+ * @param[in] priv The ECBD private key
+ */
+void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv);
+
+/**
  * calculate a flake key.
  * @f$ret = 4*y0*r1 + 3*R1 + 2*R0 + V1@f$
  *
@@ -75,16 +88,15 @@ void gotr_ecbd_gen_flake_key(gcry_mpi_point_t *ret,
 						gcry_mpi_point_t V1);
 
 /**
- * generate an ECBD X value.
- * @f$ret = priv(succ-pred)@f$
+ * calculate an ECBD circle key.
+ * @f$ret = (n+1)rZ + \sum\limits_{i=1}^n iX_i@f$
  *
- * @param[out] ret The calculated X value
- * @param[in] succ The ECBD public key of the successing node
- * @param[in] pred The ECBD public key of the predecessing node
- * @param[in] priv The ECBD private key
+ * @param[out] ret The calculated circle key
+ * @param[in] X The NULL terminated array of X values
+ * @param[in] Z The ECBD public key used
+ * @param[in] r The ECBD private key used
  */
-void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv);
+void gotr_ecbd_gen_circle_key(gcry_mpi_point_t *ret, gcry_mpi_point_t *X,
+							  gcry_mpi_point_t Z, gcry_mpi_t r);
 
-
-int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users);
 #endif

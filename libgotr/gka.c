@@ -178,53 +178,23 @@ void gotr_ecbd_gen_flake_key(gcry_mpi_point_t *ret,
 	gcry_log_debugpnt("flake", *ret, edctx);
 }
 
-/**
- * @todo use W values instead of R
- */
-int gotr_gen_BD_circle_key(gcry_mpi_t key, const struct gotr_user *users)
+void gotr_ecbd_gen_circle_key(gcry_mpi_point_t *ret, gcry_mpi_point_t *X,
+							  gcry_mpi_point_t Z, gcry_mpi_t r)
 {
-/*	const struct gotr_user *first = users;
-	const struct gotr_user *pre;
-	const struct gotr_user *cur;
-	gcry_mpi_t factors[4];
-	unsigned int pow = 0;
+	gcry_mpi_point_t tmp = gcry_mpi_point_new(0);
+	gcry_mpi_t n = gcry_mpi_new(0);
+	unsigned int i;
 
-	while (first && first->expected_msgtype != GOTR_EXPECT_MSG)
-		first = first->next;
-
-	if (!users || !first)
-		goto fail;
-*/
-//	/* if there is only one other user, circle key is equal to flake key */
-//	if (!users->next) {
-//		*key = gcry_mpi_copy(users->flake_key);
-//		return 1;
-//	}
-/*
-	pre = first;
-	gcry_mpi_release(key);
-	key = gcry_mpi_copy(GCRYMPI_CONST_ONE);
-
-	for (cur = first->next; cur; cur = cur->next) {
-		if (cur->expected_msgtype != GOTR_EXPECT_MSG)
-			continue;
-		factors[0] = cur->V[0];
-		factors[1] = cur->R[1];
-		factors[2] = pre->R[0];
-		factors[3] = pre->V[1];
-		gotr_gen_BD_circle_key_part(key, factors, pow += 4);
-		pre = cur;
+	*ret = gcry_mpi_point_set(NULL, NULL, GCRYMPI_CONST_ONE, GCRYMPI_CONST_ONE);
+	for (i = 0; X[i]; i++) {
+		gcry_mpi_set_ui(n, i+1);
+		gcry_mpi_ec_mul(tmp, n, X[i], edctx);
+		gcry_mpi_ec_add(*ret, *ret, tmp, edctx);
 	}
 
-	factors[0] = gcry_mpi_new(GOTR_PKEYSIZE);
-	gcry_mpi_powm(factors[0], first->y[0], first->r[1], prime);
-	factors[1] = first->R[1];
-	factors[2] = pre->R[0];
-	factors[3] = pre->V[1];
-	gotr_gen_BD_circle_key_part(key, factors, pow + 4);
-
-	return 1;
-fail:
-	gcry_mpi_release(key);
-*/	return 0;
+	gcry_mpi_mul_ui(n, r, i+1);
+	gcry_mpi_ec_mul(tmp, n, Z, edctx);
+	gcry_mpi_ec_add(*ret, *ret, tmp, edctx);
+	gcry_mpi_release(n);
+	gcry_mpi_point_release(tmp);
 }
