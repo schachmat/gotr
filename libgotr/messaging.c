@@ -503,7 +503,7 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 char* gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len, struct gotr_user** sender)
 {
 	struct msg_text_header *msg = (struct msg_text_header*)packed_msg;
-	struct gotr_user* cur;
+	struct gotr_user* cur = NULL;
 	struct gotr_hash_code hmac;
 	uint32_t clen = ntohl(msg->clen);
 	char* Xdata = packed_msg + sizeof(struct msg_text_header);
@@ -529,6 +529,20 @@ char* gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len, s
 				*sender = cur;
 				break;
 			}
+		}
+		if (!*sender) {
+			gotr_eprintf("could not derive sender");
+			free(ret);
+			return NULL;
+		}
+	}
+
+	if (!cur) {
+		gotr_hmac(&(*sender)->his_circle_auth, hmac_data, hmac_len, &hmac);
+		if (memcmp(&hmac, packed_msg, sizeof(hmac))) {
+			gotr_eprintf("hmac mismatch");
+			free(ret);
+			return NULL;
 		}
 	}
 
