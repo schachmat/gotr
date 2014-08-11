@@ -106,10 +106,18 @@ int gotr_point_cmp(const gcry_mpi_point_t a, const gcry_mpi_point_t b)
 	gcry_mpi_t ay = gcry_mpi_new(0);
 	gcry_mpi_t bx = gcry_mpi_new(0);
 	gcry_mpi_t by = gcry_mpi_new(0);
-	if (gcry_mpi_ec_get_affine(ax, ay, a, edctx) ||
-		gcry_mpi_ec_get_affine(bx, by, b, edctx))
-		return 1;
-	return gcry_mpi_cmp(ax, bx) || gcry_mpi_cmp(ay, by);
+	int ret = 1;
+
+	gotr_assert(a && b);
+	if (!gcry_mpi_ec_get_affine(ax, ay, a, edctx) &&
+		!gcry_mpi_ec_get_affine(bx, by, b, edctx))
+		ret = gcry_mpi_cmp(ax, bx) || gcry_mpi_cmp(ay, by);
+
+	gcry_mpi_release(ax);
+	gcry_mpi_release(ay);
+	gcry_mpi_release(bx);
+	gcry_mpi_release(by);
+	return ret;
 }
 
 void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey)
@@ -122,7 +130,7 @@ void gotr_ecbd_gen_keypair(gcry_mpi_t* privkey, gcry_mpi_point_t* pubkey)
 	gotr_mpi_scan_unsigned(privkey, priv.d, sizeof(priv.d));
 
 	gotr_ecdhe_key_get_public(&priv, &pub);
-	*pubkey = deserialize_point(pub.q_y, sizeof(pub.q_y));
+	*pubkey = deserialize_point((struct gotr_point*)pub.q_y, sizeof(pub.q_y));
 }
 
 void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, const gcry_mpi_point_t pred, const gcry_mpi_t priv)
@@ -134,8 +142,10 @@ void gotr_ecbd_gen_X_value(gcry_mpi_point_t* ret, const gcry_mpi_point_t succ, c
 
 	gotr_assert(succ && pred && priv);
 
-	///@todo use gcry_mpi_ec_sub after it is released
+	gcry_mpi_point_release(*ret);
 	*ret = gcry_mpi_point_new(0);
+
+	///@todo use gcry_mpi_ec_sub after it is released
 	gcry_mpi_point_get(x, y, z, pred);
 	gcry_mpi_neg(x, x);
 	gcry_mpi_point_set(tmpoint, x, y, z);
@@ -158,6 +168,7 @@ void gotr_ecbd_gen_flake_key(gcry_mpi_point_t *ret,
 	gcry_mpi_point_t tmp = gcry_mpi_point_new(0);
 	gcry_mpi_t n = gcry_mpi_new(0);
 
+	gcry_mpi_point_release(*ret);
 	*ret = gcry_mpi_point_new(0);
 
 	gcry_mpi_mul_ui(n, r1, 4);
@@ -184,6 +195,7 @@ void gotr_ecbd_gen_circle_key(gcry_mpi_point_t *ret, gcry_mpi_point_t *X,
 	gcry_mpi_t n = gcry_mpi_new(0);
 	unsigned int i;
 
+	gcry_mpi_point_release(*ret);
 	*ret = gcry_mpi_point_set(NULL, NULL, GCRYMPI_CONST_ONE, GCRYMPI_CONST_ONE);
 	for (i = 0; X[i]; i++) {
 		gcry_mpi_set_ui(n, i+1);

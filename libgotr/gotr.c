@@ -58,7 +58,8 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user sen
 {
 	struct gotr_chatroom *room;
 
-	room = malloc(sizeof(struct gotr_chatroom));
+	room = malloc(sizeof(*room));
+	memset(room, 0, sizeof(*room));
 	room->data.closure = room_closure;
 	room->send_all = send_all;
 	room->send_user = send_user;
@@ -199,34 +200,61 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_
 	return user;
 }
 
+static void cleanup_user(struct gotr_user *user)
+{
+	gotr_ecdhe_key_clear(&user->my_dhe_skey);
+/*
+	struct gotr_auth_key his_circle_auth;
+	struct gotr_sym_key  his_circle_key;
+	struct gotr_sym_iv   his_circle_iv;
+	struct gotr_auth_key our_hmac_key;
+	struct gotr_sym_key  our_sym_key;
+	struct gotr_sym_iv   our_sym_iv;
+	struct gotr_dhe_pkey his_dhe_pkey;
+	struct gotr_dsa_pkey his_dsa_pkey;
+*/
+	gcry_mpi_release(user->my_r[0]);
+	gcry_mpi_release(user->my_r[1]);
+	gcry_mpi_point_release(user->my_z[0]);
+	gcry_mpi_point_release(user->my_z[1]);
+	gcry_mpi_point_release(user->his_z[0]);
+	gcry_mpi_point_release(user->his_z[1]);
+	gcry_mpi_point_release(user->my_X[0]);
+	gcry_mpi_point_release(user->my_X[1]);
+	gcry_mpi_point_release(user->his_X[0]);
+	gcry_mpi_point_release(user->his_X[1]);
+	gcry_mpi_point_release(user->our_flake_key);
+}
+
 void gotr_user_left(struct gotr_chatroom *room, struct gotr_user *user)
 {
-	struct gotr_user *cur = room->data.users;
+	struct gotr_user *cur;
+	struct gotr_user **next = &(room->data.users);
 
 	room->data.circle_valid = 0;
 
-	if (cur == user) {
-		gotr_ecdhe_key_clear(&cur->my_dhe_skey);
-		room->data.users = cur->next;
-		free(cur);
+	if (!user)
 		return;
-	}
 
-	for (; cur; cur = cur->next)
-		if (cur->next == user) {
-			cur->next = user->next;
-			gotr_ecdhe_key_clear(&user->my_dhe_skey);
+	for (cur = room->data.users; cur; cur = cur->next) {
+		if (cur == user) {
+			*next = user->next;
+			cleanup_user(user);
 			free(user);
+			return;
 		}
+		next = &(cur->next);
+	}
 }
 
 struct gotr_user *gotr_init_user(struct gotr_chatroom *room, const void *user_closure)
 {
 	struct gotr_user *user;
 
-	if (!room || !(user = malloc(sizeof(struct gotr_user))))
+	if (!room || !(user = malloc(sizeof(*user))))
 		return NULL;
 
+	memset(user, 0, sizeof(*user));
 	gotr_ecdhe_key_create(&user->my_dhe_skey);
 
 	user->closure = user_closure;
@@ -246,6 +274,7 @@ void gotr_leave(struct gotr_chatroom *room)
 	while (room->data.users) {
 		user = room->data.users;
 		room->data.users = user->next;
+		cleanup_user(user);
 		free(user);
 	}
 

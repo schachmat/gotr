@@ -223,9 +223,9 @@ static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32
 	struct gotr_point* rt = NULL;
 	gcry_mpi_point_t* X;
 	gcry_mpi_point_t* Xt;
-	gcry_mpi_point_t keypoint;
-	gcry_mpi_point_t W[2];
+	gcry_mpi_point_t keypoint = NULL;
 	size_t len_X = 4 * sizeof(gcry_mpi_point_t*);
+	uint32_t i;
 
 	*n = 0;
 	*len_ret = 4 * sizeof(struct gotr_point);
@@ -238,6 +238,8 @@ static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32
 		free(ret);
 		return NULL;
 	}
+	memset(ret, 0, *len_ret);
+	memset(X, 0, len_X);
 
 	while ((cur = cur->next)) {
 		if (cur->next_sending_msgtype != GOTR_MSG)
@@ -254,44 +256,53 @@ static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32
 		ret = rt;
 		X = Xt;
 
-		gotr_ecbd_gen_X_value(&W[0], pre->his_z[1], cur->my_z[1], pre->my_r[0]);
-		gotr_ecbd_gen_X_value(&W[1], pre->my_z[0], cur->his_z[0], cur->my_r[1]);
+		X[*n] = pre->his_X[0];
+		X[*n+1] = pre->his_X[1];
+
+		// calculate the W values to connect the circle
+		X[*n+2] = X[*n+3] = NULL;
+		gotr_ecbd_gen_X_value(&X[*n+2], pre->his_z[1], cur->my_z[1], pre->my_r[0]);
+		gotr_ecbd_gen_X_value(&X[*n+3], pre->my_z[0], cur->his_z[0], cur->my_r[1]);
 
 		serialize_point(&ret[*n], sizeof(struct gotr_point), pre->his_X[0]);
 		serialize_point(&ret[*n+1], sizeof(struct gotr_point), pre->his_X[1]);
-		serialize_point(&ret[*n+2], sizeof(struct gotr_point), W[0]);
-		serialize_point(&ret[*n+3], sizeof(struct gotr_point), W[1]);
-
-		X[*n] = pre->his_X[0];
-		X[*n+1] = pre->his_X[1];
-		X[*n+2] = W[0];
-		X[*n+3] = W[1];
+		serialize_point(&ret[*n+2], sizeof(struct gotr_point), X[*n+2]);
+		serialize_point(&ret[*n+3], sizeof(struct gotr_point), X[*n+3]);
 
 		*n += 4;
 		pre = cur;
 	}
 
-	gotr_ecbd_gen_X_value(&W[0], pre->his_z[1], first->my_z[1], pre->my_r[0]);
-	gotr_ecbd_gen_X_value(&W[1], pre->my_z[0], first->his_z[0], first->my_r[1]);
+	X[*n] = pre->his_X[0];
+	X[*n+1] = pre->his_X[1];
+
+	// calculate the W values to connect the circle
+	X[*n+2] = X[*n+3] = NULL;
+	gotr_ecbd_gen_X_value(&X[*n+2], pre->his_z[1], first->my_z[1], pre->my_r[0]);
+	gotr_ecbd_gen_X_value(&X[*n+3], pre->my_z[0], first->his_z[0], first->my_r[1]);
 
 	serialize_point(&ret[*n], sizeof(struct gotr_point), pre->his_X[0]);
 	serialize_point(&ret[*n+1], sizeof(struct gotr_point), pre->his_X[1]);
-	serialize_point(&ret[*n+2], sizeof(struct gotr_point), W[0]);
-	serialize_point(&ret[*n+3], sizeof(struct gotr_point), W[1]);
+	serialize_point(&ret[*n+2], sizeof(struct gotr_point), X[*n+2]);
+	serialize_point(&ret[*n+3], sizeof(struct gotr_point), X[*n+3]);
 
-	X[*n] = pre->his_X[0];
-	X[*n+1] = pre->his_X[1];
-	X[*n+2] = W[0];
+	gcry_mpi_point_release(X[*n+3]);
 	X[*n+3] = NULL;
-
 	*n += 4;
 	gotr_ecbd_gen_circle_key(&keypoint, X, first->my_z[1], pre->my_r[0]);
+
+	// don't need the W's anymore, release them from their memorable prison
+	for (i = 0; i<*n; i+=4) {
+		gcry_mpi_point_release(X[i+2]);
+		gcry_mpi_point_release(X[i+3]);
+	}
 	free(X);
 
 	gotr_dbgpnt("circle", keypoint);
 
 	derive_key_material(keypoint, &room->my_circle_auth, &room->my_circle_key,
 						&room->my_circle_iv);
+	gcry_mpi_point_release(keypoint);
 	room->circle_valid = 1;
 	return ret;
 }
@@ -304,6 +315,7 @@ static int derive_circle_key(struct gotr_roomdata* room, const struct gotr_point
 //	struct gotr_point* ret = NULL;
 //	struct gotr_point* rt = NULL;
 //	gcry_mpi_point_t keypoint;
+///@todo free!
 	gcry_mpi_point_t* X = malloc(len_Xdata * sizeof(gcry_mpi_point_t*));
 	size_t i;
 
@@ -317,6 +329,8 @@ static int derive_circle_key(struct gotr_roomdata* room, const struct gotr_point
 	for (i = 1; i < len_Xdata; i++) {
 		X[i] = deserialize_point(&Xdata[i], sizeof(struct gotr_point));
 		for (cur = room->users; cur; cur = cur->next) {
+			if (cur->next_expected_msgtype != GOTR_MSG)
+				continue;
 			if (!gotr_point_cmp(X[i-1], cur->my_X[0]) &&
 				!gotr_point_cmp(X[i], cur->my_X[1])) {
 				*sender = cur;
@@ -325,6 +339,7 @@ static int derive_circle_key(struct gotr_roomdata* room, const struct gotr_point
 		}
 	}
 
+	free(X);
 	return 0;
 }
 
