@@ -93,7 +93,7 @@ clean_all()
 
 	lnk = links;
 	while (links && !links->online) {
-		fprintf(stderr, "%s left\n", lnk->name);
+		printf("%s left\n", lnk->name);
 		gotr_user_left(room, lnk->user);
 		links = lnk->next;
 		free(lnk->name);
@@ -103,7 +103,7 @@ clean_all()
 	for (lnk = links; lnk && lnk->next; lnk = lnk->next)
 		if (!lnk->next->online) {
 			tmp = lnk->next;
-			fprintf(stderr, "%s left\n", tmp->name);
+			printf("%s left\n", tmp->name);
 			gotr_user_left(room, tmp->user);
 			free(tmp->name);
 			lnk->next = tmp->next;
@@ -168,7 +168,7 @@ send_user(void *room_data, void *user_data, const char *message)
 static void
 receive_user(void *room_data, void *user_data, const char *message)
 {
-	fprintf(stderr, "%s: %s", (char *)user_data, message);
+	printf("%s: %s", (char *)user_data, message);
 }
 
 static void
@@ -279,6 +279,7 @@ main(int argc, char *argv[])
 						lnk->next = links;
 						if ((lnk->user = gotr_receive_user(room, NULL, lnk->name, buf+1))) {
 							links = lnk;
+							printf("%s joined\n", lnk->name);
 						} else {
 							free(lnk->name);
 							free(lnk);
