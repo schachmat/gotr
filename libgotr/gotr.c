@@ -98,20 +98,26 @@ int gotr_receive(struct gotr_chatroom *room, char *b64_msg)
 {
 	size_t len = 0;
 	char *packed_msg = NULL;
+	char *plain_msg = NULL;
+	struct gotr_user* sender;
 
 	if (!room || !b64_msg) {
 		gotr_eprintf("called gotr_receive with NULL argument");
 		return 0;
 	}
 
-	gotr_eprintf("got \"anonymous\" massage: %s", b64_msg);
-
 	if ((gotr_b64_dec(b64_msg, (unsigned char **)&packed_msg, &len))) {
 		gotr_eprintf("could not decode message: %s", b64_msg);
 		return 0;
 	}
 
-	gotr_parse_msg(&room->data, packed_msg, len);
+	if ((plain_msg = gotr_parse_msg(&room->data, packed_msg, len, &sender))) {
+		room->receive_user((void*)room->data.closure, (void*)sender->closure,
+						   plain_msg);
+		free(plain_msg);
+	} else {
+		gotr_eprintf("could not decrypt text message");
+	}
 
 	free(packed_msg);
 	return 1;

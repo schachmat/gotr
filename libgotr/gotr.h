@@ -9,6 +9,11 @@ struct gotr_user;
 
 typedef int (*gotr_cb_send_all)(void *room_closure, const char *b64_msg);
 typedef int (*gotr_cb_send_user)(void *room_closure, void *user_closure, const char *b64_msg);
+/**
+ * @param plain_msg The plain message to display. If the client wants to store
+ * it permanently, he has to copy it, the pointer will be considered invalid
+ * after this callback returns.
+ */
 typedef void (*gotr_cb_receive_user)(void *room_closure, void *user_closure, const char *plain_msg);
 
 /// @todo romove

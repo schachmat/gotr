@@ -17,6 +17,6 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room, struct gotr_user *u
 int gotr_parse_pair_channel_est (struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len);
 int gotr_parse_flake_z          (struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len);
 int gotr_parse_flake_R          (struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len);
-int gotr_parse_msg              (struct gotr_roomdata *room, char *packed_msg, size_t len);
+char* gotr_parse_msg            (struct gotr_roomdata *room, char *packed_msg, size_t len, struct gotr_user** sender);
 
 #endif

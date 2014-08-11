@@ -307,40 +307,65 @@ static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32
 	return ret;
 }
 
-static int derive_circle_key(struct gotr_roomdata* room, const struct gotr_point* Xdata,
-							 size_t len_Xdata, struct gotr_user** sender)
+static struct gotr_user* derive_circle_key(struct gotr_roomdata* room,
+										   const struct gotr_point* Xdata,
+										   size_t len_Xdata)
 {
 	struct gotr_user* cur;
-//	struct gotr_user* pre;
-//	struct gotr_point* ret = NULL;
-//	struct gotr_point* rt = NULL;
-//	gcry_mpi_point_t keypoint;
+	struct gotr_user* ret = NULL;
+	gcry_mpi_point_t keypoint = NULL;
 ///@todo free!
 	gcry_mpi_point_t* X = malloc(len_Xdata * sizeof(gcry_mpi_point_t*));
 	size_t i;
+	size_t j;
 
 	if (!X) {
 		gotr_eprintf("derive_circle_key: could not malloc:");
-		return 0;
+		return NULL;
 	}
 
 	X[0] = deserialize_point(&Xdata[0], sizeof(struct gotr_point));
 
-	for (i = 1; i < len_Xdata; i++) {
-		X[i] = deserialize_point(&Xdata[i], sizeof(struct gotr_point));
+	for (i = 1, j = 1; i < len_Xdata; i++, j++) {
+		X[j] = deserialize_point(&Xdata[i], sizeof(struct gotr_point));
+		if (ret)
+			continue;
+
+		// see if we know a user matching the last two X values. If one is
+		// found, he is the sender of the message (no one else knows our X
+		// values). Put the remaining X values in front, so the circle can be
+		// connected correctly.
 		for (cur = room->users; cur; cur = cur->next) {
-			if (cur->next_expected_msgtype != GOTR_MSG)
+			if (!cur->my_X[0] || !cur->my_X[1] ||
+				gotr_point_cmp(X[j-1], cur->my_X[0]) ||
+				gotr_point_cmp(X[j], cur->my_X[1]))
 				continue;
-			if (!gotr_point_cmp(X[i-1], cur->my_X[0]) &&
-				!gotr_point_cmp(X[i], cur->my_X[1])) {
-				*sender = cur;
-				return 1;
-			}
+			ret = cur;
+			memmove(&X[len_Xdata - j - 1], X,
+					(j + 1) * sizeof(gcry_mpi_point_t*));
+			j = -1;
+			break;
 		}
 	}
 
+	if (!ret)
+		goto quit;
+
+	gcry_mpi_point_release(X[len_Xdata - 1]);
+	X[len_Xdata - 1] = NULL;
+	gotr_ecbd_gen_circle_key(&keypoint, X, ret->my_z[1], ret->my_r[0]);
+
+	gotr_dbgpnt("circle", keypoint);
+
+	derive_key_material(keypoint, &ret->his_circle_auth, &ret->his_circle_key,
+						&ret->his_circle_iv);
+	gcry_mpi_point_release(keypoint);
+
+quit:
+	for (i = 0; i < len_Xdata; i++)
+		gcry_mpi_point_release(X[i]);
 	free(X);
-	return 0;
+	return ret;
 }
 
 unsigned char *gotr_pack_msg(struct gotr_roomdata *room,
@@ -379,7 +404,8 @@ unsigned char *gotr_pack_msg(struct gotr_roomdata *room,
 		gotr_eprintf("gotr_pack_msg: could not encrypt plain text message.");
 		return NULL;
 	}
-	gotr_hmac(&room->my_circle_auth, text, len_text, &head->hmac);
+	gotr_hmac(&room->my_circle_auth, msg + sizeof(struct gotr_hash_code),
+			  *len - sizeof(struct gotr_hash_code), &head->hmac);
 
 	return msg;
 }
@@ -474,44 +500,44 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 	return GOTR_OK;
 }
 
-int gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len)
+char* gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len, struct gotr_user** sender)
 {
 	struct msg_text_header *msg = (struct msg_text_header*)packed_msg;
 	struct gotr_user* cur;
-	struct gotr_user* sender;
 	struct gotr_hash_code hmac;
 	uint32_t clen = ntohl(msg->clen);
-	const void* Xdata = packed_msg + sizeof(struct msg_text_header);
+	char* Xdata = packed_msg + sizeof(struct msg_text_header);
 	const void *hmac_data = packed_msg + sizeof(hmac);
 	const size_t hmac_len = len - sizeof(hmac);
+	char* enc = Xdata + clen * sizeof(struct gotr_point);
+	const size_t enclen = packed_msg + len - enc;
+	char* ret;
 
 	if (!room || !packed_msg || len < sizeof(struct msg_text_header) ||
 		len < sizeof(struct msg_text_header) + clen * sizeof(struct gotr_point))
-		return 0;
+		return NULL;
+	*sender = NULL;
+	ret = malloc(enclen + 1);
 
 	gotr_eprintf("parsing text message");
 
 	if (0 == clen ||
-		!derive_circle_key(room, Xdata, clen, &sender)) {
-		sender = NULL;
+		!(*sender = derive_circle_key(room, (struct gotr_point*)Xdata, clen))) {
 		for (cur = room->users; cur; cur = cur->next) {
 			gotr_hmac(&cur->his_circle_auth, hmac_data, hmac_len, &hmac);
 			if (!memcmp(&hmac, packed_msg, sizeof(hmac))) {
-				sender = cur;
+				*sender = cur;
 				break;
 			}
 		}
 	}
 
-	if (!sender)
-		gotr_eprintf("could not derive sender");
-	else
-		gotr_eprintf("got msg from %s", sender->closure);
-
-/*	if (gotr_symmetric_decrypt(enc, enclen, &user->our_sym_key,
-	                           &user->our_sym_iv, enc) != enclen) {
+	if (gotr_symmetric_decrypt(enc, enclen, &(*sender)->his_circle_key,
+	                           &(*sender)->his_circle_iv, ret) != enclen) {
 		gotr_eprintf("could not decrypt msg");
-		return 0;
-	}*/
-	return 1;
+		free(ret);
+		return NULL;
+	}
+	ret[enclen] = '\0';
+	return ret;
 }
