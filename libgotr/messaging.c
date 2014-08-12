@@ -567,6 +567,7 @@ char* gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len, s
 {
 	struct msg_text_header *msg = (struct msg_text_header*)packed_msg;
 	struct gotr_user* cur = NULL;
+	struct gotr_user** pre_next = &(room->users);
 	struct gotr_hash_code hmac;
 	uint32_t clen = ntohl(msg->clen);
 	char* Xdata = packed_msg + sizeof(struct msg_text_header);
@@ -590,8 +591,14 @@ char* gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len, s
 			gotr_hmac(&cur->his_circle_auth, hmac_data, hmac_len, &hmac);
 			if (!memcmp(&hmac, packed_msg, sizeof(hmac))) {
 				*sender = cur;
+				// move sender to the beginning of the user list to reduce
+				// derivation time for future messages from him
+				*pre_next = cur->next;
+				cur->next = room->users;
+				room->users = cur;
 				break;
 			}
+			pre_next = &(cur->next);
 		}
 		if (!*sender) {
 			gotr_eprintf("could not derive sender");
