@@ -19,6 +19,7 @@ typedef enum {
 	GOTR_PAIR_CHAN_ESTABLISH,
 	GOTR_FLAKE_z,
 	GOTR_FLAKE_R,
+	GOTR_FLAKE_VALIDATE,
 	GOTR_MSG,
 	GOTR_MAX_MSGTYPES
 } gotr_msgtype;
@@ -69,6 +70,7 @@ struct gotr_user {
 	struct gotr_auth_key his_circle_auth;
 	struct gotr_sym_key  his_circle_key;
 	struct gotr_sym_iv   his_circle_iv;
+	struct gotr_auth_key our_flake_auth;
 	struct gotr_auth_key our_hmac_key;
 	struct gotr_sym_key  our_sym_key;
 	struct gotr_sym_iv   our_sym_iv;
@@ -80,7 +82,6 @@ struct gotr_user {
 	gcry_mpi_point_t his_z[2];
 	gcry_mpi_point_t my_X[2];
 	gcry_mpi_point_t his_X[2];
-	gcry_mpi_point_t our_flake_key;
 	struct gotr_user *next;
 	const void *closure;
 	gotr_msgtype next_expected_msgtype;

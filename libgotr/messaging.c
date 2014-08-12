@@ -39,6 +39,13 @@ struct msg_flake_R {
 	} enc;
 };
 
+struct msg_flake_validate {
+	struct gotr_hash_code     hmac;
+	struct {
+		struct gotr_hash_code flake_hash;
+	} enc;
+};
+
 struct msg_text_header {
 	struct gotr_hash_code    hmac;
 	uint32_t                 clen;
@@ -175,6 +182,28 @@ unsigned char *gotr_pack_flake_R(struct gotr_roomdata *room,
 	serialize_point(&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]), user->my_X[0]);
 	serialize_point(&msg->enc.sender_R[1], sizeof(msg->enc.sender_R[1]), user->my_X[1]);
 
+	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_FLAKE_VALIDATE);
+}
+
+unsigned char *gotr_pack_flake_validate(struct gotr_roomdata *room,
+										struct gotr_user *user,
+										size_t *len)
+{
+	struct msg_flake_validate *msg;
+	struct gotr_point p[8];
+	if (!check_params_create_msg(room, user, (void*)&msg, sizeof(*msg), "flake_validate"))
+		return NULL;
+
+	serialize_point(&p[0], sizeof(p[0]), user->my_z[0]);
+	serialize_point(&p[1], sizeof(p[1]), user->my_z[1]);
+	serialize_point(&p[2], sizeof(p[2]), user->his_z[0]);
+	serialize_point(&p[3], sizeof(p[3]), user->his_z[1]);
+	serialize_point(&p[4], sizeof(p[4]), user->my_X[0]);
+	serialize_point(&p[5], sizeof(p[5]), user->my_X[1]);
+	serialize_point(&p[6], sizeof(p[6]), user->his_X[0]);
+	serialize_point(&p[7], sizeof(p[7]), user->his_X[1]);
+	gotr_hmac(&user->our_flake_auth, p, sizeof(p), &msg->enc.flake_hash);
+
 	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_MSG);
 }
 
@@ -195,8 +224,8 @@ static void derive_key_material(const gcry_mpi_point_t keypoint,
 	struct gotr_point keydata;
 	struct gotr_hash_code keyhash;
 
-	serialize_point(&keydata, sizeof(struct gotr_point), keypoint);
-	gotr_hash(&keydata, sizeof(struct gotr_point), &keyhash);
+	serialize_point(&keydata, sizeof(keydata), keypoint);
+	gotr_hash(&keydata, sizeof(keydata), &keyhash);
 	gotr_sym_derive_key(&keyhash, key, iv);
 	gotr_hmac_derive_key(hmac, key, &keydata, sizeof(struct gotr_point), NULL);
 }
@@ -487,13 +516,47 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 					   size_t len)
 {
 	struct msg_flake_R *msg = (struct msg_flake_R*)packed_msg;
+	gcry_mpi_point_t keypoint = NULL;
+	struct gotr_point keydata;
 	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "flake_R"))
 		return 0;
 
 	user->his_X[0] = deserialize_point(&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]));
 	user->his_X[1] = deserialize_point(&msg->enc.sender_R[1], sizeof(msg->enc.sender_R[1]));
 
-	gotr_ecbd_gen_flake_key(&user->our_flake_key, user->his_z[0], user->my_r[1], user->my_X[1], user->my_X[0], user->his_X[1]);
+	gotr_ecbd_gen_flake_key(&keypoint, user->his_z[0], user->my_r[1], user->my_X[1], user->my_X[0], user->his_X[1]);
+	serialize_point(&keydata, sizeof(keydata), keypoint);
+	gotr_hmac_derive_key(&user->our_flake_auth, &user->our_sym_key, &keydata, sizeof(struct gotr_point), NULL);
+	gcry_mpi_point_release(keypoint);
+
+	user->next_expected_msgtype = GOTR_FLAKE_VALIDATE;
+	return GOTR_OK;
+}
+
+int gotr_parse_flake_validate(struct gotr_roomdata *room,
+							  struct gotr_user *user,
+							  unsigned char *packed_msg,
+							  size_t len)
+{
+	struct msg_flake_validate *msg = (struct msg_flake_validate*)packed_msg;
+	struct gotr_point p[8];
+	struct gotr_hash_code hmac;
+	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "flake_validate"))
+		return 0;
+
+	serialize_point(&p[0], sizeof(p[0]), user->his_z[0]);
+	serialize_point(&p[1], sizeof(p[1]), user->his_z[1]);
+	serialize_point(&p[2], sizeof(p[2]), user->my_z[0]);
+	serialize_point(&p[3], sizeof(p[3]), user->my_z[1]);
+	serialize_point(&p[4], sizeof(p[4]), user->his_X[0]);
+	serialize_point(&p[5], sizeof(p[5]), user->his_X[1]);
+	serialize_point(&p[6], sizeof(p[6]), user->my_X[0]);
+	serialize_point(&p[7], sizeof(p[7]), user->my_X[1]);
+	gotr_hmac(&user->our_flake_auth, p, sizeof(p), &hmac);
+	if (memcmp(&hmac, &msg->enc.flake_hash, sizeof(hmac))) {
+		gotr_eprintf("flake key hmac mismatch");
+		return 0;
+	}
 
 	user->next_expected_msgtype = GOTR_MSG;
 	room->circle_valid = 0;

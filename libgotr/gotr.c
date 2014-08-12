@@ -23,12 +23,14 @@ static int (*handler_in[GOTR_MAX_MSGTYPES])(struct gotr_roomdata *room, struct g
 	[GOTR_PAIR_CHAN_ESTABLISH] = gotr_parse_pair_channel_est,
 	[GOTR_FLAKE_z]             = gotr_parse_flake_z,
 	[GOTR_FLAKE_R]             = gotr_parse_flake_R,
+	[GOTR_FLAKE_VALIDATE]      = gotr_parse_flake_validate,
 };
 static unsigned char *(*handler_out[GOTR_MAX_MSGTYPES])(struct gotr_roomdata *room, struct gotr_user *user, size_t *len) = {
 	[GOTR_PAIR_CHAN_INIT]      = gotr_pack_pair_channel_init,
 	[GOTR_PAIR_CHAN_ESTABLISH] = gotr_pack_pair_channel_est,
 	[GOTR_FLAKE_z]             = gotr_pack_flake_z,
 	[GOTR_FLAKE_R]             = gotr_pack_flake_R,
+	[GOTR_FLAKE_VALIDATE]      = gotr_pack_flake_validate,
 };
 
 int gotr_init()
@@ -229,7 +231,6 @@ static void cleanup_user(struct gotr_user *user)
 	gcry_mpi_point_release(user->my_X[1]);
 	gcry_mpi_point_release(user->his_X[0]);
 	gcry_mpi_point_release(user->his_X[1]);
-	gcry_mpi_point_release(user->our_flake_key);
 }
 
 void gotr_user_left(struct gotr_chatroom *room, struct gotr_user *user)
