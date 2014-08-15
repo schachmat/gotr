@@ -185,7 +185,6 @@ void gotr_ecbd_gen_flake_key(gcry_mpi_point_t *ret,
 
 	gcry_mpi_point_release(tmp);
 	gcry_mpi_release(n);
-	gcry_log_debugpnt("flake", *ret, edctx);
 }
 
 void gotr_ecbd_gen_circle_key(gcry_mpi_point_t *ret, gcry_mpi_point_t *X,

@@ -79,6 +79,9 @@ static void pack_encode_send(struct gotr_chatroom* room, struct gotr_user* user,
 	size_t len_p = 0;
 	char *b64_msg;
 
+	if (type == GOTR_MSG)
+		return;
+
 	if (!handler_out[type] ||
 	    !(packed_msg = handler_out[type](&room->data, user, &len_p))) {
 		gotr_eprintf("could not pack some msg");
@@ -204,8 +207,11 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 		u->next_expected_msgtype = u->next_sending_msgtype = GOTR_PAIR_CHAN_INIT;
 
 	if (!handler_in[u->next_expected_msgtype] ||
-	    !handler_in[u->next_expected_msgtype](&room->data, u, packed_msg_in, len))
+	    !handler_in[u->next_expected_msgtype](&room->data, u, packed_msg_in, len)) {
 		gotr_eprintf("could not unpack message");
+		free(packed_msg_in);
+		return u;
+	}
 	free(packed_msg_in);
 
 	pack_encode_send(room, u, u->next_sending_msgtype);

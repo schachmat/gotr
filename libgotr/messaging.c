@@ -22,7 +22,7 @@ static inline int check_params_create_msg(const struct gotr_roomdata *room,
 		return 0;
 	}
 
-	gotr_eprintf("packing %s", msgtype);
+//	gotr_eprintf("packing %s", msgtype);
 	memset(*msg, 0, len);
 	return 1;
 }
@@ -62,7 +62,7 @@ static inline int check_hmac_decrypt(struct gotr_roomdata *room,
 	if (!room || !packed_msg || len != len_should)
 		return 0;
 
-	gotr_eprintf("parsing %s", msgtype);
+//	gotr_eprintf("parsing %s", msgtype);
 
 	gotr_hmac(&user->our_hmac_key, enc, enclen, &hmac);
 	if (0 != memcmp(&hmac, packed_msg, sizeof(hmac))) {
@@ -409,7 +409,7 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room,
 	struct msg_pair_channel_init *msg = (struct msg_pair_channel_init*)packed_msg;
 	struct gotr_hash_code exchanged_key;
 
-	gotr_eprintf("parsing pair_channel_init");
+//	gotr_eprintf("parsing pair_channel_init");
 
 	if(!room || !packed_msg || len != sizeof(*msg))
 		return 0;
@@ -555,7 +555,7 @@ char* gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len, s
 	*sender = NULL;
 	ret = malloc(enclen + 1);
 
-	gotr_eprintf("parsing text message");
+//	gotr_eprintf("parsing text message");
 
 	if (0 == clen ||
 		!(*sender = derive_circle_key(room, (struct gotr_point*)Xdata, clen))) {
