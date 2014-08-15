@@ -109,15 +109,18 @@ void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user)
 			gotr_eprintf("rekey: user not in room");
 			return;
 		}
+		gotr_ecdhe_key_clear(&user->my_dhe_skey);
+		gotr_ecdhe_key_create(&user->my_dhe_skey);
 		pack_encode_send(room, user, GOTR_PAIR_CHAN_INIT);
 		user->next_expected_msgtype = GOTR_PAIR_CHAN_INIT;
 	} else {
 		for (; cur; cur = cur->next) {
+			gotr_ecdhe_key_clear(&cur->my_dhe_skey);
+			gotr_ecdhe_key_create(&cur->my_dhe_skey);
 			pack_encode_send(room, cur, GOTR_PAIR_CHAN_INIT);
 			cur->next_expected_msgtype = GOTR_PAIR_CHAN_INIT;
 		}
 	}
-
 }
 
 int gotr_send(struct gotr_chatroom *room, char *plain_msg)
@@ -259,22 +262,21 @@ static void cleanup_user(struct gotr_user *user)
 void gotr_user_left(struct gotr_chatroom *room, struct gotr_user *user)
 {
 	struct gotr_user *cur;
-	struct gotr_user **next = &(room->data.users);
+	struct gotr_user **next;
 
-	room->data.circle_valid = 0;
-
-	if (!user)
+	if (!room || !user)
 		return;
 
-	for (cur = room->data.users; cur; cur = cur->next) {
+	room->data.circle_valid = 0;
+	next = &(room->data.users);
+
+	for (cur = room->data.users; cur; next = &(cur->next), cur = cur->next)
 		if (cur == user) {
 			*next = user->next;
 			cleanup_user(user);
 			free(user);
 			return;
 		}
-		next = &(cur->next);
-	}
 }
 
 struct gotr_user *gotr_init_user(struct gotr_chatroom *room, const void *user_closure)
