@@ -32,6 +32,8 @@
 #include "util.h"
 #include "messaging.h"
 
+extern gcry_ctx_t edctx;
+
 /**
  * initializes cryptographic constants.
  */

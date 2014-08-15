@@ -31,7 +31,7 @@
 
 #define CURVE "Ed25519"
 
-static gcry_ctx_t edctx;
+gcry_ctx_t edctx;
 
 void gotr_gka_init()
 {

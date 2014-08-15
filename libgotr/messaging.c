@@ -87,7 +87,6 @@ unsigned char *gotr_pack_pair_channel_init(struct gotr_roomdata *room,
 	if (!check_params_create_msg(room, user, (void*)&msg, sizeof(*msg), "pair_channel_init"))
 		return NULL;
 
-
 	gotr_ecdhe_key_get_public(&user->my_dhe_skey, &msg->sender_dhe_pkey);
 
 	if (user->next_sending_msgtype == GOTR_MSG)
@@ -287,8 +286,6 @@ static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32
 	}
 	free(X);
 
-	gotr_dbgpnt("circle", keypoint);
-
 	derive_key_material(keypoint, &room->my_circle_auth, &room->my_circle_key,
 						&room->my_circle_iv);
 	gcry_mpi_point_release(keypoint);
@@ -303,7 +300,6 @@ static struct gotr_user* derive_circle_key(struct gotr_roomdata* room,
 	struct gotr_user* cur;
 	struct gotr_user* ret = NULL;
 	gcry_mpi_point_t keypoint = NULL;
-///@todo free!
 	gcry_mpi_point_t* X = malloc(len_Xdata * sizeof(gcry_mpi_point_t*));
 	size_t i;
 	size_t j;
@@ -314,9 +310,17 @@ static struct gotr_user* derive_circle_key(struct gotr_roomdata* room,
 	}
 
 	X[0] = deserialize_point(&Xdata[0], sizeof(struct gotr_point));
+	if (!gcry_mpi_ec_curve_point(X[0], edctx)) {
+		gotr_eprintf("received data points are not on curve");
+		goto quit;
+	}
 
 	for (i = 1, j = 1; i < len_Xdata; i++, j++) {
 		X[j] = deserialize_point(&Xdata[i], sizeof(struct gotr_point));
+		if (!gcry_mpi_ec_curve_point(X[j], edctx)) {
+			gotr_eprintf("received data points are not on curve");
+			goto quit;
+		}
 		if (ret)
 			continue;
 
@@ -343,8 +347,6 @@ static struct gotr_user* derive_circle_key(struct gotr_roomdata* room,
 	gcry_mpi_point_release(X[len_Xdata - 1]);
 	X[len_Xdata - 1] = NULL;
 	gotr_ecbd_gen_circle_key(&keypoint, X, ret->my_z[1], ret->my_r[0]);
-
-	gotr_dbgpnt("circle", keypoint);
 
 	derive_key_material(keypoint, &ret->his_circle_auth, &ret->his_circle_key,
 						&ret->his_circle_iv);
@@ -462,6 +464,11 @@ int gotr_parse_flake_z(struct gotr_roomdata *room,
 
 	user->his_z[0] = deserialize_point(&msg->enc.sender_z[0], sizeof(msg->enc.sender_z[0]));
 	user->his_z[1] = deserialize_point(&msg->enc.sender_z[1], sizeof(msg->enc.sender_z[1]));
+	if (!gcry_mpi_ec_curve_point(user->his_z[0], edctx) ||
+		!gcry_mpi_ec_curve_point(user->his_z[1], edctx)) {
+		gotr_eprintf("received data points are not on curve");
+		return 0;
+	}
 
 	gotr_ecbd_gen_X_value(&user->my_X[0], user->his_z[1], user->my_z[1], user->my_r[0]);
 	gotr_ecbd_gen_X_value(&user->my_X[1], user->my_z[0], user->his_z[0], user->my_r[1]);
@@ -483,6 +490,11 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 
 	user->his_X[0] = deserialize_point(&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]));
 	user->his_X[1] = deserialize_point(&msg->enc.sender_R[1], sizeof(msg->enc.sender_R[1]));
+	if (!gcry_mpi_ec_curve_point(user->his_X[0], edctx) ||
+		!gcry_mpi_ec_curve_point(user->his_X[1], edctx)) {
+		gotr_eprintf("received data points are not on curve");
+		return 0;
+	}
 
 	gotr_ecbd_gen_flake_key(&keypoint, user->his_z[0], user->my_r[1], user->my_X[1], user->my_X[0], user->his_X[1]);
 	serialize_point(&keydata, sizeof(keydata), keypoint);
