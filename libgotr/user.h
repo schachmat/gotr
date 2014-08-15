@@ -2,6 +2,7 @@
 #define _GOTR_USER_H
 
 #include "crypto.h"
+#include "util.h"
 
 struct gotr_roomdata {
 	struct gotr_auth_key my_circle_auth;
@@ -86,6 +87,46 @@ struct gotr_user {
 	const void *closure;
 	gotr_msgtype next_expected_msgtype;
 	gotr_msgtype next_sending_msgtype;
+};
+
+struct msg_pair_channel_init {
+	struct gotr_dhe_pkey    sender_dhe_pkey;    /*     0    32 */
+	/* size: 32 */
+};
+
+struct msg_pair_channel_est {
+	struct gotr_hash_code       hmac;                   /*     0    64 */
+	struct {
+		struct gotr_dsa_sig     sig_sender_dhe_pkey;    /*    64    64 */
+		struct gotr_dsa_pkey    sender_dsa_pkey;        /*   128    32 */
+	} enc;                                              /*    64    96 */
+	/* size: 160 */
+};
+
+struct msg_flake_z {
+	struct gotr_hash_code    hmac;
+	struct {
+		struct gotr_point    sender_z[2];
+	} enc;
+};
+
+struct msg_flake_R {
+	struct gotr_hash_code    hmac;
+	struct {
+		struct gotr_point    sender_R[2];
+	} enc;
+};
+
+struct msg_flake_validate {
+	struct gotr_hash_code     hmac;
+	struct {
+		struct gotr_hash_code flake_hash;
+	} enc;
+};
+
+struct msg_text_header {
+	struct gotr_hash_code    hmac;
+	uint32_t                 clen;
 };
 
 #endif

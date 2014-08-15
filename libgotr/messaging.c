@@ -11,46 +11,6 @@
 #include "b64.h"
 #include "gka.h"
 
-struct msg_pair_channel_init {
-	struct gotr_dhe_pkey    sender_dhe_pkey;    /*     0    32 */
-	/* size: 32 */
-};
-
-struct msg_pair_channel_est {
-	struct gotr_hash_code       hmac;                   /*     0    64 */
-	struct {
-		struct gotr_dsa_sig     sig_sender_dhe_pkey;    /*    64    64 */
-		struct gotr_dsa_pkey    sender_dsa_pkey;        /*   128    32 */
-	} enc;                                              /*    64    96 */
-	/* size: 160 */
-};
-
-struct msg_flake_z {
-	struct gotr_hash_code    hmac;
-	struct {
-		struct gotr_point    sender_z[2];
-	} enc;
-};
-
-struct msg_flake_R {
-	struct gotr_hash_code    hmac;
-	struct {
-		struct gotr_point    sender_R[2];
-	} enc;
-};
-
-struct msg_flake_validate {
-	struct gotr_hash_code     hmac;
-	struct {
-		struct gotr_hash_code flake_hash;
-	} enc;
-};
-
-struct msg_text_header {
-	struct gotr_hash_code    hmac;
-	uint32_t                 clen;
-};
-
 static inline int check_params_create_msg(const struct gotr_roomdata *room,
 										  struct gotr_user *user,
 										  void **msg,

@@ -24,6 +24,7 @@ void gotr_user_left(struct gotr_chatroom *room, struct gotr_user *user);
 void gotr_keyupdate(struct gotr_chatroom *room);
 int gotr_send(struct gotr_chatroom *room, char *plain_msg);
 int gotr_receive(struct gotr_chatroom *room, char *b64_msg);
+void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user);
 
 /**
  * handle a received b64 encoded gotr message.

@@ -4,6 +4,11 @@
 #include <gcrypt.h>
 
 #define GOTR_OK 1
+#define SERIALIZED_POINT_LEN (256/8)
+
+struct gotr_point {
+	unsigned char data[SERIALIZED_POINT_LEN];
+};
 
 void gotr_eprintf(const char *format, ...);
 

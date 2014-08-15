@@ -297,6 +297,8 @@ main(int argc, char *argv[])
 							cleanup();
 							room = NULL;
 							return 0;
+						} else if (buf[1] == 'r') {
+							gotr_rekey(room, NULL);
 						} else {
 							fprintf(stderr, "unknown command: %s", buf);
 						}

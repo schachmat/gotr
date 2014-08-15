@@ -1,12 +1,13 @@
 #include <stdio.h>
 
-#include "util.h"
-#include "crypto.h"
-#include "gotr.h"
-#include "messaging.h"
 #include "b64.h"
+#include "crypto.h"
 #include "gka.h"
+#include "gotr.h"
 #include "key.h"
+#include "messaging.h"
+#include "user.h"
+#include "util.h"
 
 struct gotr_user;
 
@@ -72,6 +73,53 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user sen
 	return room;
 }
 
+static void pack_encode_send(struct gotr_chatroom* room, struct gotr_user* user, gotr_msgtype type)
+{
+	unsigned char *packed_msg;
+	size_t len_p = 0;
+	char *b64_msg;
+
+	if (!handler_out[type] ||
+	    !(packed_msg = handler_out[type](&room->data, user, &len_p))) {
+		gotr_eprintf("could not pack some msg");
+		return;
+	}
+
+	if((b64_msg = gotr_b64_enc(packed_msg, len_p))) {
+		room->send_user((void *)room->data.closure, (void *)user->closure, b64_msg);
+		free(b64_msg);
+	} else {
+		gotr_eprintf("could not b64 encode some msg");
+	}
+	free(packed_msg);
+}
+
+void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user)
+{
+	struct gotr_user* cur = room->data.users;
+	if (!room) {
+		gotr_eprintf("rekey called with parameter room == NULL");
+		return;
+	}
+
+	if (user) {
+		while (cur && cur != user)
+			cur = cur->next;
+		if (!cur) {
+			gotr_eprintf("rekey: user not in room");
+			return;
+		}
+		pack_encode_send(room, user, GOTR_PAIR_CHAN_INIT);
+		user->next_expected_msgtype = GOTR_PAIR_CHAN_INIT;
+	} else {
+		for (; cur; cur = cur->next) {
+			pack_encode_send(room, cur, GOTR_PAIR_CHAN_INIT);
+			cur->next_expected_msgtype = GOTR_PAIR_CHAN_INIT;
+		}
+	}
+
+}
+
 int gotr_send(struct gotr_chatroom *room, char *plain_msg)
 {
 	unsigned char *packed_msg_out = NULL;
@@ -130,9 +178,6 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 	struct gotr_user *u;
 	size_t len = 0;
 	unsigned char *packed_msg_in = NULL;
-	unsigned char *packed_msg_out = NULL;
-	char *b64_msg_out = NULL;
-	size_t len_p = 0;
 
 	if (!room || !b64_msg_in) {
 		gotr_eprintf("called gotr_receive_user with NULL argument");
@@ -149,25 +194,18 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 		return NULL;
 	}
 
+	// rekey
+	if (len == sizeof(struct msg_pair_channel_init) &&
+		u->next_expected_msgtype != GOTR_PAIR_CHAN_INIT &&
+		u->next_sending_msgtype != GOTR_PAIR_CHAN_INIT)
+		u->next_expected_msgtype = u->next_sending_msgtype = GOTR_PAIR_CHAN_INIT;
+
 	if (!handler_in[u->next_expected_msgtype] ||
 	    !handler_in[u->next_expected_msgtype](&room->data, u, packed_msg_in, len))
 		gotr_eprintf("could not unpack message");
 	free(packed_msg_in);
 
-	if (!handler_out[u->next_sending_msgtype] ||
-	    !(packed_msg_out = handler_out[u->next_sending_msgtype](&room->data, u, &len_p))) {
-		gotr_eprintf("could not pack message");
-		return u;
-	}
-
-	if ((b64_msg_out = gotr_b64_enc(packed_msg_out, len_p))) {
-		room->send_user((void *)room->data.closure, (void *)u->closure, b64_msg_out);
-		free(b64_msg_out);
-	} else {
-		gotr_eprintf("could not b64 encode message");
-	}
-	free(packed_msg_out);
-
+	pack_encode_send(room, u, u->next_sending_msgtype);
 	return u;
 }
 
@@ -177,9 +215,6 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
  */
 struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_closure)
 {
-	unsigned char *packed_msg;
-	size_t len_p = 0;
-	char *b64_msg;
 	struct gotr_user *user;
 
 	if(!room) {
@@ -192,19 +227,7 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_
 		return NULL;
 	}
 
-	if(!(packed_msg = gotr_pack_pair_channel_init(&room->data, user, &len_p))) {
-		gotr_eprintf("could not pack msg_pair_channel_init message");
-		return NULL;
-	}
-
-	if((b64_msg = gotr_b64_enc(packed_msg, len_p))) {
-		room->send_user((void *)room->data.closure, (void *)user->closure, b64_msg);
-		free(b64_msg);
-	} else {
-		gotr_eprintf("could not b64 encode msg_pair_channel_init message");
-	}
-
-	free(packed_msg);
+	pack_encode_send(room, user, GOTR_PAIR_CHAN_INIT);
 	return user;
 }
 

@@ -30,10 +30,7 @@
 #include <gcrypt.h>
 
 #include "util.h"
-#include "user.h"
 #include "messaging.h"
-
-#define SERIALIZED_POINT_LEN (256/8)
 
 /**
  * initializes cryptographic constants.
@@ -41,10 +38,6 @@
 void gotr_gka_init();
 
 void gotr_gka_exit();
-
-struct gotr_point {
-	unsigned char data[SERIALIZED_POINT_LEN];
-};
 
 void gotr_dbgpnt(const char* name, gcry_mpi_point_t p);
 gcry_mpi_point_t deserialize_point(const struct gotr_point* data, const int len);
