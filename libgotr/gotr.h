@@ -21,7 +21,6 @@ int gotr_init();
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user send_user, gotr_cb_receive_user receive_user, const void *room_closure, const char *privkey_filename);
 struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_closure);
 void gotr_user_left(struct gotr_chatroom *room, struct gotr_user *user);
-void gotr_keyupdate(struct gotr_chatroom *room);
 int gotr_send(struct gotr_chatroom *room, char *plain_msg);
 int gotr_receive(struct gotr_chatroom *room, char *b64_msg);
 void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user);
