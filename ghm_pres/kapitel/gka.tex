@@ -1,0 +1,38 @@
+\section{Group Key Agreement}
+\begin{frame}{Group Key Agreement}
+	\begin{block}{Operational sequence}
+		\begin{itemize}
+			\item Establish a secure channel with each user
+			\item Exchange ECBD parameters
+			\item Every user calculates his own circle key
+			\item piggyback public circle key on every message
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+\begin{frame}{Crypto}
+	\begin{block}{Changes to the proposed gotr protocol}
+		\begin{itemize}
+			\item Everything Curve 25519 based
+			\item Reordering of Flakes
+			\item Don't piggyback z values
+			\item Only piggyback circle if something changed
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+\begin{frame}{Crypto summary}
+	\begin{block}{Advantages}
+		\begin{itemize}
+			\item Extended DHE
+			\item Cheap calculations
+			\item Hotplug capable
+		\end{itemize}
+	\end{block}
+	\begin{alertblock}{Drawbacks}
+		\begin{itemize}
+			\item Expensive rekeying
+			\item Piggybacked public circle key size $(n-1)128$ bytes
+		\end{itemize}
+	\end{alertblock}
+\end{frame}

@@ -1,0 +1,81 @@
+\section{Protocol}
+\begin{frame}{Protocol}
+	\begin{block}{Definitions}
+		\begin{itemize}
+			\item $Enc()$ uses ECDHE and includes an HMAC
+			\item $Sig_{user}()$ uses long term EdDSA keys
+			\item $Mac()$ is an HMAC with the flake key
+			\item $Enc_G()$ uses a key $k_1$ derived from the circle key
+			\item $Mac_G()$ uses a key $k_2$ derived from the circle key
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+\begin{frame}{Establish secure pair channel}
+	\begin{tikzpicture}[font=\scriptsize]
+		\matrix (m)[matrix of nodes, ampersand replacement=\&, column sep=1cm, row  sep=1cm, nodes={draw=none, anchor=center,text depth=0pt}]
+		{
+			Alice \&  \& Bob \\
+			Choose $DH_{pub}^A$, $DH_{sec}^A$ \& $DH_{pub}^A$ \& \\
+			 \& $DH_{pub}^B$ \& Choose $DH_{pub}^B$, $DH_{sec}^B$ \\
+			 \& $Enc(Sig_{A}(DH_{pub}^A))$ \& \\
+			 \& $Enc(Sig_{B}(DH_{pub}^B))$ \& \\
+		};
+		\draw[shorten <=-1.5cm,shorten >=-1.5cm] (m-1-1.south east)--(m-1-3.south west);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-2-2.south west)--(m-2-2.south east);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-3-2.south east)--(m-3-2.south west);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-4-2.south west)--(m-4-2.south east);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-5-2.south east)--(m-5-2.south west);
+	\end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Establish flake key}
+	\begin{tikzpicture}[font=\scriptsize]
+		\matrix (m)[matrix of nodes, ampersand replacement=\&, column sep=1cm, row  sep=5mm, nodes={draw=none, anchor=center,text depth=0pt}]
+		{
+			Alice \&  \& Bob \\
+			Choose $r_{1,2}^A$ \& $Enc(z_{1,2}^A)$ \& Save as $y_{1,2}^B$ \\
+			Save as $y_{1,2}^A$ \& $Enc(z_{1,2}^B)$ \& Choose $r_{1,2}^B$ \\
+			Calculate $R_{1,2}^A$ \& $Enc(R_{1,2}^A)$ \& Save as $V_{1,2}^B$ \\
+			Save as $V_{1,2}^A$ \& $Enc(R_{1,2}^B)$ \& Calculate $R_{1,2}^B$ \\
+			 \& $Enc(Mac(r_{1,2}^A | y_{1,2}^A | R_{1,2}^A | V_{1,2}^A))$ \& Check $Mac$ \\
+			Check $Mac$ \& $Enc(Mac(r_{1,2}^B | y_{1,2}^B | R_{1,2}^B | V_{1,2}^B))$ \& \\
+		};
+		\draw[shorten <=-1.5cm,shorten >=-1.5cm] (m-1-1.south east)--(m-1-3.south west);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-2-2.south west)--(m-2-2.south east);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-3-2.south east)--(m-3-2.south west);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-4-2.south west)--(m-4-2.south east);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-5-2.south east)--(m-5-2.south west);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-6-2.south west)--(m-6-2.south east);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-7-2.south east)--(m-7-2.south west);
+	\end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Sending a message}
+	\begin{tikzpicture}[font=\scriptsize]
+		\matrix (m)[matrix of nodes, ampersand replacement=\&, column sep=1cm, row  sep=5mm, nodes={draw=none, anchor=center,text depth=0pt}]
+		{
+			Alice \&  \& everyone \\
+			\& $Mac_G(clen\dots Enc_G) | clen |$ all $WV$ pairs $| Enc_G(m|digest)$ \& \\
+		};
+		\draw[shorten <=-1.5cm,shorten >=-1.5cm] (m-1-1.south east)--(m-1-3.south west);
+		\draw[shorten <=-1cm,shorten >=-1cm,-latex] (m-2-2.south west)--(m-2-2.south east);
+	\end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Complexity}
+	\begin{block}{Joining / rekey per user}
+		\begin{itemize}
+			\item[] $5$ messages to establish keys
+			\item[] $5$ round trip times
+			\item[] $O(1)$ bytes to send and receive
+		\end{itemize}
+	\end{block}
+	\begin{block}{Sending a Message of length $m$}
+		\begin{itemize}
+			\item[] $<=n$ messages (underlay structure dependent)
+			\item[] $max(RTT)$ delay
+			\item[] $O(n+m)$ bytes
+		\end{itemize}
+	\end{block}
+\end{frame}
