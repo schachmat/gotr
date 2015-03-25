@@ -39,10 +39,31 @@ extern gcry_ctx_t edctx;
  */
 void gotr_gka_init();
 
+/**
+ * release cryptographic context.
+ */
 void gotr_gka_exit();
 
+/**
+ * Print out the point coordinates.
+ * @todo remove for release
+ */
 void gotr_dbgpnt(const char* name, gcry_mpi_point_t p);
+
+/**
+ * read ec point data from bytestring.
+ * @param[in] data Pointer to the bytestring
+ * @param[in] len Length of @a data
+ * @return parsed gcry_mpi_point_t structure
+ */
 gcry_mpi_point_t deserialize_point(const struct gotr_point* data, const int len);
+
+/**
+ * write ec point data to bytestring.
+ * @param[out] buf Resulting bytestring destination pointer
+ * @param[in] len The length which can be written to @a buf
+ * @param[in] p The point structure which is to be serialized
+ */
 void serialize_point(struct gotr_point *buf, const size_t len, const gcry_mpi_point_t p);
 
 /**
