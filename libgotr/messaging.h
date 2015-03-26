@@ -1,6 +1,12 @@
 #ifndef _MESSAGING_H
 #define _MESSAGING_H
 
+/**
+ * @file messaging.h
+ * @brief todo
+ * @todo document non gotr.h usage.
+ */
+
 #include "util.h"
 #include "crypto.h"
 #include "gotr.h"
