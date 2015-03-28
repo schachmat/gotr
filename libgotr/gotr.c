@@ -200,6 +200,7 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 		return NULL;
 	}
 
+	/// @todo check if user is in room: extract static func from rekey()??
 	// rekey
 	if (len == sizeof(struct msg_pair_channel_init) &&
 		u->next_expected_msgtype != GOTR_PAIR_CHAN_INIT &&
@@ -218,10 +219,6 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 	return u;
 }
 
-/**
- * @brief BLABLA
- * @todo docu
- */
 struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_closure)
 {
 	struct gotr_user *user;

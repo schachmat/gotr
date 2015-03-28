@@ -49,27 +49,27 @@ struct gotr_user;
  * b64_msg to every user in @a room_closure either via the chatroom broadcast
  * mechanism of the underlying protocol or if not available as separate messages
  * to each user. The callback should return 1 on success and 0 on failure.
- * @param room_closure Closure pointer representing the respective chatroom.
+ * @param[in] room_closure Closure pointer representing the respective chatroom.
  * This is the Pointer given to gotr_join().
- * @param b64_msg The message to be sent to all users in @a room_closure. The
+ * @param[in] b64_msg The message to be sent to all users in @a room_closure. The
  * pointer will be invalidated after this call has returned, so make a copy if
  * you need the data later.
  * @return 1 on success, 0 on failure.
  */
-
 typedef int (*gotr_cb_send_all)(void *room_closure, const char *b64_msg);
+
 /**
  * This callback is used by libgotr to send an encrypted and base64 encoded
  * protocol management message to a specific user in a chatroom. The client
  * should send this message @a b64_msg to the user @a user_closure in the
  * chatroom @a room_closure. The callback should return 1 on success and 0 on
  * failure.
- * @param room_closure Closure pointer representing the respective chatroom.
+ * @param[in] room_closure Closure pointer representing the respective chatroom.
  * This is the Pointer given to gotr_join().
- * @param user_closure Closure pointer representing the recipient of the
+ * @param[in] user_closure Closure pointer representing the recipient of the
  * message.
  * This is the Pointer given to gotr_user_joined() or gotr_receive_user().
- * @param b64_msg The message to be sent to all users in @a room_closure. The
+ * @param[in] b64_msg The message to be sent to all users in @a room_closure. The
  * pointer will be invalidated after this call has returned, so make a copy if
  * you need the data later.
  * @return 1 on success, 0 on failure.
@@ -81,11 +81,11 @@ typedef int (*gotr_cb_send_user)(void *room_closure, void *user_closure, const c
  * decrypted content of a received message protected with gotr. The client
  * should display the message in the chatroom @a room_closure coming from user
  * @a user_closure.
- * @param room_closure Closure pointer representing the respective chatroom.
+ * @param[in] room_closure Closure pointer representing the respective chatroom.
  * This is the Pointer given to gotr_join().
- * @param user_closure Closure pointer representing the sender of the message.
+ * @param[in] user_closure Closure pointer representing the sender of the message.
  * This is the Pointer given to gotr_user_joined() or gotr_receive_user().
- * @param plain_msg The plain message to display. The
+ * @param[in] plain_msg The plain message to display. The
  * pointer will be invalidated after this call has returned, so make a copy if
  * you need the data later.
  */
@@ -99,15 +99,79 @@ typedef void (*gotr_cb_receive_user)(void *room_closure, void *user_closure, con
 int gotr_init();
 
 /**
- * Enables the gotr protocol for the given chatroom.
- * @param room_closure Closure pointer representing the new chatroom. This
+ * Enables the gotr protocol for the given chatroom. You may use different
+ * callback functions for different chatrooms/protocols.
+ * @param[in] send_all Pointer to the send_all callback function
+ * @param[in] send_user Pointer to the send_user callback function
+ * @param[in] receive_user Pointer to the receive_user callback function
+ * @param[in] room_closure Closure pointer representing the new chatroom. This
  * will not be touched by gotr. It is only passed to the callbacks.
+ * @param[in] privkey_filename The absolute filepath where the private key is
+ * stored. If the file does not exist, but the containing folder does, a key is
+ * generated and saved as the specified name. If you set this argument to NULL,
+ * a key is generated and used for this chatroom, but not saved to disk, so it
+ * may not be recovered after the chat session.
+ * @return A pointer, which should only be remembered and passed to
+ * gotr functions when the client needs to refer to this chat room. This is a
+ * black-box pointer, do NOT access/change it or the data it points to!
  */
 struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user send_user, gotr_cb_receive_user receive_user, const void *room_closure, const char *privkey_filename);
+
+/**
+ * Notify gotr about a new user who just joined a chatroom. This should be
+ * called as early as possible to allow fast key establishment with this user.
+ * This function must be called even if the same user already has a established
+ * gotr connection with the client in another room. The private keys for those
+ * two rooms may differ.
+ * @param[in] room The pointer returned by gotr_join() to the respective chat room
+ * which the user just joined.
+ * @param[in] user_closure Closure pointer representing the new user in this
+ * Chatroom. This will not be touched by gotr. It is only passed to the
+ * callbacks.
+ * @return A pointer, which should only be remembered by the client and passed
+ * to gotr functions when the client needs to refer to this user. This is a
+ * black-box pointer, do NOT access/change it or the data it points to!
+ */
 struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_closure);
+
+/**
+ * Notify gotr about a user who just left a chatroom.
+ * @param[in] room The pointer returned by gotr_join() to the respective chat room
+ * which the user just left.
+ * @param[in] user The pointer returned by gotr_user_joined() or gotr_receive_user()
+ * to the respective user who left the chatroom @a room.
+ */
 void gotr_user_left(struct gotr_chatroom *room, struct gotr_user *user);
+
+/**
+ * Send a gotr protected message to a chat room.
+ * @param[in] room The pointer returned by gotr_join() to which message @a plain_msg
+ * should be sent.
+ * @param[in] plain_msg The plain text message to send. gotr will automatically
+ * encrypt it and send it by calling the gotr_cb_send_all() callback.
+ * @return 1 on success, 0 on failure.
+ */
 int gotr_send(struct gotr_chatroom *room, char *plain_msg);
+
+/**
+ * Receive a gotr protected message from a chat room.
+ * @param[in] room The pointer returned by gotr_join() from which message @a b64_msg
+ * was received.
+ * @param[in] b64_msg The base64 encoded, encrypted text message that was received.
+ * It should begin with `?GOTR?1`. gotr will automatically
+ * decrypt it and call the gotr_cb_receive_user() callback to let the client
+ * display it to the user.
+ * @return 1 on success, 0 on failure.
+ */
 int gotr_receive(struct gotr_chatroom *room, char *b64_msg);
+
+/**
+ * Establish new ephemeral keypairs with one or all users in a chatroom.
+ * @param[in] room The pointer returned by gotr_join() in which the rekey should be
+ * executed.
+ * @param[in] user The pointer to the user with which a rekey should be executed. If
+ * this argument is NULL a rekey is done for each user in the @a room.
+ */
 void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user);
 
 /**
@@ -123,10 +187,18 @@ void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user);
  * @param[in] user The gotr_user struct associated with the author of the message or
  * NULL if such does not exist yet
  * @param[in] user_closure The users closure pointer, only used if @a user == NULL
- * @param[in] b64_msg The message, that has been received
+ * @param[in] b64_msg_in The message, that has been received
  * @return @a user or the newly created gotr_user struct if @a user == NULL
  */
 struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user *user, const void *user_closure, const char *b64_msg_in);
+
+/**
+ * Disable gotr for a given chat room. This releases all ressources associated
+ * with this room and all users from this room. It also clears the respective
+ * keys from memory. Call this as early as possible so no further callbacks
+ * refering to this room will occur.
+ * @param[in] room The chat room to leave.
+ */
 void gotr_leave(struct gotr_chatroom *room); //room will be freed
 
 #endif
