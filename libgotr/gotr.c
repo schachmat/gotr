@@ -19,6 +19,7 @@ struct gotr_chatroom {
 };
 
 static struct gotr_user *gotr_init_user(struct gotr_chatroom *room, const void *user_closure);
+static struct gotr_user *gotr_user_in_room(struct gotr_chatroom *room, struct gotr_user *user);
 static int (*handler_in[GOTR_MAX_MSGTYPES])(struct gotr_roomdata *room, struct gotr_user *user, unsigned char *packed_msg, size_t len) = {
 	[GOTR_PAIR_CHAN_INIT]      = gotr_parse_pair_channel_init,
 	[GOTR_PAIR_CHAN_ESTABLISH] = gotr_parse_pair_channel_est,
@@ -106,9 +107,7 @@ void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user)
 	}
 
 	if (user) {
-		while (cur && cur != user)
-			cur = cur->next;
-		if (!cur) {
+		if (!(cur = gotr_user_in_room(room, user))) {
 			gotr_eprintf("rekey: user not in room");
 			return;
 		}
@@ -179,6 +178,15 @@ int gotr_receive(struct gotr_chatroom *room, char *b64_msg)
 	return 1;
 }
 
+static struct gotr_user *gotr_user_in_room(struct gotr_chatroom *room, struct gotr_user *user)
+{
+	struct gotr_user* cur = room->data.users;
+
+	while (cur && cur != user)
+		cur = cur->next;
+	return cur;
+}
+
 struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user *user, const void *user_closure, const char *b64_msg_in)
 {
 	struct gotr_user *u;
@@ -187,6 +195,10 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 
 	if (!room || !b64_msg_in) {
 		gotr_eprintf("called gotr_receive_user with NULL argument");
+		return NULL;
+	}
+	if (user && !gotr_user_in_room(room, user)) {
+		gotr_eprintf("gotr_receive_user: specified user is not in specified room");
 		return NULL;
 	}
 
@@ -200,7 +212,6 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 		return NULL;
 	}
 
-	/// @todo check if user is in room: extract static func from rekey()??
 	// rekey
 	if (len == sizeof(struct msg_pair_channel_init) &&
 		u->next_expected_msgtype != GOTR_PAIR_CHAN_INIT &&
