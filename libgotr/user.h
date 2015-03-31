@@ -43,27 +43,28 @@ typedef enum {
  * own private key for the ECDHE
  * @var gotr_user::his_dhe_pkey
  * other users public key for the ECDHE
- * @var gotr_user::r
+ * @var gotr_user::my_r
  * own (ephemeral) private key to this user.
  * @f$r_{ij0}@f$ and @f$r_{ij1}@f$
- * @var gotr_user::z
+ * @var gotr_user::my_z
  * own corresponding (ephemeral) public keys.
  * @f$z_{ij0} = g^{r_{ij0}} \pmod{prime}@f$
  * and @f$z_{ij1} = g^{r_{ij1}} \pmod{prime}@f$
- * @var gotr_user::y
- * other users (ephemeral) public keys.
+ * @var gotr_user::his_z
+ * other users (ephemeral) public keys. Also called y.
  * @f$y_{ij0} = z_{ji0} = g^{r_{ji0}} \pmod{prime}@f$
  * and @f$y_{ij1} = z_{ji1} = g^{r_{ji1}} \pmod{prime}@f$
- * @var gotr_user::R
- * own X values for the flake key.
+ * @var gotr_user::my_X
+ * own X values for the flake key. Also called R.
  * @f$R_{ij0} = (\frac{z_{ij1}}{y_{ij0}})^{r_{ij0}} \pmod{prime}@f$
  * and @f$R_{ij1} = (\frac{y_{ij1}}{z_{ij0}})^{r_{ij1}} \pmod{prime}@f$
- * @var gotr_user::V
- * other users X values for the flake key.
+ * @var gotr_user::his_X
+ * other users X values for the flake key. Also called V.
  * @f$V_{ij0} = R_{ji0} = (\frac{z_{ji1}}{y_{ji0}})^{r_{ji0}} \pmod{prime}@f$
  * and @f$V_{ij1} = R_{ji1} = (\frac{y_{ji1}}{z_{ji0}})^{r_{ji1}} \pmod{prime}@f$
- * @var gotr_user::flake_key
- * the flake key we agreed on with the other user
+ * @var gotr_user::our_flake_auth
+ * the auth key derived from the flake key we agreed on with the other user.
+ * This is used for authenticating the flake validation.
  * @var gotr_user::next
  * link to next user in the list
  */

@@ -43,11 +43,16 @@ int gotr_init()
 		return 0;
 	}
 
+	/* SECMEM cannot be resized dynamically. We do not know how much we need */
 	if ((err = gcry_control(GCRYCTL_DISABLE_SECMEM, 0)))
 		gotr_eprintf("failed to set libgcrypt option DISABLE_SECMEM: %s",
 				gcry_strerror(err));
 
-	/* ecc is slow otherwise */
+	/**
+	 * ecc is slow otherwise
+	 * @todo research how to not enable quick random for long term key
+	 * generation.
+	 */
 	if ((err = gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0)))
 		gotr_eprintf("failed to set libgcrypt option ENABLE_QUICK_RANDOM: %s",
 				gcry_strerror(err));

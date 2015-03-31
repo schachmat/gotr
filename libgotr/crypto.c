@@ -281,7 +281,7 @@ gotr_eddsa_key_get_public(const struct gotr_dsa_skey *priv,
  * @param block the data to sign
  * @param size length of the block to sign
  * @param sig where to write the signature
- * @return #GNUNET_SYSERR on error, #GNUNET_OK on success
+ * @return 1 on success, 0 on failure
  */
 	int
 gotr_eddsa_sign(const struct gotr_dsa_skey *priv,
@@ -327,11 +327,11 @@ gotr_eddsa_sign(const struct gotr_dsa_skey *priv,
 /**
  * Verify signature.
  *
- * @param block the data to validate
- * @param the length of the block
- * @param sig signature that is being validated
  * @param pub public key of the signer
- * @returns #GNUNET_OK if ok, #GNUNET_SYSERR if invalid
+ * @param block the data to validate
+ * @param size the length of the block
+ * @param sig signature that is being validated
+ * @return 1 on success, -1 on failure
  */
 	int
 gotr_eddsa_verify(const struct gotr_dsa_pkey *pub,
@@ -350,7 +350,6 @@ gotr_eddsa_verify(const struct gotr_dsa_pkey *pub,
 					(int)sizeof(sig->s), sig->s)))
 	{
 		//LOG_GCRY (GNUNET_ERROR_TYPE_ERROR, "gcry_sexp_build", rc);
-		//return GNUNET_SYSERR;
 		return -1;
 	}
 	data = data_to_eddsa_value(block, size);
@@ -360,7 +359,6 @@ gotr_eddsa_verify(const struct gotr_dsa_pkey *pub,
 	{
 		gcry_sexp_release(data);
 		gcry_sexp_release(sig_sexpr);
-		//return GNUNET_SYSERR;
 		return -1;
 	}
 	rc = gcry_pk_verify(sig_sexpr, data, pub_sexpr);
@@ -372,10 +370,8 @@ gotr_eddsa_verify(const struct gotr_dsa_pkey *pub,
 		/*LOG (GNUNET_ERROR_TYPE_INFO,
 		  _("EdDSA signature verification failed at %s:%d: %s\n"), __FILE__,
 		  __LINE__, gcry_strerror (rc));*/
-		//return GNUNET_SYSERR;
 		return -1;
 	}
-	//return GNUNET_OK;
 	return 1;
 }
 
@@ -740,10 +736,11 @@ gotr_symmetric_create_session_key(struct gotr_sym_key *key)
 /**
  * Initialize AES cipher.
  *
+ * @todo check return/abort()
  * @param handle handle to initialize
  * @param sessionkey session key to use
  * @param iv initialization vector to use
- * @return #GNUNET_OK on success, #GNUNET_SYSERR on error
+ * @return 1 on success
  */
 	static int
 setup_cipher_aes(gcry_cipher_hd_t *handle,
@@ -777,10 +774,11 @@ setup_cipher_aes(gcry_cipher_hd_t *handle,
 /**
  * Initialize TWOFISH cipher.
  *
+ * @todo check return/abort()
  * @param handle handle to initialize
  * @param sessionkey session key to use
  * @param iv initialization vector to use
- * @return #GNUNET_OK on success, #GNUNET_SYSERR on error
+ * @return 1 on success
  */
 	static int
 setup_cipher_twofish(gcry_cipher_hd_t *handle,
@@ -871,12 +869,12 @@ gotr_symmetric_decrypt(const void *block, size_t size,
 	char tmp[size];
 
 	if (1 != setup_cipher_twofish(&handle, sessionkey, iv))
-		return 0;
+		return -1;
 	rc = gcry_cipher_decrypt(handle, tmp, size, block, size);
 	gotr_assert_gpgerr(rc);
 	gcry_cipher_close(handle);
 	if (1 != setup_cipher_aes(&handle, sessionkey, iv))
-		return 0;
+		return -1;
 	rc = gcry_cipher_decrypt(handle, result, size, tmp, size);
 	gotr_assert_gpgerr(rc);
 	gcry_cipher_close(handle);
@@ -951,7 +949,7 @@ gotr_symmetric_derive_iv_v(struct gotr_sym_iv *iv,
  * @param skm source key material
  * @param skm_len length of @a skm
  * @param argp va_list of void * & size_t pairs for context chunks
- * @return #GNUNET_YES on success
+ * @return 1 on success, -1 on failure
  */
 	int
 gotr_kdf_v(void *result, size_t out_len, const void *xts,
@@ -983,7 +981,7 @@ gotr_kdf_v(void *result, size_t out_len, const void *xts,
  * @param skm source key material
  * @param skm_len length of @a skm
  * @param ... void * & size_t pairs for context chunks
- * @return 1 on success
+ * @return 1 on success, -1 on failure
  */
 int
 gotr_kdf (void *result, size_t out_len, const void *xts, size_t xts_len,
@@ -1027,7 +1025,7 @@ doHMAC(gcry_md_hd_t mac, const void *key, size_t key_len, const void *buf,
  * @param skm source key material
  * @param skm_len length of @a skm
  * @param prk result buffer (allocated by caller; at least gcry_md_dlen() bytes)
- * @return #GNUNET_YES on success
+ * @return 1 on success, -1 on failure
  */
 	static int
 getPRK(gcry_md_hd_t mac, const void *xts, size_t xts_len, const void *skm,
@@ -1035,16 +1033,11 @@ getPRK(gcry_md_hd_t mac, const void *xts, size_t xts_len, const void *skm,
 {
 	const void *ret;
 
-	ret = doHMAC(mac, xts, xts_len, skm, skm_len);
-	if (ret == NULL) {
-		//return GNUNET_SYSERR;
+	if (!(ret = doHMAC(mac, xts, xts_len, skm, skm_len)))
 		return -1;
-
-	}
 
 	memcpy(prk, ret, gcry_md_get_algo_dlen(gcry_md_get_algo(mac)));
 
-	//return GNUNET_YES;
 	return 1;
 }
 
@@ -1059,7 +1052,7 @@ getPRK(gcry_md_hd_t mac, const void *xts, size_t xts_len, const void *skm,
  * @param skm source key material
  * @param skm_len length of @a skm
  * @param argp va_list of void * & size_t pairs for context chunks
- * @return #GNUNET_YES on success
+ * @return 1 on success, -1 on failure
  */
 	int
 gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
@@ -1080,13 +1073,11 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 	va_list args;
 
 	if (0 == k) {
-		//return GNUNET_SYSERR;
 		return -1;
 	}
 
 	if (GPG_ERR_NO_ERROR !=
 			gcry_md_open(&xtr, xtr_algo, GCRY_MD_FLAG_HMAC)) {
-		//return GNUNET_SYSERR;
 		return -1;
 	}
 
@@ -1094,7 +1085,6 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 			gcry_md_open(&prf, prf_algo, GCRY_MD_FLAG_HMAC))
 	{
 		gcry_md_close(xtr);
-		//return GNUNET_SYSERR;
 		return -1;
 	}
 	va_copy(args, argp);
@@ -1106,7 +1096,7 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 	va_end(args);
 
 	memset(result, 0, out_len);
-	if (getPRK(xtr, xts, xts_len, skm, skm_len, prk) != 1 /*GNUNET_YES*/)
+	if (getPRK(xtr, xts, xts_len, skm, skm_len, prk) != 1)
 		goto hkdf_error;
 
 	t = out_len / k;
@@ -1173,12 +1163,10 @@ gotr_hkdf_v(void *result, size_t out_len, int xtr_algo, int prf_algo,
 			memcpy(result, hc, d);
 		}
 
-		//ret = GNUNET_YES;
 		ret = 1;
 		goto hkdf_ok;
 	}
 hkdf_error:
-	//ret = GNUNET_SYSERR;
 	ret = -1;
 hkdf_ok:
 	gcry_md_close(xtr);

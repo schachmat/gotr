@@ -93,7 +93,6 @@ typedef void (*gotr_cb_receive_user)(void *room_closure, void *user_closure, con
 
 /**
  * initialize libgotr.
- * @todo initialize libgotr in library loader and remove this function
  * @return 1 on success, 0 on failure.
  */
 int gotr_init();

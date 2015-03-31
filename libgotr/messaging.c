@@ -195,8 +195,8 @@ static void derive_key_material(const gcry_mpi_point_t keypoint,
  * encryption key, both of which are saved in the apropriate fields within the
  * supplied gotr_roomdata struct @a room.
  *
- * @param[in] users The list of users to search through. We only take users into
- * account with which we exchanged a flake key previously.
+ * @param[in] room The room for which to calculate a circle key. We only take
+ * users into account with which we exchanged a flake key previously.
  * @param[out] len_ret The size of the returned pointer in bytes.
  * @param[out] n The amount of X values returned.
  * @return An array of the serialized X values used in the flake key generation
