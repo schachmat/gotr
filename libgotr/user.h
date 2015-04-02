@@ -67,6 +67,12 @@ typedef enum {
  * This is used for authenticating the flake validation.
  * @var gotr_user::next
  * link to next user in the list
+ * @var gotr_user::our_hmac_key
+ * key to protect unicast messages HMAC with this user
+ * @var gotr_user::our_sym_key
+ * key to encrypt unicast messages with this user
+ * @var gotr_user::our_sym_iv
+ * iv for the unicast messages exchanged with this user
  */
 struct gotr_user {
 	struct gotr_auth_key his_circle_auth;
