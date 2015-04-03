@@ -73,6 +73,12 @@ typedef enum {
  * key to encrypt unicast messages with this user
  * @var gotr_user::our_sym_iv
  * iv for the unicast messages exchanged with this user
+ * @var gotr_user::his_circle_auth
+ * authentication key, this user will use for sending group messages
+ * @var gotr_user::his_circle_key
+ * encryption key, this user will use for sending group messages
+ * @var gotr_user::his_circle_iv
+ * initialization vector for encrypted group messages from this user
  */
 struct gotr_user {
 	struct gotr_auth_key his_circle_auth;
