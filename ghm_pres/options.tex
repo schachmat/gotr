@@ -1,0 +1,42 @@
+\documentclass[16pt]{beamer}
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+
+\usefonttheme{structurebold}
+
+\beamertemplatenavigationsymbolsempty
+%\setbeamertemplate{footline}[default]
+
+% Weitere Pakete
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{matrix,shapes,arrows,positioning,chains,calc}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Itemabstand vergrößern
+\newlength{\wideitemsep}
+\setlength{\wideitemsep}{\itemsep}
+\addtolength{\wideitemsep}{1.5em}
+\newcommand{\bigitem}{\setlength{\itemsep}{\wideitemsep}\item}
+
+\usepackage{textpos}
+\setlength{\TPHorizModule}{5mm}
+\setlength{\TPVertModule}{\TPHorizModule}
+
+% TODO Notiz
+\newcommand\todo[1]{\textcolor{red}{TODO: #1}}
+
+% Listing
+\lstset{ %
+    language=C,                      % the language of the code
+    basicstyle=\ttfamily,            % the size of the fonts that are used for the code
+    breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+    breaklines=true,                 % sets automatic line breaking
+    stepnumber=2,                    % the step between two line-numbers. If it's 1, each line will be numbered
+    tabsize=2,                       % sets default tabsize to 2 spaces
+    morecomment=[l][\emph]{\#},
+    captionpos=b,                    % sets the caption-position to bottom
+}
