@@ -1,0 +1,11 @@
+gotr_receive_unencrypted
+digest -> evolving hash
+logging
+
+mpi_
+clean crypto.[ch]
+remove test.[ch]
+
+library loading code statt init
+assert statt if() return 0; in internen funktionen
+https://bugs.otr.im/issues/47
