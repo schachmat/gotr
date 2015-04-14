@@ -1,6 +1,6 @@
 \input{options.tex}
 
-\title{Expose: a free Group OTR library \\ {\small Interdisciplinary Project, Summer 2015}}
+\title{Proposal: An Open Source Group OTR Library \\ {\small Interdisciplinary Project, Summer 2015}}
 \author{
 	Markus Teich
 }
@@ -21,93 +21,82 @@ through the popularity of smartphones makes IM attractive for a broad audience.
 Also companies have discovered IM as a suitable solution for online business
 meetings, particularly because it causes no additional costs.
 
-At its heart IM emulates the behavior of a private conversation held in person.
-Naturally people expect their face to face conversations to have several
-properties. For example for any party that did not participate the conversation
-the (hopefully) honest word of the participants is the only proof of what was
-said during the conversation (given that no one recorded it). To be a suitable
-alternative to face to face conversations IM should also satisfy these
-properties. It is also not astonishing that people without a strong knowledge in
-computer science and/or cryptography already expect their private online
-conversation to be held under these constraints.
-
-However, the dominant IM solutions do not satisfy all of these properties.
-Security concerns fuelled by the revelation of surveillance activities of
-government institutions last year have lead to a more wide spread awareness for
-the need to secure communication over the internet.
-
-
 \section{Motivation}
 
-Ideally it should be possible to have secure, face to face
-like conversations over the internet without additional effort. To properly
-emulate the security of a face to face meeting, an IM conversation should
-satisfy the following properties:
+Ideally it should be possible to have secure, face to face like conversations
+over the internet without additional effort. To properly emulate the security of
+a face to face meeting, an IM conversation should satisfy the following
+properties:
 
 \begin{itemize}
-
-	\item{\textbf{Authenticity:} The receiver can be sure about the origin of a
-		message.}
+	\item{\textbf{Confidentiality:} No entities other than the participants are
+		able to read the content of the messages.}
 
 	\item{\textbf{Integrity:} The receiver can be sure, the message has not been
 		modified after it has been sent.}
 
-	\item{\textbf{Confidentiality:} No entity other than the participants is
-		able to read the content of the messages.}
+	\item{\textbf{Authenticity:} The receiver can be sure about the origin of a
+		message.}
+
+	\item{\textbf{Deniability/Repudiability:} No entity is able to prove the
+			authorship of a message to a non participating entity.}
 
 	\item{\textbf{Perfect Forward Secrecy:} An attacker is unable to derive
-		ephemeral key material of past conversations from disclosed long term keys.}
+		ephemeral key material of past conversations from disclosed long term
+		keys.}
 
-	\item{\textbf{Deniability:} No entity is able to prove the authorship of a
-			message to a non participating entity.\footnote{Deniability as a
-				property is the direct opposite of what traditional security
-				patterns (e.g. PGP for e-mail) achieve. Typically the signature
-		used to achieve authenticity also provides a proof of who the author of
-a message was. On the other hand this property makes such patterns suitable for
-messages of legal relevance such as contracts or bills.}}
-
+	\item{\textbf{Consensus:} All participants agree about the history of who
+		said what.}
 \end{itemize}
 
-For just two chat participants the well known and established \texttt{libotr} can be used
-to achieve these goals. However, currently there is no free and open source
-library for inclusion in IM clients that provide these properties for
-conversations with more than two participants such as IRC channels or XMPP
-conference rooms. Considering groups wanting to have private conversations such
-as political parties, business partners, whistle blowers or even ordinary people, which are unable to
-meet in person due to legal, time or monetary restrictions, the need for such a
-tool is obvious.
+For just two chat participants the well known and established
+\texttt{libotr}\cite{otr} can be used to achieve these goals.  However,
+currently there is no open source implementation that provides all of these
+properties for conversations with more than two participants such as IRC
+channels or XMPP conference rooms. Considering groups wanting to have private
+conversations such as political parties, business partners, whistle blowers and
+also ordinary people, which are unable to meet in person due to legal, time or
+monetary restrictions, the need for such a tool is obvious. Security concerns
+fuelled by the revelation of surveillance activities of government institutions
+in the recent past have lead to a more wide spread awareness for the need to
+further secure communication over the internet.
 
 \section{Related Work}
 
-In 2004 Borisov et al.\ initially proposed the idea of off-the-record
-communication(OTR) \cite{otr}. The OTR protocol aimed at providing the
-aforementioned properties for chats with two participants. However in 2005 Di
-Raimondo et al.\ published a paper in which they revealed several weaknesses in
-the protocol and also provided solutions to fix these \cite{sec-otr}. In 2007
-Alexander et al.\ attended the problem that the key exchange imposes an obstacle
-for casual users \cite{auth-otr}. To facilitate this they suggest to choose a question to which
-only the two parties of the conversation know the answer. With the aid of a solution
-to the Socialist Millionaires’ Problem the two answers are then checked for equality without sending their answers over the internet.
-In 2008 this expansion also was evaluated \cite{user-study} in a user study and some understanding problems have been fixed.
-
-A first attempt to expand the capabilities of OTR to group conversation was made in 2007 by Bian at al.\ \cite{gotr}. They implemented a plugin for the MSN messenger, which designates one participant to work as a virtual server. All messages are then sent via the OTR protocol to this server and distributed to the other participants from there.
+A first attempt to expand the capabilities of OTR to group conversation was made
+in 2007 by Bian at al.\ \cite{gotr}. They implemented a plugin for the MSN
+messenger, which designates one participant to work as a virtual server. All
+messages are then sent via the OTR protocol to this server and distributed to
+the other participants from there. This approach obviously suffers under a
+single point of failure.
 
 The first protocol proposing OTR for group conversations without the need for a
 trusted “server” party \cite{mp-otr} has been published in 2009 by Goldberg et
 al.\ In 2013 this topic has been revisited by Liu et al.\ \cite{impr-gotr} to
-improve repudiability of the previous approach.
+improve repudiability and efficiency in dynamic chatrooms.
+
+As a project for the “Peer-to-Peer systems and Security” lecture during SS2014 I
+started an implementation of the last protocol as a C library\cite{libgotr} with
+another student. Due to time constraints, my team partner leaving the project a
+few weeks before the final deadline and the complexity of implementing the
+underlying cryptographic protocol the library was not finished. It is yet
+missing the consensus property, a proper client plugin and the protocol is very
+bandwidth-heavy.
 
 \section{Project Plan}
 
-The goal of our project is to implement a free and open source library which is
-independent from a specific IM solution and provides the user with the group OTR
-functionality proposed in \cite{impr-gotr}. The existing proof of concept
-implementation for pidgin serves as reference to our work. We aim to provide the
-group OTR algorithm under a standardised interface usable by various existing IM
-clients as well as new IM concepts based on OTR only communications. Further the
-correct functionality of our library is to be tested with a simple application in form of a command line tool.
-However the evaluation of the cryptographic correctness of the proposed
-algorithm is not the subject of our project.
+The goal of this project is to finish the gotr library\cite{libgotr} and write a
+pidgin plugin using it. The consensus property could be achieved relatively
+easily by adding another bandwidth heavy step to the protocol, but I want to
+evaluate another protocol\cite{oldblue}, which promises better performance,
+Byzantine failure resistance and causal delivery of the messages. Also I want to
+switch to triple-DHE\cite{tripledhe} instead of the default authenticated one
+and try to incorporate the axolotl ratchet\cite{axolotl} to provide better
+forward secrecy if possible.
+
+To aid me in designing the necessary cryptographic protocol adaptions, I would
+like to visit the ”Kryptologie und IT-Sicherheit“ lecture from the electrical
+engineering department.
 
 \begin{thebibliography}{xx}
 
@@ -115,21 +104,9 @@ algorithm is not the subject of our project.
 		communication, or, why not to use PGP. In \textit{Proceedings of the ACM
 		workshop on Privacy in the electronic society}, WPES ’04, 2004.
 
-	\bibitem{sec-otr} M. Di Raimondo, R. Gennaro, and H. Krawczyk. Secure
-		off-the-record messaging. In \textit{Proceedings of the ACM workshop on
-		Privacy in the electronic society}, WPES ’05, 2005.
-
-	\bibitem{auth-otr} C. Alexander and I. Goldberg. Improved User
-		Authentication in Off-the-Record Messaging. In \textit{Proceedings of
-		the 2007 ACM workshop on Privacy in electronic society}, WPES ’07, 2007.
-
 	\bibitem{gotr} J. Bian, R. Seker, and U. Topaloglu. Off-the-Record Instant
 		Messaging for Group Conversation. In \textit{Proceedings of Information
 		Reuse and Integration}, IRI ’07, 2007.
-
-	\bibitem{user-study} R. Stedman, K. Yoshida, and I. Goldberg. A User Study
-		of Off-the-Record Messaging. In \textit{Proceedings of the Symposium On
-		Usable Privacy and Security}, SOUPS ’07, 2008.
 
 	\bibitem{mp-otr} I. Goldberg, B. Ustaoğlu, M. D. Van Gundy, and H. Chen.
 		Multi-party Off-the-Record Messaging. In \textit{Proceedings of the ACM
@@ -138,6 +115,22 @@ algorithm is not the subject of our project.
 	\bibitem{impr-gotr} H. Liu, E. Y. Vasserman, and N. Hopper. Improved Group
 		Off-the-Record Messaging. In \textit{Proceedings of the ACM workshop on
 		Privacy in the electronic society}, WPES ’11, 2013.
+
+	\bibitem{libgotr} M. Teich.
+		Gotr library code and documentation.\\Repository:
+		\url{https://github.com/schachmat/gotr}
+
+	\bibitem{oldblue} M. Gundy and H. Chen.
+		OldBlue: Causal Broadcast In A Mutually Suspicious Environment.
+		Working draft: \url{http://matt.singlethink.net/projects/mpotr/oldblue-draft.pdf}
+
+	\bibitem{tripledhe} M. Marlinspike.
+		Simplifying OTR deniability. Blog post:
+		\url{https://whispersystems.org/blog/simplifying-otr-deniability/}
+
+	\bibitem{axolotl} T. Perrin.
+		Axolotl Ratchet.\\Specification:
+		\url{https://github.com/trevp/axolotl/wiki}
 
 \end{thebibliography}
 
