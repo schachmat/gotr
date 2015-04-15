@@ -1,6 +1,6 @@
 #libgotr
 
-libgotr is a library providing a OTR-like encryption scheme for group
+libgotr is a library providing an [OTR](https://otr.cypherpunks.ca/)-like encryption scheme for group
 conversations.
 
 ##Build Dependencies
