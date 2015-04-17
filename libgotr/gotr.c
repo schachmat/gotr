@@ -166,7 +166,7 @@ int gotr_receive(struct gotr_chatroom *room, char *b64_msg)
 		return 0;
 	}
 
-	if ((gotr_b64_dec(b64_msg, (unsigned char **)&packed_msg, &len))) {
+	if (gotr_b64_dec(b64_msg, (unsigned char **)&packed_msg, &len)) {
 		gotr_eprintf("could not decode message: %s", b64_msg);
 		return 0;
 	}
