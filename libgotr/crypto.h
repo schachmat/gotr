@@ -47,14 +47,14 @@ struct gotr_auth_key {
 };
 
 void gotr_hash(const void *block, size_t size, struct gotr_hash_code *ret);
-void gotr_hmac (const struct gotr_auth_key *key, const void *plaintext, size_t plaintext_len, struct gotr_hash_code *hmac);
+void gotr_hmac(const struct gotr_auth_key *key, const void *plaintext, size_t plaintext_len, struct gotr_hash_code *hmac);
 
 
 
 // --- MPI ---
 
 void gotr_mpi_print_unsigned(void *buf, size_t size, gcry_mpi_t val);
-void gotr_mpi_scan_unsigned (gcry_mpi_t *result, const void *data, size_t size);
+void gotr_mpi_scan_unsigned(gcry_mpi_t *result, const void *data, size_t size);
 
 
 
@@ -116,7 +116,7 @@ void gotr_symmetric_create_session_key(struct gotr_sym_key *key);
 ssize_t gotr_symmetric_encrypt(const void *block, size_t size, const struct gotr_sym_key *sessionkey, const struct gotr_sym_iv *iv, void *result);
 ssize_t gotr_symmetric_decrypt(const void *block, size_t size, const struct gotr_sym_key *sessionkey, const struct gotr_sym_iv *iv, void *result);
 void gotr_symmetric_derive_iv(struct gotr_sym_iv *iv, const struct gotr_sym_key *skey, const void *salt, size_t salt_len, ...);
-void gotr_symmetric_derive_iv_v (struct gotr_sym_iv *iv, const struct gotr_sym_key *skey, const void *salt, size_t salt_len, va_list argp);
+void gotr_symmetric_derive_iv_v(struct gotr_sym_iv *iv, const struct gotr_sym_key *skey, const void *salt, size_t salt_len, va_list argp);
 
 
 

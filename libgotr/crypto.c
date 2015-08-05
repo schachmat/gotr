@@ -213,7 +213,7 @@ gotr_eddsa_key_create(struct gotr_dsa_skey *priv)
 {
 	gcry_sexp_t priv_sexp;
 	gcry_sexp_t s_keyparam;
-	gcry_mpi_t d; 
+	gcry_mpi_t d;
 	int rc;
 
 	if (0 != (rc = gcry_sexp_build(&s_keyparam, NULL,
