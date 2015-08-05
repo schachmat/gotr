@@ -49,6 +49,7 @@ struct gotr_user;
  * b64_msg to every user in @a room_closure either via the chatroom broadcast
  * mechanism of the underlying protocol or if not available as separate messages
  * to each user. The callback should return 1 on success and 0 on failure.
+ * This callback must not call any other gotr_ function itself.
  * @param[in] room_closure Closure pointer representing the respective chatroom.
  * This is the Pointer given to gotr_join().
  * @param[in] b64_msg The message to be sent to all users in @a room_closure. The
@@ -63,7 +64,7 @@ typedef int (*gotr_cb_send_all)(void *room_closure, const char *b64_msg);
  * protocol management message to a specific user in a chatroom. The client
  * should send this message @a b64_msg to the user @a user_closure in the
  * chatroom @a room_closure. The callback should return 1 on success and 0 on
- * failure.
+ * failure. This callback must not call any other gotr_ function itself.
  * @param[in] room_closure Closure pointer representing the respective chatroom.
  * This is the Pointer given to gotr_join().
  * @param[in] user_closure Closure pointer representing the recipient of the
@@ -80,7 +81,7 @@ typedef int (*gotr_cb_send_user)(void *room_closure, void *user_closure, const c
  * Callbacks of this type will be invoked to inform the client about the
  * decrypted content of a received message protected with gotr. The client
  * should display the message in the chatroom @a room_closure coming from user
- * @a user_closure.
+ * @a user_closure. This callback must not call any other gotr_ function itself.
  * @param[in] room_closure Closure pointer representing the respective chatroom.
  * This is the Pointer given to gotr_join().
  * @param[in] user_closure Closure pointer representing the sender of the message.
