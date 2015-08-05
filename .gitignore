@@ -5,6 +5,7 @@ libgotr/test
 libgotr/libgotr.a
 libgotr/include
 libgotr/lib
+libgotr/structsizes
 *.o
 .DS_Store
 */cscope.out

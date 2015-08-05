@@ -54,8 +54,12 @@ doc: Doxyfile
 	@echo DOXYGEN
 	@${DOXYGEN} >/dev/null
 
+structs: ${CLIENT}
+	@echo measuring structs
+	@pahole ${CLIENT} >structsizes
+
 clean:
 	@echo cleaning
 	@rm -f ${LIB} ${CLIENT} ${OBJ} ${CLIENT_OBJ} ${TEST} ${TEST_OBJ}
 
-.PHONY: all client libgotr.a options cscope doc clean
+.PHONY: all client libgotr.a options cscope doc clean structs
