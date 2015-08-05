@@ -9,6 +9,6 @@
  * abs_filename is NULL, a key is only generated but not saved.
  * @param key Where to store the loaded/generated key.
  */
-void load_privkey(const char* abs_filename, struct gotr_dsa_skey *key);
+void load_privkey(const char* abs_filename, struct gotr_dhe_skey *key);
 
 #endif

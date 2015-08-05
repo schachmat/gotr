@@ -6,10 +6,10 @@
 #include "util.h"
 #include "key.h"
 
-void load_privkey(const char* abs_filename, struct gotr_dsa_skey *key)
+void load_privkey(const char* abs_filename, struct gotr_dhe_skey *key)
 {
 	FILE *fp;
-	size_t size = sizeof(struct gotr_dsa_skey);
+	size_t size = sizeof(struct gotr_dhe_skey);
 	mode_t oldmask;
 
 	if (!abs_filename)
@@ -29,7 +29,7 @@ void load_privkey(const char* abs_filename, struct gotr_dsa_skey *key)
 
 create:
 //	gotr_eprintf("generating new private key, please wait...");
-	gotr_eddsa_key_create(key);
+	gotr_ecdhe_key_create(key);
 //	gotr_eprintf("done generating private key.");
 
 	if (!abs_filename)

@@ -27,32 +27,65 @@ static inline int check_params_create_msg(const struct gotr_roomdata *room,
 	return 1;
 }
 
+
+/**
+ * Encrypts the message and calculates the hmac to prepare for sending.
+ *
+ * @param[in] user The user who will receive this message.
+ * @param[in,out] msg A pointer to the message which shall be encrypted with the
+ * first sizeof(struct gotr_hash_code) bytes serving as a padding/placeholder,
+ * where the HMAC will be stored.
+ * @param[in] msglen The length of @a msg in bytes.
+ * @param[out] len On success this will be set to @a msglen.
+ * @param[in] generation The key generation to use. 0 means pre-key (used for
+ * pair channel establish message) and 1 is used for the following handshake
+ * messages.
+ * @param[in] next_type The next message type which will be sent to this user to
+ * finish the handshake.
+ * @return @a msg on success, NULL on failure.
+ */
 static inline unsigned char *encrypt_and_hmac(struct gotr_user *user,
 											  unsigned char *msg,
 											  size_t msglen,
 											  size_t *len,
+											  int generation,
 											  gotr_msgtype next_type)
 {
 	void *enc = msg + sizeof(struct gotr_hash_code);
 	const size_t enclen = msglen - sizeof(struct gotr_hash_code);
 
-	if (gotr_symmetric_encrypt(enc, enclen, &user->our_sym_key,
-							   &user->our_sym_iv, enc) != enclen) {
+	if (gotr_symmetric_encrypt(enc, enclen, &user->our_sym_key[generation], &user->our_sym_iv[generation], enc) != enclen) {
 		gotr_eprintf("could not encrypt msg");
 		return NULL;
 	}
-	gotr_hmac(&user->our_hmac_key, enc, enclen, (struct gotr_hash_code *)msg);
+	gotr_hmac(&user->our_hmac_key[generation], enc, enclen, (struct gotr_hash_code *)msg);
 
 	user->next_sending_msgtype = next_type;
 	*len = msglen;
 	return msg;
 }
 
+/**
+ * Encrypts the message and calculates the hmac to prepare for sending.
+ *
+ * @param[in] room The room context.
+ * @param[in] user The user from which this message was received.
+ * @param[in,out] packed_msg A pointer to the encrypted message with the
+ * first sizeof(struct gotr_hash_code) bytes containing the HMAC.
+ * @param[in] len The length of @a packed_msg in bytes.
+ * @param[in] len_should Checked for equality with len.
+ * @param[in] generation The key generation to use. 0 means pre-key (used for
+ * pair channel establish message) and 1 is used for the following handshake
+ * messages.
+ * @param[in] msgtype The message type, only used for debugging.
+ * @return 1 on success, 0 on failure.
+ */
 static inline int check_hmac_decrypt(struct gotr_roomdata *room,
 									 struct gotr_user *user,
 									 unsigned char *packed_msg,
 									 size_t len,
 									 size_t len_should,
+									 int generation,
 									 const char* msgtype)
 {
 	struct gotr_hash_code hmac;
@@ -64,14 +97,13 @@ static inline int check_hmac_decrypt(struct gotr_roomdata *room,
 
 //	gotr_eprintf("parsing %s", msgtype);
 
-	gotr_hmac(&user->our_hmac_key, enc, enclen, &hmac);
+	gotr_hmac(&user->our_hmac_key[generation], enc, enclen, &hmac);
 	if (0 != memcmp(&hmac, packed_msg, sizeof(hmac))) {
 		gotr_eprintf("hmac mismatch");
 		return 0;
 	}
 
-	if (gotr_symmetric_decrypt(enc, enclen, &user->our_sym_key,
-	                           &user->our_sym_iv, enc) != enclen) {
+	if (gotr_symmetric_decrypt(enc, enclen, &user->our_sym_key[generation], &user->our_sym_iv[generation], enc) != enclen) {
 		gotr_eprintf("could not decrypt msg");
 		return 0;
 	}
@@ -89,6 +121,7 @@ unsigned char *gotr_pack_pair_channel_init(struct gotr_roomdata *room,
 
 	gotr_ecdhe_key_get_public(&user->my_dhe_skey, &msg->sender_dhe_pkey);
 
+	/// @todo: is this check needed or can we just set circle_valid to 0 anyway?
 	if (user->next_sending_msgtype == GOTR_MSG)
 		room->circle_valid = 0;
 	user->next_sending_msgtype = GOTR_PAIR_CHAN_ESTABLISH;
@@ -101,19 +134,13 @@ unsigned char *gotr_pack_pair_channel_est(struct gotr_roomdata *room,
 										  size_t *len)
 {
 	struct msg_pair_channel_est *msg;
-	struct gotr_dhe_pkey own_pub;
 
 	if (!check_params_create_msg(room, user, (void*)&msg, sizeof(*msg), "pair_channel_est"))
 		return NULL;
 
-	gotr_ecdhe_key_get_public(&user->my_dhe_skey, &own_pub);
-	if(!gotr_eddsa_sign(&room->my_dsa_skey, &own_pub, sizeof(own_pub), &msg->enc.sig_sender_dhe_pkey)) {
-		gotr_eprintf("could not sign pair channel establishment message.");
-		return NULL;
-	}
-	memcpy(&msg->enc.sender_dsa_pkey, &room->my_dsa_pkey, sizeof(room->my_dsa_pkey));
+	memcpy(&msg->enc.sender_longterm_pkey, &room->my_longterm_pkey, sizeof(room->my_longterm_pkey));
 
-	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_FLAKE_z);
+	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, 0, GOTR_FLAKE_z);
 }
 
 unsigned char *gotr_pack_flake_z(struct gotr_roomdata *room,
@@ -127,7 +154,7 @@ unsigned char *gotr_pack_flake_z(struct gotr_roomdata *room,
 	serialize_point(&msg->enc.sender_z[0], sizeof(msg->enc.sender_z[0]), user->my_z[0]);
 	serialize_point(&msg->enc.sender_z[1], sizeof(msg->enc.sender_z[1]), user->my_z[1]);
 
-	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_FLAKE_R);
+	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, 1, GOTR_FLAKE_R);
 }
 
 unsigned char *gotr_pack_flake_R(struct gotr_roomdata *room,
@@ -141,7 +168,7 @@ unsigned char *gotr_pack_flake_R(struct gotr_roomdata *room,
 	serialize_point(&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]), user->my_X[0]);
 	serialize_point(&msg->enc.sender_R[1], sizeof(msg->enc.sender_R[1]), user->my_X[1]);
 
-	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_FLAKE_VALIDATE);
+	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, 1, GOTR_FLAKE_VALIDATE);
 }
 
 unsigned char *gotr_pack_flake_validate(struct gotr_roomdata *room,
@@ -163,7 +190,7 @@ unsigned char *gotr_pack_flake_validate(struct gotr_roomdata *room,
 	serialize_point(&p[7], sizeof(p[7]), user->his_X[1]);
 	gotr_hmac(&user->our_flake_auth, p, sizeof(p), &msg->enc.flake_hash);
 
-	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, GOTR_MSG);
+	return encrypt_and_hmac(user, (unsigned char *)msg, sizeof(*msg), len, 1, GOTR_MSG);
 }
 
 /**
@@ -416,14 +443,16 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room,
 
 	memcpy(&user->his_dhe_pkey, &msg->sender_dhe_pkey, sizeof(user->his_dhe_pkey));
 
-	if(!gotr_ecdhe(&user->my_dhe_skey, &user->his_dhe_pkey, &exchanged_key)) {
+	if (!gotr_ecdhe(&user->my_dhe_skey, &user->his_dhe_pkey, &exchanged_key)) {
 		gotr_eprintf("ecdhe failed.");
 		return 0;
 	}
-	gotr_sym_derive_key(&exchanged_key, &user->our_sym_key, &user->our_sym_iv);
-	gotr_hmac_derive_key(&user->our_hmac_key, &user->our_sym_key,
+	gotr_sym_derive_key(&exchanged_key, &user->our_sym_key[0],
+						&user->our_sym_iv[0]);
+	gotr_hmac_derive_key(&user->our_hmac_key[0], &user->our_sym_key[0],
 	                     &exchanged_key, sizeof(exchanged_key), NULL);
 
+	/// @todo: is this check needed or can we just set circle_valid to 0 anyway?
 	if (user->next_expected_msgtype == GOTR_MSG)
 		room->circle_valid = 0;
 	user->next_expected_msgtype = GOTR_PAIR_CHAN_ESTABLISH;
@@ -436,15 +465,28 @@ int gotr_parse_pair_channel_est(struct gotr_roomdata *room,
 								size_t len)
 {
 	struct msg_pair_channel_est *msg = (struct msg_pair_channel_est*)packed_msg;
-	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "pair_channel_est"))
+	struct gotr_hash_code triple_dhe[3];
+	struct gotr_hash_code seed;
+	unsigned char sw;
+
+	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), 0, "pair_channel_est"))
 		return 0;
 
-	memcpy(&user->his_dsa_pkey, &msg->enc.sender_dsa_pkey, sizeof(user->his_dsa_pkey));
-	if (!gotr_eddsa_verify(&user->his_dsa_pkey, &user->his_dhe_pkey, sizeof(user->his_dhe_pkey), &msg->enc.sig_sender_dhe_pkey)) {
-		gotr_eprintf("signature mismatch");
+	memcpy(&user->his_longterm_pkey, &msg->enc.sender_longterm_pkey, sizeof(user->his_longterm_pkey));
+	/// @todo: check pubkey trust level
+
+	// Derive shared key for encryption and hmac from triple-DH
+	// See https://whispersystems.org/blog/simplifying-otr-deniability/
+	sw = memcmp(&room->my_longterm_pkey, &user->his_longterm_pkey, sizeof(struct gotr_dhe_pkey)) > 0;
+	if (!gotr_ecdhe(&user->my_dhe_skey, &user->his_longterm_pkey, &triple_dhe[sw]) ||
+	    !gotr_ecdhe(&room->my_longterm_skey, &user->his_dhe_pkey, &triple_dhe[!sw]) ||
+	    !gotr_ecdhe(&user->my_dhe_skey, &user->his_dhe_pkey, &triple_dhe[2])) {
+		gotr_eprintf("triple ecdhe failed.");
 		return 0;
 	}
-	/// @todo: check pubkey trust level
+	gotr_hash(triple_dhe, sizeof(triple_dhe), &seed);
+	gotr_sym_derive_key(&seed, &user->our_sym_key[1], &user->our_sym_iv[1]);
+	gotr_hmac_derive_key(&user->our_hmac_key[1], &user->our_sym_key[1], &seed, sizeof(seed), NULL);
 
 	gotr_ecbd_gen_keypair(&user->my_r[0], &user->my_z[0]);
 	gotr_ecbd_gen_keypair(&user->my_r[1], &user->my_z[1]);
@@ -459,7 +501,7 @@ int gotr_parse_flake_z(struct gotr_roomdata *room,
 					   size_t len)
 {
 	struct msg_flake_z *msg = (struct msg_flake_z*)packed_msg;
-	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "flake_z"))
+	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), 1, "flake_z"))
 		return 0;
 
 	user->his_z[0] = deserialize_point(&msg->enc.sender_z[0], sizeof(msg->enc.sender_z[0]));
@@ -485,7 +527,7 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 	struct msg_flake_R *msg = (struct msg_flake_R*)packed_msg;
 	gcry_mpi_point_t keypoint = NULL;
 	struct gotr_point keydata;
-	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "flake_R"))
+	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), 1, "flake_R"))
 		return 0;
 
 	user->his_X[0] = deserialize_point(&msg->enc.sender_R[0], sizeof(msg->enc.sender_R[0]));
@@ -498,7 +540,7 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 
 	gotr_ecbd_gen_flake_key(&keypoint, user->his_z[0], user->my_r[1], user->my_X[1], user->my_X[0], user->his_X[1]);
 	serialize_point(&keydata, sizeof(keydata), keypoint);
-	gotr_hmac_derive_key(&user->our_flake_auth, &user->our_sym_key, &keydata, sizeof(struct gotr_point), NULL);
+	gotr_hmac_derive_key(&user->our_flake_auth, &user->our_sym_key[1], &keydata, sizeof(struct gotr_point), NULL);
 	gcry_mpi_point_release(keypoint);
 
 	user->next_expected_msgtype = GOTR_FLAKE_VALIDATE;
@@ -513,7 +555,7 @@ int gotr_parse_flake_validate(struct gotr_roomdata *room,
 	struct msg_flake_validate *msg = (struct msg_flake_validate*)packed_msg;
 	struct gotr_point p[8];
 	struct gotr_hash_code hmac;
-	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), "flake_validate"))
+	if(!check_hmac_decrypt(room, user, packed_msg, len, sizeof(*msg), 1, "flake_validate"))
 		return 0;
 
 	serialize_point(&p[0], sizeof(p[0]), user->his_z[0]);

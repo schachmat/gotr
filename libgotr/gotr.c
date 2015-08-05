@@ -74,11 +74,12 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user sen
 	room->send_user = send_user;
 	room->receive_user = receive_user;
 
-	load_privkey(privkey_filename, &room->data.my_dsa_skey);
-	gotr_eddsa_key_get_public(&room->data.my_dsa_skey, &room->data.my_dsa_pkey);
+	load_privkey(privkey_filename, &room->data.my_longterm_skey);
+	gotr_ecdhe_key_get_public(&room->data.my_longterm_skey, &room->data.my_longterm_pkey);
 	return room;
 }
 
+///TODO:remove type argument
 static void pack_encode_send(struct gotr_chatroom* room, struct gotr_user* user, gotr_msgtype type)
 {
 	unsigned char *packed_msg;
@@ -256,7 +257,7 @@ struct gotr_user *gotr_user_joined(struct gotr_chatroom *room, const void *user_
 static void cleanup_user(struct gotr_user *user)
 {
 	gotr_ecdhe_key_clear(&user->my_dhe_skey);
-/*
+/* members we do not have to clear:
 	struct gotr_auth_key his_circle_auth;
 	struct gotr_sym_key  his_circle_key;
 	struct gotr_sym_iv   his_circle_iv;
@@ -264,7 +265,7 @@ static void cleanup_user(struct gotr_user *user)
 	struct gotr_sym_key  our_sym_key;
 	struct gotr_sym_iv   our_sym_iv;
 	struct gotr_dhe_pkey his_dhe_pkey;
-	struct gotr_dsa_pkey his_dsa_pkey;
+	struct gotr_dhe_pkey his_longterm_pkey;
 */
 	gcry_mpi_release(user->my_r[0]);
 	gcry_mpi_release(user->my_r[1]);
@@ -329,7 +330,7 @@ void gotr_leave(struct gotr_chatroom *room)
 		free(user);
 	}
 
-	gotr_eddsa_key_clear(&room->data.my_dsa_skey);
+	gotr_ecdhe_key_clear(&room->data.my_longterm_skey);
 
 	free(room);
 }

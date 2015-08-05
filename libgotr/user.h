@@ -8,8 +8,8 @@ struct gotr_roomdata {
 	struct gotr_auth_key my_circle_auth;
 	struct gotr_sym_key my_circle_key;
 	struct gotr_sym_iv my_circle_iv;
-	struct gotr_dsa_skey my_dsa_skey;
-	struct gotr_dsa_pkey my_dsa_pkey;
+	struct gotr_dhe_skey my_longterm_skey;
+	struct gotr_dhe_pkey my_longterm_pkey;
 	struct gotr_user *users;         ///< a list of all users in the room
 	const void *closure;
 	char circle_valid;
@@ -37,8 +37,8 @@ typedef enum {
  * the next message from the other user should have this type.
  * @var gotr_user::next_sending_msgtype
  * the next message, we send to the other user should have the given type.
- * @var gotr_user::his_dsa_pkey
- * other users long term public key for EDDSA.
+ * @var gotr_user::his_longterm_pkey
+ * other users long term public key used to authenticate tripe DHE.
  * @var gotr_user::my_dhe_skey
  * own private key for the ECDHE
  * @var gotr_user::his_dhe_pkey
@@ -85,12 +85,12 @@ struct gotr_user {
 	struct gotr_sym_key  his_circle_key;
 	struct gotr_sym_iv   his_circle_iv;
 	struct gotr_auth_key our_flake_auth;
-	struct gotr_auth_key our_hmac_key;
-	struct gotr_sym_key  our_sym_key;
-	struct gotr_sym_iv   our_sym_iv;
+	struct gotr_auth_key our_hmac_key[2];
+	struct gotr_sym_key  our_sym_key[2];
+	struct gotr_sym_iv   our_sym_iv[2];
 	struct gotr_dhe_skey my_dhe_skey;
 	struct gotr_dhe_pkey his_dhe_pkey;
-	struct gotr_dsa_pkey his_dsa_pkey;
+	struct gotr_dhe_pkey his_longterm_pkey;
 	gcry_mpi_t my_r[2];
 	gcry_mpi_point_t my_z[2];
 	gcry_mpi_point_t his_z[2];
@@ -103,25 +103,22 @@ struct gotr_user {
 };
 
 struct msg_pair_channel_init {
-	struct gotr_dhe_pkey    sender_dhe_pkey;    /*     0    32 */
-	/* size: 32 */
-};
+	struct gotr_dhe_pkey sender_dhe_pkey; /*     0    32 */
+};                                        /* size:    32 */
 
 struct msg_pair_channel_est {
-	struct gotr_hash_code       hmac;                   /*     0    64 */
+	struct gotr_hash_code    hmac;                 /*     0    64 */
 	struct {
-		struct gotr_dsa_sig     sig_sender_dhe_pkey;    /*    64    64 */
-		struct gotr_dsa_pkey    sender_dsa_pkey;        /*   128    32 */
-	} enc;                                              /*    64    96 */
-	/* size: 160 */
-};
+		struct gotr_dhe_pkey sender_longterm_pkey; /*    64    32 */
+	} enc;                                         /*    64    32 */
+};                                                 /* size:    96 */
 
 struct msg_flake_z {
-	struct gotr_hash_code    hmac;
+	struct gotr_hash_code hmac;        /*     0    64 */
 	struct {
-		struct gotr_point    sender_z[2];
-	} enc;
-};
+		struct gotr_point sender_z[2]; /*    64    64 */
+	} enc;                             /*    64    64 */
+};                                     /* size:   128 */
 
 struct msg_flake_R {
 	struct gotr_hash_code    hmac;
