@@ -30,6 +30,7 @@ struct link {
 static char *nick;
 static struct link *links;
 static int sock_fd;
+static int shutdown_sig;
 static struct sockaddr_un receiver;
 static struct gotr_chatroom *room = NULL;
 
@@ -182,7 +183,7 @@ cleanup()
 static void
 handle_sig(int signum)
 {
-	cleanup();
+  shutdown_sig = 1;
 }
 
 static struct gotr_user *
@@ -311,9 +312,11 @@ main(int argc, char *argv[])
 		case 0: /* timeout, do nothing */
 			break;
 		case -1:
-			perror("main: select() failed");
-			goto fail;
-			break;
+                  if (shutdown_sig)
+                    return 0;   /* cleanup() queued with atexit() */
+                  perror("main: select() failed");
+                  goto fail;
+                  break;
 		}
 	}
 
