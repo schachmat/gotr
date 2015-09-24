@@ -1,9 +1,15 @@
 include config.mk
 
+LIBA = libgotr.a
+LIBSO = libgotr.so.${MAJOR}.${MINOR}
 SRC = messaging.c gotr.c util.c gka.c b64.c crypto.c key.c
-LIB = libgotr.a
 INC = messaging.h gotr.h util.h gka.h b64.h crypto.h key.h user.h
 OBJ = ${SRC:.c=.o}
+
+GENKEY = gotr_genkey
+GENKEY_SRC = genkey.c
+GENKEY_INC = crypto.h
+GENKEY_OBJ = ${GENKEY_SRC:.c=.o}
 
 CLIENT = client
 CLIENT_SRC = client.c
@@ -15,7 +21,7 @@ TEST_SRC = test.c
 TEST_INC = test.h
 TEST_OBJ = ${TEST_SRC:.c=.o}
 
-all: options cscope ${LIB} ${CLIENT}
+all: options cscope ${LIBA} ${LIBSO} ${GENKEY} ${CLIENT}
 
 options:
 	@echo build options:
@@ -28,18 +34,27 @@ options:
 	@${CC} -c ${CFLAGS} $<
 
 ${OBJ}: ${INC} config.mk
+${GENKEY_OBJ}: ${GENKEY_INC} config.mk
 ${CLIENT_OBJ}: ${CLIENT_INC} config.mk
 ${TEST_OBJ}: ${TEST_INC} config.mk
 
-${LIB}: ${OBJ}
+${LIBA}: ${OBJ}
 	@echo AR
 	@${AR} -rcs $@ ${OBJ}
 
-${CLIENT}: ${CLIENT_OBJ} ${LIB}
+${LIBSO}: ${OBJ}
+	@echo CC $<
+	@${CC} ${LDFLAGS} -o ${@} ${OBJ}
+
+${GENKEY}: ${GENKEY_OBJ}
+	@echo CC -o $@
+	@${CC} -o $@ ${GENKEY_OBJ} ${GENKEY_LDFLAGS}
+
+${CLIENT}: ${CLIENT_OBJ} ${LIBA}
 	@echo CC -o $@
 	@${CC} -o $@ ${CLIENT_OBJ} ${CLIENT_LDFLAGS}
 
-${TEST}: ${TEST_OBJ} ${LIB}
+${TEST}: ${TEST_OBJ} ${LIBA}
 	@echo CC -o $@
 	@${CC} -o $@ ${TEST_OBJ} -lgcrypt
 
@@ -60,6 +75,6 @@ structs: ${CLIENT}
 
 clean:
 	@echo cleaning
-	@rm -f ${LIB} ${CLIENT} ${OBJ} ${CLIENT_OBJ} ${TEST} ${TEST_OBJ}
+	@rm -f ${LIBA} ${LIBSO} ${GENKEY} ${CLIENT} ${OBJ} ${CLIENT_OBJ} ${TEST} ${TEST_OBJ}
 
-.PHONY: all client libgotr.a options cscope doc clean structs
+.PHONY: all genkey client libgotr.a options cscope doc clean structs

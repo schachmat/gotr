@@ -1,3 +1,6 @@
+MAJOR = 0
+MINOR = 1
+
 # Customize below to fit your system
 
 # includes and libs
@@ -7,11 +10,14 @@ LIBS = -L/usr/lib -lc -lgcrypt
 CLIENT_LIBS = -L. -L/usr/lib -lc -lgotr -lgcrypt
 
 # flags
-CFLAGS = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}
-#CFLAGS = -std=c99 -pedantic -Wall -O3 ${INCS} ${CPPFLAGS}
-LDFLAGS = -g ${LIBS}
-#LDFLAGS = -s ${LIBS}
+CPPFLAGS = -DLGOTR_VERSION_MAJOR=\"${MAJOR}\" -DLGOTR_VERSION_MINOR=\"${MINOR}\"
+CFLAGS = -g -std=c99 -fPIC -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}
+#CFLAGS = -std=c99 -fPIC -pedantic -Wall -O3 ${INCS} ${CPPFLAGS}
+LDFLAGS = -g -shared -Wl,-soname,libgotr.so.${MAJOR} ${LIBS}
+#LDFLAGS = -shared -Wl,-soname,libgotr.so.${MAJOR} ${LIBS}
 
+GENKEY_LDFLAGS = -g ${CLIENT_LIBS}
+#GENKEY_LDFLAGS = -s ${CLIENT_LIBS}
 CLIENT_LDFLAGS = -g ${CLIENT_LIBS}
 #CLIENT_LDFLAGS = -s ${CLIENT_LIBS}
 
