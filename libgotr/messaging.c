@@ -248,7 +248,13 @@ static void* calc_circle_key(struct gotr_roomdata *room, size_t *len_ret, uint32
 		first = first->next;
 	pre = cur = first;
 
-	if (!cur || !(ret = malloc(*len_ret)) || !(X = malloc(len_X))) {
+	if (!cur) {
+		/* just a warning, nothing serious
+		 * TODO: return a 1-user circle key? */
+		gotr_eprintf("calc_circle_key: no other users in room");
+		return NULL;
+	}
+	if (!(ret = malloc(*len_ret)) || !(X = malloc(len_X))) {
 		gotr_eprintf("calc_circle_key: could not malloc:");
 		free(ret);
 		return NULL;
