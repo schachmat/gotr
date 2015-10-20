@@ -24,7 +24,6 @@ int main(int argc, char *argv[])
 	 * used for the key generation */
 
 	gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
-	gotr_rand_poll();
 
 	gotr_ecdhe_key_create(&key);
 
