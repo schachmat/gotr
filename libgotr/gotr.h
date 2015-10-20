@@ -37,7 +37,6 @@
 #ifndef _GOTR_GOTR_H
 #define _GOTR_GOTR_H
 
-#define GOTR_GCRYPT_VERSION "1.6.1"
 #define GOTR_PROT_VERSION "1"
 
 struct gotr_chatroom;

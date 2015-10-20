@@ -1,3 +1,8 @@
+# libgotr version
+MAJOR = 0
+MINOR = 1
+
+# system specific build configuration
 include config.mk
 
 LIBA = libgotr.a
