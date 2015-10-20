@@ -1,6 +1,5 @@
 #include <sys/stat.h>
 
-#include "gotr.h"
 #include "util.h"
 #include "crypto.h"
 
@@ -11,19 +10,21 @@ int main(int argc, char *argv[])
 	mode_t oldmask;
 	struct gotr_dhe_skey key;
 
-	gcry_error_t err = 0;
+	if (argc != 2 || !argv[1]) {
+		gotr_eprintf("usage: gotr_genkey FILENAME");
+		return 1;
+	}
+
 	if (!gcry_check_version(GOTR_GCRYPT_VERSION)) {
 		gotr_eprintf("libgcrypt version mismatch");
 		return 1;
 	}
 
+	/* Do not set GCRYCTL_ENABLE_QUICK_RANDOM here so GCRY_VERY_STRONG_RANDOM is
+	 * used for the key generation */
+
 	gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
 	gotr_rand_poll();
-
-	if (argc != 2 || !argv[1]) {
-		gotr_eprintf("usage: gotr_genkey FILENAME");
-		return 1;
-	}
 
 	gotr_ecdhe_key_create(&key);
 
