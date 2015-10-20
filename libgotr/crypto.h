@@ -1,5 +1,4 @@
-/**
- * This file is part of libgotr.
+/* This file is part of libgotr.
  * (C) 2001-2014 Christian Grothoff, Nils Durner, Markus Teich, Jannik Theiß
  * (and other contributing authors)
  *
