@@ -462,7 +462,7 @@ int gotr_parse_pair_channel_init(struct gotr_roomdata *room,
 	if (user->next_expected_msgtype == GOTR_MSG)
 		room->circle_valid = 0;
 	user->next_expected_msgtype = GOTR_PAIR_CHAN_ESTABLISH;
-	return GOTR_OK;
+	return 1;
 }
 
 int gotr_parse_pair_channel_est(struct gotr_roomdata *room,
@@ -498,7 +498,7 @@ int gotr_parse_pair_channel_est(struct gotr_roomdata *room,
 	gotr_ecbd_gen_keypair(&user->my_r[1], &user->my_z[1]);
 
 	user->next_expected_msgtype = GOTR_FLAKE_z;
-	return GOTR_OK;
+	return 1;
 }
 
 int gotr_parse_flake_z(struct gotr_roomdata *room,
@@ -522,7 +522,7 @@ int gotr_parse_flake_z(struct gotr_roomdata *room,
 	gotr_ecbd_gen_X_value(&user->my_X[1], user->my_z[0], user->his_z[0], user->my_r[1]);
 
 	user->next_expected_msgtype = GOTR_FLAKE_R;
-	return GOTR_OK;
+	return 1;
 }
 
 int gotr_parse_flake_R(struct gotr_roomdata *room,
@@ -550,7 +550,7 @@ int gotr_parse_flake_R(struct gotr_roomdata *room,
 	gcry_mpi_point_release(keypoint);
 
 	user->next_expected_msgtype = GOTR_FLAKE_VALIDATE;
-	return GOTR_OK;
+	return 1;
 }
 
 int gotr_parse_flake_validate(struct gotr_roomdata *room,
@@ -580,7 +580,7 @@ int gotr_parse_flake_validate(struct gotr_roomdata *room,
 
 	user->next_expected_msgtype = GOTR_MSG;
 	room->circle_valid = 0;
-	return GOTR_OK;
+	return 1;
 }
 
 char* gotr_parse_msg(struct gotr_roomdata *room, char *packed_msg, size_t len, struct gotr_user** sender)

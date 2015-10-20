@@ -3,7 +3,6 @@
 
 #include <gcrypt.h>
 
-#define GOTR_OK 1
 #define SERIALIZED_POINT_LEN (256/8)
 
 struct gotr_point {
