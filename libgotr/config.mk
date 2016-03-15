@@ -1,5 +1,8 @@
 # Customize below to fit your system
 
+# paths
+PREFIX = /usr/local
+
 # includes and libs
 INCS = -I. -I./include -I/usr/include
 LIBS = -L/usr/lib -lc -lgcrypt

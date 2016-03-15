@@ -1,16 +1,18 @@
 # libgotr version
 MAJOR = 0
 MINOR = 1
+VERSION = ${MAJOR}.${MINOR}
 
 # system specific build configuration
 include config.mk
 
 LIBA = libgotr.a
-LIBSO = libgotr.so.${MAJOR}.${MINOR}
+LIBSO = libgotr.so.${VERSION}
 SRC = messaging.c gotr.c util.c gka.c b64.c crypto.c key.c
 INC = messaging.h gotr.h util.h gka.h b64.h crypto.h key.h user.h
 OBJ = ${SRC:.c=.o}
 
+# libexec binary which generates a private key
 GENKEY = gotr_genkey
 GENKEY_SRC = genkey.c
 GENKEY_INC = crypto.h
@@ -51,7 +53,7 @@ ${LIBSO}: ${OBJ}
 	@echo CC $<
 	@${CC} ${LDFLAGS} -o ${@} ${OBJ}
 
-${GENKEY}: ${GENKEY_OBJ}
+${GENKEY}: ${GENKEY_OBJ} ${LIBA}
 	@echo CC -o $@
 	@${CC} -o $@ ${GENKEY_OBJ} ${GENKEY_LDFLAGS}
 
@@ -81,5 +83,34 @@ structs: ${CLIENT}
 clean:
 	@echo cleaning
 	@rm -f ${LIBA} ${LIBSO} ${GENKEY} ${CLIENT} ${OBJ} ${CLIENT_OBJ} ${TEST} ${TEST_OBJ}
+
+dist: clean
+	@echo creating dist tarball
+	@mkdir -p libgotr-${VERSION}
+	@cp -R ../LICENSE Makefile config.mk \
+		${SRC} ${GENKEY_SRC} ${CLIENT_SRC} ${TEST_SRC} ${INC} ${TEST_INC} \
+		libgotr-${VERSION}
+	@tar -cf libgotr-${VERSION}.tar libgotr-${VERSION}
+	@gzip -f libgotr-${VERSION}.tar
+	@rm -rf libgotr-${VERSION}
+
+install: all
+	@echo installing library files to ${DESTDIR}${PREFIX}/lib
+	@mkdir -p ${DESTDIR}${PREFIX}/lib
+	@cp -f ${LIBSO} ${DESTDIR}${PREFIX}/lib
+	@chmod 755 ${DESTDIR}${PREFIX}/lib/${LIBSO}
+	@cp -f ${LIBA} ${DESTDIR}${PREFIX}/lib
+	@chmod 644 ${DESTDIR}${PREFIX}/lib/${LIBA}
+	@echo installing genkey binary to ${DESTDIR}${PREFIX}/libexec
+	@mkdir -p ${DESTDIR}${PREFIX}/libexec
+	@cp -f ${GENKEY} ${DESTDIR}${PREFIX}/libexec
+	@chmod 755 ${DESTDIR}${PREFIX}/libexec/${GENKEY}
+
+uninstall:
+	@echo removing library files from ${DESTDIR}${PREFIX}/lib
+	@rm -f ${DESTDIR}${PREFIX}/lib/${LIBSO}
+	@rm -f ${DESTDIR}${PREFIX}/lib/${LIBA}
+	@echo removing genkey binary from ${DESTDIR}${PREFIX}/libexec
+	@rm -f ${DESTDIR}${PREFIX}/libexec/${GENKEY}
 
 .PHONY: all genkey client libgotr.a options cscope doc clean structs
