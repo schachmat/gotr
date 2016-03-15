@@ -106,10 +106,9 @@ int gotr_init();
  * @param[in] room_closure Closure pointer representing the new chatroom. This
  * will not be touched by gotr. It is only passed to the callbacks.
  * @param[in] privkey_filename The absolute filepath where the private key is
- * stored. If the file does not exist, but the containing folder does, a key is
- * generated and saved as the specified name. If you set this argument to NULL,
- * a key is generated and used for this chatroom, but not saved to disk, so it
- * may not be recovered after the chat session.
+ * stored. If the file does not exist, a temporary key is generated to be used
+ * in this session and discarded on gotr_leave. If you set this argument to
+ * NULL, you can enforce using a temporary key.
  * @return A pointer, which should only be remembered and passed to
  * gotr functions when the client needs to refer to this chat room. This is a
  * black-box pointer, do NOT access/change it or the data it points to!

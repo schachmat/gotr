@@ -32,7 +32,7 @@ struct gotr_user;
 
 struct gotr_chatroom {
 	struct gotr_roomdata data;
-	gotr_cb_send_all send_all;       ///< callback to send a message to every participant in this room
+	gotr_cb_send_all send_all;         ///< callback to send a message to every participant in this room
 	gotr_cb_send_user send_user;       ///< callback to send a message to a specific user
 	gotr_cb_receive_user receive_user; ///< callback to notify the client about a decrypted message he has to print
 };
@@ -68,9 +68,8 @@ int gotr_init()
 				gcry_strerror(err));
 
 	/**
-	 * ecc is slow otherwise
-	 * @todo research how to not enable quick random for long term key
-	 * generation.
+	 * ecc is slow otherwise. long term key generation should be done by the
+	 * separate gotr_genkey binary, which does not set this option.
 	 */
 	if ((err = gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0)))
 		gotr_eprintf("failed to set libgcrypt option ENABLE_QUICK_RANDOM: %s",

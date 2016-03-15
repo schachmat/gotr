@@ -21,11 +21,13 @@
 #define _GOTR_KEY_H
 
 /**
- * load the private key from file or generate a new one.
+ * load the private key from file or generate a temporary one. If one is
+ * generated, it will not use the strong random number generator and therefore
+ * should not be used long term. Use the gotr_genkey binary to generate long
+ * term keys.
  *
  * @param abs_filename The absolut path to the file. If it does not exist yet
- * but the directory already exists, a generated key is saved there. If @a
- * abs_filename is NULL, a key is only generated but not saved.
+ * or @a abs_filename is NULL, a key is generated to be used in this session.
  * @param key Where to store the loaded/generated key.
  */
 void load_privkey(const char* abs_filename, struct gotr_dhe_skey *key);
