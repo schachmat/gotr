@@ -27,6 +27,7 @@
 #include <gcrypt.h>
 
 #include "gka.h"
+#include "crypto.h"
 #include "util.h"
 
 #define CURVE "Ed25519"

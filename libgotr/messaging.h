@@ -26,10 +26,6 @@
  * @todo document non gotr.h usage.
  */
 
-#include "util.h"
-#include "crypto.h"
-#include "gotr.h"
-
 struct gotr_user;
 struct gotr_roomdata;
 

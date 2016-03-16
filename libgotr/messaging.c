@@ -26,8 +26,6 @@
 #include "user.h"
 #include "util.h"
 #include "crypto.h"
-#include "gotr.h"
-#include "b64.h"
 #include "gka.h"
 
 static inline int check_params_create_msg(const struct gotr_roomdata *room,

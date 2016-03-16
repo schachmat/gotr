@@ -30,7 +30,6 @@
 #include <gcrypt.h>
 
 #include "util.h"
-#include "messaging.h"
 
 extern gcry_ctx_t edctx;
 
