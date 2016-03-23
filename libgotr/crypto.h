@@ -57,29 +57,6 @@ void gotr_mpi_scan_unsigned(gcry_mpi_t *result, const void *data, size_t size);
 
 
 
-// --- EdDSA ---
-
-struct gotr_dsa_skey {
-	unsigned char d[256 / 8];
-};
-
-struct gotr_dsa_pkey {
-	unsigned char q_y[256 / 8];
-};
-
-struct gotr_dsa_sig {
-	unsigned char r[256 / 8];
-	unsigned char s[256 / 8];
-};
-
-void gotr_eddsa_key_create(struct gotr_dsa_skey *priv);
-void gotr_eddsa_key_get_public(const struct gotr_dsa_skey *priv, struct gotr_dsa_pkey *pub);
-int gotr_eddsa_sign(const struct gotr_dsa_skey *priv, const void *block, size_t size, struct gotr_dsa_sig *sig);
-int gotr_eddsa_verify(const struct gotr_dsa_pkey *pub, const void *block, size_t size, const struct gotr_dsa_sig *sig);
-void gotr_eddsa_key_clear(struct gotr_dsa_skey *priv);
-
-
-
 // --- ECDHE ---
 
 struct gotr_dhe_skey {
