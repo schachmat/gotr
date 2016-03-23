@@ -26,14 +26,6 @@
  * protocols. See the documentation of file messaging.h for details.
  */
 
-/**
- * @mainpage The libgotr library documentation
- * @section term Terminologies
- *
- * Throughout this documentation the term "client" refers to the application
- * linking against libgotr and using it's code.
- */
-
 #ifndef _GOTR_GOTR_H
 #define _GOTR_GOTR_H
 
