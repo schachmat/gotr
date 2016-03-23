@@ -1,13 +1,13 @@
-#libgotr
+# libgotr
 
 libgotr is a library providing an [OTR](https://otr.cypherpunks.ca/)-like encryption scheme for group
 conversations.
 
-##Build Dependencies
+## Build Dependencies
 
 - libgcrypt v1.6.1 or higher
 
-##Documentation
+## Documentation
 
 The API documentation can be built by running `make doc` inside the `libgotr`
 folder. This requires Doxygen and some other tools to build the graphs. The API
@@ -17,7 +17,7 @@ Also the folders `expose`, `ghm_pres`, `presentation 1`,  `presentation2` and
 `proposal` provide some deliverables required for the university course where
 this library was developed.
 
-##License
+## License
 
 (C) 2014-2015 Markus Teich, Jannik Theiß, Christian Grothoff, Nils Durner
 (and other contributing authors)
