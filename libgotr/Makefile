@@ -84,14 +84,13 @@ clean:
 	@echo cleaning
 	@rm -f ${LIBA} ${LIBSO} ${GENKEY} ${CLIENT} ${OBJ} ${CLIENT_OBJ} ${TEST} ${TEST_OBJ}
 
-dist: clean
+dist:
 	@echo creating dist tarball
 	@mkdir -p libgotr-${VERSION}
 	@cp -R ../LICENSE Makefile config.mk \
 		${SRC} ${GENKEY_SRC} ${CLIENT_SRC} ${TEST_SRC} ${INC} ${TEST_INC} \
 		libgotr-${VERSION}
-	@tar -cf libgotr-${VERSION}.tar libgotr-${VERSION}
-	@gzip -f libgotr-${VERSION}.tar
+	@tar -cf - libgotr-${VERSION} | gzip -c > libgotr-${VERSION}.tar.gz
 	@rm -rf libgotr-${VERSION}
 
 install: all
