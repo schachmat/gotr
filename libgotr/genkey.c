@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 
 	gotr_ecdhe_key_create(&key);
 
-	oldmask = umask(077);
+	oldmask = umask(0077);
 	if ((fp = fopen(argv[1], "wb"))) {
 		if (fwrite(&key, 1, size, fp) != size)
 			gotr_eprintf("could not write private key to file %s", argv[1]);
