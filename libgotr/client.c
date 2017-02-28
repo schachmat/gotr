@@ -261,6 +261,7 @@ main(int argc, char *argv[])
 	}
 
 	signal(SIGINT, &handle_sig);
+	signal(SIGQUIT, &handle_sig);
 	signal(SIGABRT, &handle_sig);
 	signal(SIGSEGV, &handle_sig);
 	atexit(&cleanup);
@@ -325,6 +326,8 @@ main(int argc, char *argv[])
 					} else {
 						gotr_send(room, buf);
 					}
+				} else {
+					return 0;
 				}
 			}
 			break;
