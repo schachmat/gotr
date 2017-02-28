@@ -1,11 +1,31 @@
 gotr_receive_unencrypted
 digest -> evolving hash
-logging
+ensure circle_key continued authenticity after first message with a hash chain
+logging: more explicit/useful messages
+
+key.[ch]: the filename is relative to cwd, not absolute!
+all: check for [in] or [out] in "@param" documentation
 
 mpi_
 clean crypto.[ch]
 remove test.[ch]
 
-library loading code statt init
+library loading code statt init?
 assert statt if() return 0; in internen funktionen
 https://bugs.otr.im/issues/47
+
+docu:
+- trust is defined as a relation between two longterm public keys. A~B <==>
+  owner of A trusts the owner of B to protect the private key b and does not
+  provide it to any other party.
+- a web of trust has drawbacks (citation needed), therefore we keep the trust db
+  local and do not build transitive relations. to make this viable, we TOFU to
+  establish a first level of trust.
+- trust can be hardened by manual pubkey verification.
+- since we use TOFU, we need to store the other parties account identifier
+  together with the key and the trust level to detect when someone else is using
+  a known account with a new key (impersonation) and display a warning to the
+  user. => trust db entry consists of:
+  - other users pubkey
+  - other users accound id
+  - trust level
