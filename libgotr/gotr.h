@@ -90,7 +90,8 @@ typedef int (*gotr_cb_send_user)(void *room_closure, void *user_closure, const c
 typedef void (*gotr_cb_receive_user)(void *room_closure, void *user_closure, const char *plain_msg);
 
 /**
- * initialize libgotr.
+ * initialize libgotr. Apart from setting up a custom log function, this must be
+ * the first call to libgotr.
  * @return 1 on success, 0 on failure.
  */
 int gotr_init();
@@ -198,7 +199,9 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
 void gotr_leave(struct gotr_chatroom *room); //room will be freed
 
 /**
- * Set a custom logging function. The default is to log to stderr.
+ * Set a custom logging function. The default is to log to stderr. If you want
+ * to use your custom logging function inside gotr_init(), you have to call it
+ * first.
  * @param[in] fn Pointer to the log function which should be used. If NULL, the
  * log function is reset to the default.
  */
