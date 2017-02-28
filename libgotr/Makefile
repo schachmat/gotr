@@ -104,6 +104,10 @@ install: all
 	@mkdir -p ${DESTDIR}${PREFIX}/libexec
 	@cp -f ${GENKEY} ${DESTDIR}${PREFIX}/libexec
 	@chmod 755 ${DESTDIR}${PREFIX}/libexec/${GENKEY}
+	@echo installing header files to ${DESTDIR}${PREFIX}/include
+	@mkdir -p ${DESTDIR}${PREFIX}/include
+	@cp -f gotr.h ${DESTDIR}${PREFIX}/include
+	@chmod 644 ${DESTDIR}${PREFIX}/include/gotr.h
 
 uninstall:
 	@echo removing library files from ${DESTDIR}${PREFIX}/lib
@@ -111,5 +115,7 @@ uninstall:
 	@rm -f ${DESTDIR}${PREFIX}/lib/${LIBA}
 	@echo removing genkey binary from ${DESTDIR}${PREFIX}/libexec
 	@rm -f ${DESTDIR}${PREFIX}/libexec/${GENKEY}
+	@echo removing header files from ${DESTDIR}${PREFIX}/include
+	@rm -f ${DESTDIR}${PREFIX}/include/gotr.h
 
 .PHONY: all genkey client libgotr.a options cscope doc clean structs
