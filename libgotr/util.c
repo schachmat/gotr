@@ -24,25 +24,42 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "gotr.h"
 #include "util.h"
 
+static void gotr_default_log(const char *format, ...);
+static gotr_cb_log gotr_custom_logfn = &gotr_default_log;
 
-void gotr_eprintf(const char *format, ...)
+void gotr_set_log_fn(gotr_cb_log fn)
+{
+	gotr_custom_logfn = fn ? fn : &gotr_default_log;
+}
+
+static void gotr_default_log(const char *format, ...)
 {
 	va_list ap;
-
-	fputs("libgotr: ", stderr);
 
 	va_start(ap, format);
 	vfprintf(stderr, format, ap);
 	va_end(ap);
+}
 
-	if (format[0] != '\0' && format[strlen(format)-1] == ':') {
-		fputc(' ', stderr);
-		perror(NULL);
-	} else {
-		fputc('\n', stderr);
-	}
+void gotr_eprintf(const char *format, ...)
+{
+	va_list ap;
+	const size_t mlen = 2048;
+	char msg[mlen];
+	char *err = NULL;
+
+	va_start(ap, format);
+	vsnprintf(msg, mlen, format, ap);
+	va_end(ap);
+	msg[mlen-1] = '\0';
+
+	if (format[0] != '\0' && format[strlen(format)-1] == ':')
+		err = strerror(errno);
+
+	gotr_custom_logfn("libgotr: %s%s%s\n", msg, err ? " " : "", err ? err : "");
 }
 
 void gotr_assert_fail(const char *assertion, const char *file, unsigned int line, const char *function)

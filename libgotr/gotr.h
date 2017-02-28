@@ -35,6 +35,12 @@ struct gotr_chatroom;
 struct gotr_user;
 
 /**
+ * Functions of this type can be used as a custom log handler.
+ * @param[in] format A standard POSIX printf format string.
+ */
+typedef void (*gotr_cb_log)(const char *format, ...);
+
+/**
  * This callback is used by libgotr to broadcast encrypted and base64 encoded
  * messages to all users in a chatroom. The Client should send the message @a
  * b64_msg to every user in @a room_closure either via the chatroom broadcast
@@ -190,5 +196,12 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
  * @param[in] room The chat room to leave.
  */
 void gotr_leave(struct gotr_chatroom *room); //room will be freed
+
+/**
+ * Set a custom logging function. The default is to log to stderr.
+ * @param[in] fn Pointer to the log function which should be used. If NULL, the
+ * log function is reset to the default.
+ */
+void gotr_set_log_fn(gotr_cb_log fn);
 
 #endif
