@@ -34,7 +34,7 @@ void load_privkey(const char* abs_filename, struct gotr_dhe_skey *key)
 		goto create;
 
 	if (!(fp = fopen(abs_filename, "rb"))) {
-		gotr_eprintf("could not open file %s for reading:", abs_filename);
+		gotr_eprintf("could not open key file %s for reading:", abs_filename);
 		goto create;
 	}
 
