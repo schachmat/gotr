@@ -62,20 +62,24 @@ int gotr_init()
 		return 0;
 	}
 
-	/* SECMEM cannot be resized dynamically. We do not know how much we need */
-	if ((err = gcry_control(GCRYCTL_DISABLE_SECMEM, 0)))
-		gotr_eprintf("failed to set libgcrypt option DISABLE_SECMEM: %s",
-				gcry_strerror(err));
+	if (!gcry_control(GCRYCTL_INITIALIZATION_FINISHED_P))
+	{
+		/* libgcrypt initialization not yet finished. Set some options. */
 
-	/**
-	 * ecc is slow otherwise. long term key generation should be done by the
-	 * separate gotr_genkey binary, which does not set this option.
-	 */
-	if ((err = gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0)))
-		gotr_eprintf("failed to set libgcrypt option ENABLE_QUICK_RANDOM: %s",
-				gcry_strerror(err));
+		/* SECMEM cannot be resized dynamically.
+		 * We do not know how much we need */
+		if ((err = gcry_control(GCRYCTL_DISABLE_SECMEM, 0)))
+			gotr_eprintf("failed to set libgcrypt option DISABLE_SECMEM: %s",
+			             gcry_strerror(err));
 
-	gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
+		/* ecc is slow otherwise. long term key generation should be done by the
+		 * separate gotr_genkey binary, which does not set this option. */
+		if ((err = gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0)))
+			gotr_eprintf("failed to set libgcrypt option ENABLE_QUICK_RANDOM: %s",
+			             gcry_strerror(err));
+
+		gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);
+	}
 	gotr_rand_poll();
 	gotr_gka_init();
 	return 1;
