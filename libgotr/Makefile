@@ -28,7 +28,7 @@ TEST_SRC = test.c
 TEST_INC = test.h
 TEST_OBJ = ${TEST_SRC:.c=.o}
 
-all: options cscope ${LIBA} ${LIBSO} ${GENKEY} ${CLIENT}
+all: options ${LIBA} ${LIBSO} ${GENKEY} ${CLIENT}
 
 options:
 	@echo build options:
@@ -67,10 +67,6 @@ ${TEST}: ${TEST_OBJ} ${LIBA}
 
 check: ${TEST}
 	@./${TEST}
-
-cscope: ${SRC} ${INC} ${CLIENT_SRC} ${CLIENT_INC} ${TEST_SRC} ${TEST_INC}
-	@echo cScope
-	@${CSCOPE} -R -b
 
 doc: Doxyfile
 	@echo DOXYGEN
@@ -118,4 +114,4 @@ uninstall:
 	@echo removing header files from ${DESTDIR}${PREFIX}/include
 	@rm -f ${DESTDIR}${PREFIX}/include/gotr.h
 
-.PHONY: all genkey client libgotr.a options cscope doc clean structs
+.PHONY: all genkey client libgotr.a options doc clean structs
