@@ -2,6 +2,7 @@ gotr_receive_unencrypted
 digest -> evolving hash
 ensure circle_key continued authenticity after first message with a hash chain
 logging: more explicit/useful messages
+closures: make non const
 
 key.[ch]: the filename is relative to cwd, not absolute!
 all: check for [in] or [out] in "@param" documentation
