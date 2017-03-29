@@ -12,7 +12,7 @@ SRC = messaging.c gotr.c util.c gka.c b64.c crypto.c key.c
 INC = messaging.h gotr.h util.h gka.h b64.h crypto.h key.h user.h
 OBJ = ${SRC:.c=.o}
 
-# libexec binary which generates a private key
+# binary which generates a private key
 GENKEY = gotr_genkey
 GENKEY_SRC = genkey.c
 GENKEY_INC = crypto.h
@@ -96,10 +96,10 @@ install: all
 	@chmod 755 ${DESTDIR}${PREFIX}/lib/${LIBSO}
 	@cp -f ${LIBA} ${DESTDIR}${PREFIX}/lib
 	@chmod 644 ${DESTDIR}${PREFIX}/lib/${LIBA}
-	@echo installing genkey binary to ${DESTDIR}${PREFIX}/libexec
-	@mkdir -p ${DESTDIR}${PREFIX}/libexec
-	@cp -f ${GENKEY} ${DESTDIR}${PREFIX}/libexec
-	@chmod 755 ${DESTDIR}${PREFIX}/libexec/${GENKEY}
+	@echo installing genkey binary to ${DESTDIR}${PREFIX}/bin
+	@mkdir -p ${DESTDIR}${PREFIX}/bin
+	@cp -f ${GENKEY} ${DESTDIR}${PREFIX}/bin
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/${GENKEY}
 	@echo installing header files to ${DESTDIR}${PREFIX}/include
 	@mkdir -p ${DESTDIR}${PREFIX}/include
 	@cp -f gotr.h ${DESTDIR}${PREFIX}/include
@@ -109,8 +109,8 @@ uninstall:
 	@echo removing library files from ${DESTDIR}${PREFIX}/lib
 	@rm -f ${DESTDIR}${PREFIX}/lib/${LIBSO}
 	@rm -f ${DESTDIR}${PREFIX}/lib/${LIBA}
-	@echo removing genkey binary from ${DESTDIR}${PREFIX}/libexec
-	@rm -f ${DESTDIR}${PREFIX}/libexec/${GENKEY}
+	@echo removing genkey binary from ${DESTDIR}${PREFIX}/bin
+	@rm -f ${DESTDIR}${PREFIX}/bin/${GENKEY}
 	@echo removing header files from ${DESTDIR}${PREFIX}/include
 	@rm -f ${DESTDIR}${PREFIX}/include/gotr.h
 
