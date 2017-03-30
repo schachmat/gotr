@@ -34,13 +34,12 @@ static inline int check_params_create_msg(const struct gotr_roomdata *room,
 										  size_t len,
 										  char *msgtype)
 {
-	if(!room || !(*msg = malloc(len))) {
+	if(!room || !(*msg = calloc(len, 1))) {
 		gotr_eprintf("packing %s failed:", msgtype);
 		return 0;
 	}
 
 //	gotr_eprintf("packing %s", msgtype);
-	memset(*msg, 0, len);
 	return 1;
 }
 

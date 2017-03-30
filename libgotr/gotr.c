@@ -89,8 +89,7 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user sen
 {
 	struct gotr_chatroom *room;
 
-	room = malloc(sizeof(*room));
-	memset(room, 0, sizeof(*room));
+	room = calloc(sizeof(*room), 1);
 	room->data.closure = room_closure;
 	room->send_all = send_all;
 	room->send_user = send_user;
@@ -325,10 +324,9 @@ struct gotr_user *gotr_init_user(struct gotr_chatroom *room, const void *user_cl
 {
 	struct gotr_user *user;
 
-	if (!room || !(user = malloc(sizeof(*user))))
+	if (!room || !(user = calloc(sizeof(*user), 1)))
 		return NULL;
 
-	memset(user, 0, sizeof(*user));
 	gotr_ecdhe_key_create(&user->my_dhe_skey);
 
 	user->closure = user_closure;
