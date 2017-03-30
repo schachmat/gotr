@@ -95,7 +95,14 @@ struct gotr_chatroom *gotr_join(gotr_cb_send_all send_all, gotr_cb_send_user sen
 	room->send_user = send_user;
 	room->receive_user = receive_user;
 
-	load_privkey(privkey_filename, &room->data.my_longterm_skey);
+	if (privkey_filename &&
+	    !load_privkey(privkey_filename, &room->data.my_longterm_skey)) {
+		free(room);
+		return NULL;
+	} else {
+		gotr_ecdhe_key_create(&room->data.my_longterm_skey);
+	}
+
 	gotr_ecdhe_key_get_public(&room->data.my_longterm_skey, &room->data.my_longterm_pkey);
 	return room;
 }

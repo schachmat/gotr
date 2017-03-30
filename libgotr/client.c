@@ -270,6 +270,10 @@ main(int argc, char *argv[])
 		goto fail;
 
 	room = gotr_join(&send_all, &send_user, &receive_user, NULL, argc > 2 ? argv[2] : NULL);
+	if (!room) {
+		fprintf(stderr, "could not load key\n");
+		goto fail;
+	}
 
 	for_all(&join, NULL);
 

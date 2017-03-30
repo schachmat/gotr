@@ -20,16 +20,17 @@
 #ifndef _GOTR_KEY_H
 #define _GOTR_KEY_H
 
+#include "crypto.h"
+
 /**
- * load the private key from file or generate a temporary one. If one is
- * generated, it will not use the strong random number generator and therefore
- * should not be used long term. Use the gotr_genkey binary to generate long
+ * load the private key from file. Use the gotr_genkey binary to generate long
  * term keys.
  *
- * @param abs_filename The absolut path to the file. If it does not exist yet
- * or @a abs_filename is NULL, a key is generated to be used in this session.
+ * @param fname The pathname of the private key file. Can be relative or
+ * absolute.
  * @param key Where to store the loaded/generated key.
+ * @return 1 if key could be loaded, 0 if not.
  */
-void load_privkey(const char* abs_filename, struct gotr_dhe_skey *key);
+int load_privkey(const char* fname, struct gotr_dhe_skey *key);
 
 #endif

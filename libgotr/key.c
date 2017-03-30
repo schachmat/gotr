@@ -17,34 +17,32 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#include "crypto.h"
-#include "util.h"
 #include "key.h"
+#include "util.h"
 
-void load_privkey(const char* abs_filename, struct gotr_dhe_skey *key)
+int load_privkey(const char* fname, struct gotr_dhe_skey *key)
 {
 	FILE *fp;
-	size_t size = sizeof(struct gotr_dhe_skey);
+	const size_t size = sizeof(struct gotr_dhe_skey);
 
-	if (!abs_filename)
-		goto create;
+	if (!fname)
+		return 0;
 
-	if (!(fp = fopen(abs_filename, "rb"))) {
-		gotr_eprintf("could not open key file %s for reading:", abs_filename);
-		goto create;
+	if (!(fp = fopen(fname, "rb"))) {
+		gotr_eprintf("could not open key file %s for reading:", fname);
+		return 0;
 	}
 
-	if (size == fread(key, 1, size, fp)) {
+	if (size != fread(key, 1, size, fp)) {
 		fclose(fp);
-		return;
+		gotr_eprintf("got invalid size reading key from file %s", fname);
+		return 0;
 	}
 	fclose(fp);
-	gotr_eprintf("could not read private key from file %s", abs_filename);
 
-create:
-	gotr_ecdhe_key_create(key);
+	return 1;
 }
