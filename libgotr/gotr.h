@@ -106,7 +106,8 @@ int gotr_init();
  * will not be touched by gotr. It is only passed to the callbacks.
  * @param[in] privkey_filename The private key file pathname. If you set this
  * argument to NULL, a temporary key will be generated for this session and
- * discarded on gotr_leave().
+ * discarded on gotr_leave(). This string will not be kept, you can free() it
+ * after gotr_join() returns.
  * @return A pointer, which should only be remembered and passed to
  * gotr functions when the client needs to refer to this chat room. This is a
  * black-box pointer, do NOT access/change it or the data it points to! If the

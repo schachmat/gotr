@@ -1,6 +1,6 @@
 # libgotr version
 MAJOR = 0
-MINOR = 1
+MINOR = 2
 VERSION = ${MAJOR}.${MINOR}
 
 # system specific build configuration
@@ -94,6 +94,7 @@ install: all
 	@mkdir -p ${DESTDIR}${PREFIX}/lib
 	@cp -f ${LIBSO} ${DESTDIR}${PREFIX}/lib
 	@chmod 755 ${DESTDIR}${PREFIX}/lib/${LIBSO}
+	@/sbin/ldconfig -n ${DESTDIR}${PREFIX}/lib
 	@cp -f ${LIBA} ${DESTDIR}${PREFIX}/lib
 	@chmod 644 ${DESTDIR}${PREFIX}/lib/${LIBA}
 	@echo installing genkey binary to ${DESTDIR}${PREFIX}/bin
