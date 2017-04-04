@@ -35,6 +35,18 @@ struct gotr_chatroom;
 struct gotr_user;
 
 /**
+ * Possible key exchange states per user.
+ */
+enum gotr_state {
+	gotr_state_not_private,
+	gotr_state_stage0,
+	gotr_state_stage1,
+	gotr_state_stage2,
+	gotr_state_stage3,
+	gotr_state_private
+};
+
+/**
  * Functions of this type can be used as a custom log handler.
  * @param[in] format A standard POSIX printf format string.
  */
@@ -189,6 +201,23 @@ struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user
  * this argument is NULL a rekey is done for each user in the @a room.
  */
 void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user);
+
+/**
+ * Retrieve the state of the key exchange with the given user in the given
+ * chatroom. If @a user is NULL, the state will be the minimum of the chatroom.
+ * This means gotr_state_not_private if no
+ * other user responded to any key exchange message, so if no other party in
+ * this room supports GOTR. If there are some users who support GOTR and the key
+ * exchange is done with all of them the return code will be gotr_state_private.
+ * If there is a user who supports GOTR but the key exchange is not finished,
+ * the return code will be the smallest gotr_state_stageX state found in these
+ * users.
+ * @param[in] room The chat room to query.
+ * @param[in] user The user to query. May be NULL.
+ * @return The state of the queried @a user in the @a room. If @user is NULL,
+ * the state of the @a room.
+ */
+enum gotr_state gotr_get_state(struct gotr_chatroom *room, struct gotr_user *user);
 
 /**
  * Disable gotr for a given chat room. This releases all ressources associated

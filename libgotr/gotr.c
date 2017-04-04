@@ -135,6 +135,7 @@ static void pack_encode_send(struct gotr_chatroom* room, struct gotr_user* user,
 void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user)
 {
 	struct gotr_user* cur = room->data.users;
+
 	if (!room) {
 		gotr_eprintf("rekey called with parameter room == NULL");
 		return;
@@ -149,14 +150,52 @@ void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user)
 		gotr_ecdhe_key_create(&user->my_dhe_skey);
 		pack_encode_send(room, user, GOTR_PAIR_CHAN_INIT);
 		user->next_expected_msgtype = GOTR_PAIR_CHAN_INIT;
-	} else {
-		for (; cur; cur = cur->next) {
-			gotr_ecdhe_key_clear(&cur->my_dhe_skey);
-			gotr_ecdhe_key_create(&cur->my_dhe_skey);
-			pack_encode_send(room, cur, GOTR_PAIR_CHAN_INIT);
-			cur->next_expected_msgtype = GOTR_PAIR_CHAN_INIT;
+	}
+
+	for (; cur; cur = cur->next) {
+		gotr_ecdhe_key_clear(&cur->my_dhe_skey);
+		gotr_ecdhe_key_create(&cur->my_dhe_skey);
+		pack_encode_send(room, cur, GOTR_PAIR_CHAN_INIT);
+		cur->next_expected_msgtype = GOTR_PAIR_CHAN_INIT;
+	}
+}
+
+enum gotr_state gotr_get_state(struct gotr_chatroom *room, struct gotr_user *user)
+{
+	struct gotr_user* cur;
+	enum gotr_state ret = gotr_state_not_private;
+	enum gotr_state ustate;
+
+	if (!room) {
+		gotr_eprintf("get_state called with parameter room == NULL");
+		return gotr_state_not_private;
+	}
+
+	if (user) {
+		if (!(cur = gotr_user_in_room(room, user))) {
+			gotr_eprintf("rekey: user not in room");
+			return gotr_state_not_private;
+		}
+		if (GOTR_PAIR_CHAN_ESTABLISH == cur->next_expected_msgtype)
+			return gotr_state_stage0;
+		if (GOTR_FLAKE_z == cur->next_expected_msgtype)
+			return gotr_state_stage1;
+		if (GOTR_FLAKE_R == cur->next_expected_msgtype)
+			return gotr_state_stage2;
+		if (GOTR_FLAKE_VALIDATE == cur->next_expected_msgtype)
+			return gotr_state_stage3;
+		if (GOTR_MSG == cur->next_expected_msgtype)
+			return gotr_state_private;
+		return gotr_state_not_private;
+	}
+
+	for (cur = room->data.users; cur; cur = cur->next) {
+		if ((ustate = gotr_get_state(room, cur)) > gotr_state_not_private) {
+			if (ustate < ret || gotr_state_not_private == ret)
+				ret = ustate;
 		}
 	}
+	return ret;
 }
 
 int gotr_send(struct gotr_chatroom *room, char *plain_msg)
