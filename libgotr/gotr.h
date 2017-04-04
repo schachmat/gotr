@@ -214,7 +214,7 @@ void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user);
  * users.
  * @param[in] room The chat room to query.
  * @param[in] user The user to query. May be NULL.
- * @return The state of the queried @a user in the @a room. If @user is NULL,
+ * @return The state of the queried @a user in the @a room. If @a user is NULL,
  * the state of the @a room.
  */
 enum gotr_state gotr_get_state(struct gotr_chatroom *room, struct gotr_user *user);
