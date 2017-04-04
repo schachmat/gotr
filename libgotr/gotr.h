@@ -164,15 +164,6 @@ int gotr_send(struct gotr_chatroom *room, char *plain_msg);
 int gotr_receive(struct gotr_chatroom *room, char *b64_msg);
 
 /**
- * Establish new ephemeral keypairs with one or all users in a chatroom.
- * @param[in] room The pointer returned by gotr_join() in which the rekey should be
- * executed.
- * @param[in] user The pointer to the user with which a rekey should be executed. If
- * this argument is NULL a rekey is done for each user in the @a room.
- */
-void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user);
-
-/**
  * handle a received b64 encoded gotr message.
  * This function should be called if the client receives a message, regardless
  * of its content. If the client does not have a gotr_user pointer for the
@@ -189,6 +180,15 @@ void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user);
  * @return @a user or the newly created gotr_user struct if @a user == NULL
  */
 struct gotr_user *gotr_receive_user(struct gotr_chatroom *room, struct gotr_user *user, const void *user_closure, const char *b64_msg_in);
+
+/**
+ * Establish new ephemeral keypairs with one or all users in a chatroom.
+ * @param[in] room The pointer returned by gotr_join() in which the rekey should be
+ * executed.
+ * @param[in] user The pointer to the user with which a rekey should be executed. If
+ * this argument is NULL a rekey is done for each user in the @a room.
+ */
+void gotr_rekey(struct gotr_chatroom *room, struct gotr_user *user);
 
 /**
  * Disable gotr for a given chat room. This releases all ressources associated
