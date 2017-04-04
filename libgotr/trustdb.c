@@ -315,6 +315,8 @@ struct gotr_trustdb *gotr_read_trustdb(const char *filename)
 		last = cur;
 	}
 
+	fclose(fp);
+
 	// sort
 	first = natural_mergesort(first);
 
@@ -326,6 +328,5 @@ struct gotr_trustdb *gotr_read_trustdb(const char *filename)
 	// build tree
 	ret->root = tree_from_list(first, last);
 
-	fclose(fp);
 	return ret;
 }
