@@ -19,7 +19,7 @@ this library was developed.
 
 ## License
 
-(C) 2014-2015 Markus Teich, Jannik Theiß, Christian Grothoff, Nils Durner
+(C) 2014-2017 Markus Teich, Jannik Theiß, Christian Grothoff, Nils Durner
 (and other contributing authors)
 
 libgotr is free software; you can redistribute it and/or modify
